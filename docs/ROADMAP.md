@@ -465,3 +465,95 @@ You want these numbers because "3,000 students used this last semester" is a res
 Not the algorithms — they're in every textbook. The hard part was designing the core library so that *explanation* was a first-class output rather than a UI afterthought. Once `determinize()` returned its reasoning alongside its result, the browser step-through, the CLI's verbose mode, and the docs examples all came from one source of truth. And the regex → DFA → regex round-trip property test found three bugs in state elimination that hand-written tests missed entirely.
 
 That is a systems-design answer, not a coursework answer. It's the whole reason to build this.
+
+---
+
+## 9. Teaching layer (v1.1 / v1.2)
+
+Two things people will ask for the moment this is usable: *can my professor set problems
+with it*, and *can it be more fun than a textbook*. Both are reasonable. Both are also the
+fastest available route to a rewrite, an on-call rotation, and a legal obligation.
+
+So this section has exactly one organising constraint:
+
+> **Every feature here ships with zero backend.** No accounts, no database, no student PII.
+> Kleene stays static files on a CDN.
+
+Three reasons, stated plainly so they are not quietly relitigated at 1am in week 14:
+
+1. **Student data is not a thing to collect casually.** A class list is a set of named
+   individuals, frequently minors, and holding it pulls in DPDP, FERPA and GDPR obligations
+   simultaneously. Those are real duties with real penalties, and they are not duties a solo
+   undergraduate should be signing up for in exchange for a feature.
+2. **A backend is an uptime promise, and the promise comes due at the worst time.** The hour
+   a submission deadline lands is the hour the server must be up, and that hour is
+   statistically the same week as your own finals. A static file on a CDN has no such week.
+3. **Nobody needs permission to run a binary.** A teacher cannot adopt a new LMS without
+   institutional sign-off, procurement, and a data-protection review. A teacher can adopt a
+   CLI tool this afternoon, without asking anyone. The zero-backend version is not the
+   compromised version; it is the version that can actually be adopted.
+
+### 9.1 Teacher workflow, without an LMS
+
+**Assignment links.** A problem spec — target language, optional maximum state budget,
+optional alphabet restriction — encoded into the URL fragment with the same compression
+scheme as §2.6. The teacher writes the problem once and sends a link. The student opens it,
+builds a machine, and the equivalence check runs client-side against the spec.
+
+Be honest about what this is: **client-side means the answer is inspectable**. A student who
+opens devtools can read the target. That makes this a practice and self-check mode, and it
+is a genuinely good one — instant feedback, unlimited attempts, no submission anxiety. It is
+not a graded assessment, and it should never be described as one.
+
+**Graded work goes through the CLI.**
+
+```
+kleene grade submissions/ --against reference.kln --format csv
+```
+
+Batch-grade a directory into whatever gradebook the institution already mandates. The
+reference automaton never leaves the professor's machine, so there is nothing to inspect.
+This is also where the counterexample engine earns its place twice over: the CSV can carry
+*why* each submission failed, not just that it did, which is the difference between a grade
+and feedback.
+
+**GitHub Classroom.** A template repository plus a GitHub Action that runs `kleene equiv` on
+push. Many CS departments already run GitHub Classroom; this uses infrastructure they have
+rather than asking them to adopt infrastructure they do not. It is also the cheapest thing
+in this entire section to build — it is a workflow file.
+
+### 9.2 Gamification, domain-native only
+
+The rule, first: **no XP, no badges, no streaks, no leaderboards.** Generic point systems
+are filler bolted onto content that could not hold attention on its own, and students read
+them as exactly that. They also cost real implementation time and teach nothing.
+
+Every mechanic below is instead a real property of the subject, machine-checkable, and
+already something the course asks students to do.
+
+| Mechanic | Why it works |
+|---|---|
+| **Counterexample feedback** | Ships in v1 (§2.4). The foundation everything else stands on: an attempt can always be told the shortest specific string it gets wrong, and in which direction. |
+| **State-budget challenges** | *"Accept this language in ≤ 4 states."* Minimality is decidable, so the constraint is real rather than arbitrary — the tool can prove the bound is achievable and prove the student hit it. Automata golf, with a verifier. |
+| **Pumping lemma game** | Implemented literally as the adversarial game it is already taught as: the machine picks *n*, the student picks *w*, the machine decomposes into *xyz*, the student picks *i*. Aimed squarely at the students who can recite the lemma and cannot apply it — which is most of them. |
+| **Ordered problem set** | ~20 problems in difficulty order, *"strings ending in `ab`"* through *"binary numbers divisible by 3"*. Progress in `localStorage`. |
+
+The pumping lemma game is the one worth building even if nothing else here gets built. It is
+the topic students most reliably fail, the failure is always the same failure — treating a
+proof about an adversary as a formula to memorise — and an adversary is precisely the thing
+software is good at being.
+
+### 9.3 Sequencing
+
+| Version | Contents | Cost |
+|---|---|---|
+| **v1** | Counterexample engine only. | Already in §2.4; no additional scope. |
+| **v1.1** | Assignment links + the ordered problem set. | One weekend. Both are the §2.6 share format with a different payload. |
+| **v1.2** | Pumping lemma game + state-budget golf. | The only genuinely new interaction work in this section. |
+| **Anything with a database** | Only when a real professor asks, with specific requirements. | Not estimated, deliberately. |
+
+That last row is not a refusal. A professor arriving with specific requirements is the
+strongest validation signal this project can receive, and it should be treated as such —
+answered, scoped, and taken seriously. The point is that the requirements come *first*. A
+database built in anticipation of a user is how a static site becomes a service nobody asked
+for; a database built for a named professor with a stated need is a product decision.
