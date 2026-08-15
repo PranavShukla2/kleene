@@ -111,10 +111,17 @@ in [DECISIONS.md](DECISIONS.md).
       and the feature is unusable in practice. 🔵 **LEFTOVER CANDIDATE**: the aggressive
       rules. The four listed above are mandatory.
 - [ ] **E3.** `ops.rs` — complement, product construction (union, intersection, difference).
-- [ ] **E4.** `equiv.rs` — Hopcroft–Karp with union-find. Returns not just a bool but, on
-      inequality, **a shortest witness string** separating the two languages. The witness is
-      what makes the autograder useful instead of merely correct.
-- [ ] **E5.** `simulate.rs` — DFA single-state stepping and NFA configuration-set stepping,
+- [ ] **E4.** `equiv.rs` — Hopcroft–Karp with union-find. Near-linear; the fast path that
+      answers only *are these the same language*.
+- [ ] **E5.** `counterexample.rs` — **the shortest string two machines disagree on.**
+      Symmetric difference by product construction, then BFS from the product's start state
+      to its nearest accepting state. BFS, not DFS: the shortest disagreement is the whole
+      point, and a long one is nearly useless to a confused student.
+      Returns the string *and the direction* — "`abba` should be accepted, your machine
+      rejects it" — because the direction is half the diagnostic information.
+      Both halves of this already exist by the time it is written (E3 product construction,
+      C-track determinization), so it is assembly rather than new theory.
+- [ ] **E6.** `simulate.rs` — DFA single-state stepping and NFA configuration-set stepping,
       both fully traced, with per-step accept/reject/stuck status.
 
 ### Track F — I/O
@@ -131,8 +138,10 @@ in [DECISIONS.md](DECISIONS.md).
 
 - [ ] **G1.** `kleene convert` — regex → NFA/DFA/minimal, `--to`, `--from`.
 - [ ] **G2.** `kleene minimize`, `kleene run <automaton> <string>`, `kleene export`.
-- [ ] **G3.** `kleene equiv a.kln b.kln` — exit code 0/1 for scripting, and on failure
-      prints the witness string from E4. **This is the autograder wedge** (roadmap §6.2).
+- [ ] **G3.** `kleene equiv a.kln b.kln` — exit code 0/1 for scripting, and under
+      `--counterexample` prints the shortest disagreeing string from E5 with its direction.
+      **This is the autograder wedge** (roadmap §6.2). Exit codes make it scriptable; the
+      counterexample makes its output worth reading.
 - [ ] **G4.** `--verbose` on every subcommand prints the `Traced` steps. This is where the
       trace design pays for itself the first time.
 - [ ] **G5.** `--json` output on every subcommand, so a professor can pipe results into a
@@ -148,9 +157,13 @@ in [DECISIONS.md](DECISIONS.md).
 - [ ] **H4.** `roundtrip_through_regex` — regex → DFA → regex → DFA must be equivalent.
       The roadmap calls this the strong one and it is right. Expect it to fail first, and
       expect the failures to be real.
-- [ ] **H5.** Differential testing against the `regex` crate on shared syntax.
-- [ ] **H6.** `insta` snapshots for DOT and `.kln`.
-- [ ] **H7.** proptest at 10,000 cases in CI; regressions committed.
+- [ ] **H5.** `counterexample_is_always_a_real_witness` — both directions. A returned
+      witness must be accepted by exactly one machine; no witness returned must mean the two
+      are genuinely equivalent. A fabricated witness lies to a student who is already
+      confused, and a withheld one turns "correct" into an unbacked claim.
+- [ ] **H6.** Differential testing against the `regex` crate on shared syntax.
+- [ ] **H7.** `insta` snapshots for DOT and `.kln`.
+- [ ] **H8.** proptest at 10,000 cases in CI; regressions committed.
 
 ---
 
@@ -158,7 +171,8 @@ in [DECISIONS.md](DECISIONS.md).
 
 - [ ] Every algorithm in roadmap §2.4 implemented; every one marked *traced* returns steps.
 - [ ] `cargo test --workspace` green including proptest at 10k cases.
-- [ ] `kleene equiv` returns correct exit codes and prints a witness on mismatch.
+- [ ] `kleene equiv` returns correct exit codes and prints a shortest counterexample,
+      with direction, on mismatch.
 - [ ] `--verbose` produces reasoning a student could follow.
 - [ ] `docs/formats/kln.md` exists and matches the implementation.
 - [ ] Zero clippy warnings; no `unsafe`.
@@ -176,10 +190,14 @@ in [DECISIONS.md](DECISIONS.md).
 
 ## Hooks for later phases
 
-- **E4's witness string** is what Phase 7's `kleene grade` reports back to students. Built
-  here for the CLI; costs nothing extra.
-- **G5's `--json`** is the machine-readable surface Phase 7 batch grading consumes.
-- **D2's distinguishing string** is what Phase 6's Arena uses to give a failing challenge
-  attempt a specific counterexample instead of "wrong".
-- **Core-generated step prose (D3)** means Arena hints and Classroom feedback come from the
-  same source as the UI, with no second implementation to keep in sync.
+- **E5's counterexample** is the foundation the entire teaching layer stands on
+  (roadmap §9.2). `kleene grade` reports it per submission, assignment links use it for
+  instant self-check feedback, and the problem set uses it to say *why* an attempt failed.
+  Built here for the CLI, at no extra cost to v1.
+- **G5's `--json`** is the machine-readable surface `kleene grade --format csv` consumes
+  in v1.1 (roadmap §9.1).
+- **D2's distinguishing string** is the minimization-time analogue of E5, and what lets a
+  failing attempt be told exactly which pair of states it wrongly merged.
+- **Core-generated step prose (D3)** means CLI verbose output, in-app explanations, and
+  every v1.1/v1.2 teaching feature read from one source, with no second implementation to
+  keep in sync.
