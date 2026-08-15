@@ -21,3 +21,19 @@ console_error_panic_hook = "0.1"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
+
+# Rust 1.93 emits bulk-memory instructions (`memory.copy`, `memory.fill`), and wasm-opt
+# refuses to validate them unless the feature is named explicitly. Without these flags the
+# release build fails outright — not silently, but with a wall of validator errors that
+# read like a miscompilation rather than a missing flag.
+#
+# Note the flag set is version-sensitive. wasm-pack pins binaryen 117, where
+# `--enable-bulk-memory` covers `memory.copy`/`memory.fill`. Binaryen 119+ split those out
+# into a separate `--enable-bulk-memory-opt`, which 117 rejects as an unknown option. Since
+# wasm-pack supplies its own binaryen, pinning to what 117 understands is the reproducible
+# choice — but if the wasm-pack version is ever bumped, this list is the first thing to check.
+#
+# -Oz rather than -O: this artifact is fetched over campus wifi and roadmap §3.2 budgets it
+# at 400 KB gzipped. Size is the scarce resource here, not speed.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
