@@ -15,9 +15,17 @@ one subset-construction round at a time, with the reasoning attached to every st
 
 ## Status
 
-**Phase 0 — de-risking the toolchain.** Not yet usable. See the
-[phase plans](docs/plan/README.md) for what is being built and in what order,
-and [LEFTOVERS.md](LEFTOVERS.md) for work deferred out of completed phases.
+**Phase 0 — de-risking the toolchain.** The vertical slice works: `kleene-core` compiles to
+WebAssembly, the browser loads it, and a real DFA renders as SVG in both light and dark
+themes. There is no editor and no conversion pipeline yet — this is a skeleton with a good
+posture, not a usable tool.
+
+The one thing standing between Phase 0 and its exit criterion is a public URL, which is
+blocked on a Cloudflare account (decision **D10**).
+
+See the [phase plans](docs/plan/README.md) for what is being built and in what order,
+[DECISIONS.md](docs/plan/DECISIONS.md) for the open questions, and
+[LEFTOVERS.md](LEFTOVERS.md) for work deferred out of a phase.
 
 ## What it is
 
@@ -69,10 +77,24 @@ docs/                 roadmap, phase plans, format specs
 
 ## Development
 
+Requires a Rust toolchain (pinned by `rust-toolchain.toml`), Node 24, and
+[`wasm-pack`](https://rustwasm.github.io/wasm-pack/) **v0.15.x** — the version matters,
+because it supplies its own `binaryen` and the `wasm-opt` flags in
+`crates/kleene-wasm/Cargo.toml` are only valid for the one it ships.
+
 ```sh
-cargo test --workspace     # core algorithms + property tests
-cd web && npm run dev      # web app against a locally built wasm bundle
+cargo test --workspace           # core algorithms
+cargo clippy --workspace --all-targets -- -D warnings
+
+cd web
+npm install
+npm run dev                      # builds the wasm bundle, then serves the app
+npm run build                    # production build
+npx vitest run                   # frontend tests
 ```
+
+`node scripts/check-wasm-size.mjs` reports the WebAssembly bundle against its 400 KB
+gzipped budget.
 
 ## License
 
