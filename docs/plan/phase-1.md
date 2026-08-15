@@ -2,8 +2,9 @@
 
 **Weeks 2–4 · ~30 hrs**
 
-> **Exit criterion:** `kleene equiv student.kln reference.kln` works from a terminal, and
-> the property tests pass.
+> **Exit criterion:** `kleene equiv student.kln reference.kln` works from a terminal, prints
+> the shortest disagreeing string under `--counterexample` when the two differ, and the
+> property tests pass.
 
 ## Goal
 
