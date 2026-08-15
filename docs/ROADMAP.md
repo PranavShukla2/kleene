@@ -333,10 +333,11 @@ Headless. No UI work at all this phase.
 - [ ] Partition refinement — `Traced`
 - [ ] Simulation with traces
 - [ ] Hopcroft–Karp equivalence
+- [ ] Counterexample search — shortest string on which two machines disagree
 - [ ] `kleene-cli`: `convert`, `minimize`, `equiv`, `run`, `export`
 - [ ] proptest suite passing at 10k cases
 
-**Exit criterion:** `kleene equiv student.kln reference.kln` works from a terminal, and the property tests pass.
+**Exit criterion:** `kleene equiv student.kln reference.kln` works from a terminal, prints the shortest disagreeing string under `--counterexample` when the two differ, and the property tests pass.
 
 ### Phase 2 — The editor (Weeks 5–7)
 
