@@ -454,7 +454,7 @@ You want these numbers because "3,000 students used this last semester" is a res
 ## 8. How to talk about it
 
 **Resume:**
-> **Kleene** — Automata theory workbench. Rust core compiled to WebAssembly, shared by a browser app, native CLI, and desktop build. Implements Thompson construction, subset construction, partition-refinement minimization, and Hopcroft–Karp equivalence, with every algorithm emitting a step-by-step trace consumed by the UI. Property-tested with proptest across all machine representations. *N users across M universities.*
+> **Kleene** — Automata theory workbench. Rust core compiled to WebAssembly, shared by a browser app, native CLI, and desktop build. Implements Thompson construction, subset construction, partition-refinement minimization, and Hopcroft–Karp equivalence, with every algorithm emitting a step-by-step trace consumed by the UI. Wrong answers are never reported as merely wrong — a counterexample search over the product automaton returns the shortest input string on which two machines disagree, and the direction of the error. Property-tested with proptest across all machine representations. *N users across M universities.*
 
 **The interview answer to "what was hard about it":**
 Not the algorithms — they're in every textbook. The hard part was designing the core library so that *explanation* was a first-class output rather than a UI afterthought. Once `determinize()` returned its reasoning alongside its result, the browser step-through, the CLI's verbose mode, and the docs examples all came from one source of truth. And the regex → DFA → regex round-trip property test found three bugs in state elimination that hand-written tests missed entirely.
