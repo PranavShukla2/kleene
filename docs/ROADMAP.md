@@ -267,10 +267,25 @@ proptest! {
         let dfa2 = minimize(&determinize(&thompson(&parse(&back)?)).result).result;
         prop_assert!(equivalent(&dfa, &dfa2));
     }
+
+    #[test]
+    fn counterexample_is_always_a_real_witness(a in arb_regex(), b in arb_regex()) {
+        let (x, y) = (dfa_of(&a)?, dfa_of(&b)?);
+        match counterexample(&x, &y) {
+            // Disagreement means exactly one of them accepts the witness.
+            Some(w) => prop_assert_ne!(x.accepts(&w), y.accepts(&w)),
+            // No witness may be withheld: none returned must mean none exists.
+            None    => prop_assert!(equivalent(&x, &y)),
+        }
+    }
 }
 ```
 
 That third one — regex → DFA → regex → DFA must be equivalent — is a genuinely strong test. It will find bugs in your state elimination that no hand-written test would.
+
+The fourth is what keeps the counterexample engine honest in both directions. A witness that
+is not actually a disagreement is a lie told to a student who is already confused, and a
+withheld witness turns "correct" into a claim the tool cannot back up.
 
 ### 3.2 Other layers
 
