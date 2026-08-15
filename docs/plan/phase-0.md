@@ -127,4 +127,4 @@ Cheap things done now so later phases are not blocked. None of these add v1 scop
 - **The `origin` field exists on `State` from the first commit.** It is
   three lines and retrofitting it is painful (roadmap §2.3).
 - **Design tokens live in CSS custom properties**, so the Tauri shell, the docs site, and
-  (later) Arena and Classroom all read the same palette without a second source of truth.
+  (later) the teaching layer all read the same palette without a second source of truth.

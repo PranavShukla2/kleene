@@ -146,7 +146,8 @@ in [DECISIONS.md](DECISIONS.md).
 - [ ] **G4.** `--verbose` on every subcommand prints the `Traced` steps. This is where the
       trace design pays for itself the first time.
 - [ ] **G5.** `--json` output on every subcommand, so a professor can pipe results into a
-      spreadsheet. 🔵 **LEFTOVER CANDIDATE**, but cheap and it is what makes Phase 7 possible.
+      spreadsheet. 🔵 **LEFTOVER CANDIDATE**, but cheap, and `kleene grade --format csv`
+      (roadmap §9.1) is built directly on it.
 
 ### Track H — Tests
 

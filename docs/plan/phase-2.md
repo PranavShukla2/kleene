@@ -118,7 +118,7 @@ features, and starts by reading how Graphviz solves it rather than by writing co
       This is the view that actually explains nondeterminism.
 - [ ] **F5.** Play/pause with adjustable speed.
 - [ ] **F6.** A batch tester — paste many strings, get a pass/fail table.
-      🔵 **LEFTOVER CANDIDATE**, though it is directly reused by Phase 7 assignments.
+      🔵 **LEFTOVER CANDIDATE**, though v1.1 assignment links reuse it directly.
 
 ### Track G — Layout
 
@@ -165,8 +165,8 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 
 ## Hooks for later phases
 
-- **F6's batch tester** is the same component Phase 7 uses to run an assignment's test
-  strings against a student's submission.
-- **A5's IndexedDB persistence** is the store Phase 6's Arena progress uses; building it as
-  a general document store rather than a single-slot save costs nothing now.
-- **E4's determinism badge** becomes an Arena objective ("make this NFA deterministic").
+- **F6's batch tester** is the same component v1.1 uses to run an assignment's test strings
+  against a student's attempt (roadmap §9.1).
+- **A5's IndexedDB persistence** is the store the v1.1 problem set records progress in;
+  building it as a general document store rather than a single-slot save costs nothing now.
+- **E4's determinism badge** becomes a v1.1 problem objective ("make this NFA deterministic").
