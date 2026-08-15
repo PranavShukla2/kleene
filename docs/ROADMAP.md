@@ -101,6 +101,7 @@ kleene/
 │   │   │   │   └── to_regex.rs # state elimination (GNFA)
 │   │   │   ├── ops.rs          # complement, product, union, intersection
 │   │   │   ├── equiv.rs        # Hopcroft–Karp equivalence
+│   │   │   ├── counterexample.rs  # shortest string two machines disagree on
 │   │   │   ├── simulate.rs     # step-by-step execution traces
 │   │   │   ├── trace.rs        # Step, Traced<T>
 │   │   │   └── io/
@@ -186,6 +187,7 @@ The document format layers presentation on top:
 | Completion / trap state | Needed before complement. |
 | Product construction | Union, intersection, difference. |
 | Hopcroft–Karp equivalence | Union-find, near-linear. Powers the CLI autograder. |
+| **Counterexample search** | Symmetric difference by product construction, then BFS from the start state to the nearest accepting state of the product. Returns the shortest string the two machines disagree on, and which one accepts it. Both halves are already in this table — this is assembly, not new theory. Powers the CLI's grading output and every form of student feedback in the app. |
 | State elimination → regex | DFA → regex. Arden's theorem territory; heavily taught, poorly tooled. |
 | Simulation | NFA config-set stepping, DFA single-state stepping, with full trace. |
 | Reachable / co-reachable pruning | Dead state removal. |
