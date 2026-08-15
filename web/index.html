@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Kleene — automata theory workbench</title>
+    <meta
+      name="description"
+      content="Draw an automaton or type a regular expression, then watch the conversion happen one step at a time. Export to TikZ, share by link, works offline."
+    />
+
+    <!--
+      Applied before first paint so a dark-mode user never sees a white flash. It has to be
+      inline and synchronous; a module import would run after the first frame.
+    -->
+    <script>
+      try {
+        var t = localStorage.getItem('kleene.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        /* blocked storage is not worth failing over */
+      }
+    </script>
+
+    <meta name="theme-color" content="#6d5ef8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1117" media="(prefers-color-scheme: dark)" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
