@@ -12,9 +12,11 @@
 import type { Automaton } from '@/model/automaton';
 import {
   GEOM,
+  bendSideBelow,
   curvedEdge,
   groupEdges,
   hasReverse,
+  isObstructed,
   rowLayout,
   selfLoop,
   straightEdge,
@@ -88,7 +90,12 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
             from={positions[edge.from]}
             to={positions[edge.to]}
             symbols={edge.symbols}
-            curve={hasReverse(edges, edge.from, edge.to)}
+            // Every state that is not an endpoint of this edge is a potential obstacle.
+            obstacles={ids
+              .filter((id) => id !== edge.from && id !== edge.to)
+              .map((id) => positions[id])
+              .filter((p): p is Point => p !== undefined)}
+            pairedWithReverse={hasReverse(edges, edge.from, edge.to)}
             selfLoop={edge.from === edge.to}
           />
         ))}
@@ -163,14 +170,15 @@ interface EdgeProps {
   from: Point | undefined;
   to: Point | undefined;
   symbols: string[];
-  curve: boolean;
+  obstacles: Point[];
+  pairedWithReverse: boolean;
   selfLoop: boolean;
 }
 
-function Edge({ from, to, symbols, curve, selfLoop: isLoop }: EdgeProps) {
+function Edge({ from, to, symbols, obstacles, pairedWithReverse, selfLoop: isLoop }: EdgeProps) {
   if (!from || !to) return null;
 
-  const geom = isLoop ? selfLoop(from) : curve ? curvedEdge(from, to) : straightEdge(from, to);
+  const geom = routeEdge(from, to, obstacles, pairedWithReverse, isLoop);
   const text = symbols.join(', ');
 
   return (
@@ -201,6 +209,28 @@ function Edge({ from, to, symbols, curve, selfLoop: isLoop }: EdgeProps) {
       </text>
     </g>
   );
+}
+
+/**
+ * Choose how an edge is drawn, in priority order.
+ *
+ * A self-loop is its own shape. A bidirectional pair must bow apart — both halves pass the
+ * same side and rely on the direction vector flipping. An edge that would cross an unrelated
+ * state bows below it, far enough to actually clear it. Everything else is a straight line.
+ */
+function routeEdge(
+  from: Point,
+  to: Point,
+  obstacles: Point[],
+  pairedWithReverse: boolean,
+  isLoop: boolean,
+) {
+  if (isLoop) return selfLoop(from);
+  if (pairedWithReverse) return curvedEdge(from, to);
+  if (isObstructed(from, to, obstacles)) {
+    return curvedEdge(from, to, bendSideBelow(from, to), GEOM.bendClearance);
+  }
+  return straightEdge(from, to);
 }
 
 /** Fit the viewBox to the states, with room for labels, loops and the start arrow. */

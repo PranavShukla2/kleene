@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   GEOM,
+  bendSideBelow,
   curvedEdge,
   groupEdges,
   hasReverse,
+  isObstructed,
   pointOnRim,
   rowLayout,
 } from '@/canvas/geometry';
@@ -104,6 +106,68 @@ describe('curvedEdge', () => {
     const a = { x: 0, y: 0 };
     const b = { x: 200, y: 0 };
     expect(curvedEdge(a, b, 1).label.y).toBeCloseTo(curvedEdge(b, a, -1).label.y, 6);
+  });
+});
+
+describe('isObstructed', () => {
+  // The exact situation the first render got wrong: q0, q1, q2 in a row, and the
+  // q2 -> q0 edge running straight over q1. It read as a double-headed arrow between
+  // q0 and q1 — a wrong diagram, not just an ugly one.
+  const q0 = { x: 90, y: 130 };
+  const q1 = { x: 186, y: 130 };
+  const q2 = { x: 282, y: 130 };
+
+  it('detects an edge passing straight through an intervening state', () => {
+    expect(isObstructed(q2, q0, [q1])).toBe(true);
+  });
+
+  it('leaves adjacent states alone', () => {
+    expect(isObstructed(q0, q1, [q2])).toBe(false);
+  });
+
+  it('ignores states that are merely near the endpoints, not between them', () => {
+    // Clamping the projection to the segment is what makes this true; without it, a
+    // state behind q0 would count as blocking an edge that travels away from it.
+    expect(isObstructed(q1, q2, [{ x: -200, y: 130 }])).toBe(false);
+  });
+
+  it('treats a near miss inside the clearance band as obstructed', () => {
+    const grazing = { x: 186, y: 130 + GEOM.radius + GEOM.clearance - 1 };
+    expect(isObstructed(q0, q2, [grazing])).toBe(true);
+  });
+});
+
+describe('bendClearance', () => {
+  it('is large enough for the curve to actually clear a state', () => {
+    // A quadratic reaches only half its control offset at the midpoint, so the naive
+    // choice of bendOffset would deviate 14px and pass through a 24px-radius state.
+    const deviation = GEOM.bendClearance / 2;
+    expect(deviation).toBeGreaterThan(GEOM.radius + GEOM.clearance);
+  });
+
+  it('routes the curve clear of the state it is avoiding', () => {
+    const q0 = { x: 90, y: 130 };
+    const q1 = { x: 186, y: 130 };
+    const q2 = { x: 282, y: 130 };
+    const routed = curvedEdge(q2, q0, bendSideBelow(q2, q0), GEOM.bendClearance);
+
+    // The label rides the curve's midpoint, so its distance from q1 is the clearance.
+    expect(Math.hypot(routed.label.x - q1.x, routed.label.y - q1.y)).toBeGreaterThan(
+      GEOM.radius,
+    );
+  });
+});
+
+describe('bendSideBelow', () => {
+  it('bows downward in both travel directions, away from self-loops', () => {
+    const left = { x: 0, y: 100 };
+    const right = { x: 200, y: 100 };
+
+    // Self-loops sit above their state, so an edge routed over the top collides.
+    expect(curvedEdge(left, right, bendSideBelow(left, right), GEOM.bendClearance).label.y)
+      .toBeGreaterThan(100);
+    expect(curvedEdge(right, left, bendSideBelow(right, left), GEOM.bendClearance).label.y)
+      .toBeGreaterThan(100);
   });
 });
 

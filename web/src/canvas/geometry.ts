@@ -41,6 +41,17 @@ export const GEOM = {
   labelOffset: 12,
   /** Perpendicular control-point offset for a bidirectional pair. */
   bendOffset: 28,
+  /**
+   * Control-point offset for an edge routed around an intervening state.
+   *
+   * A quadratic Bézier only reaches *half* its control offset at the midpoint, so this
+   * needs to be more than twice the state radius to clear one: 96 gives 48px of deviation
+   * against a 24px radius, leaving 24px of daylight. Using `bendOffset` here would deviate
+   * by 14px and pass straight through the state it is meant to avoid.
+   */
+  bendClearance: 96,
+  /** How close an edge may pass to an unrelated state before it must route around it. */
+  clearance: 10,
   /** Radius of a self-loop circle. */
   loopRadius: 16,
   /** Visible dot grid pitch. */
@@ -88,11 +99,16 @@ export function straightEdge(from: Point, to: Point) {
  * puts both curves on the same side — which is the overlap this function exists to avoid.
  * `side` is for deliberately flipping a curve, not for distinguishing the pair.
  */
-export function curvedEdge(from: Point, to: Point, side: 1 | -1 = 1) {
+export function curvedEdge(
+  from: Point,
+  to: Point,
+  side: 1 | -1 = 1,
+  offset: number = GEOM.bendOffset,
+) {
   const { dx, dy, len } = delta(from, to);
   // Unit normal to the line joining the two centres.
-  const nx = (-dy / len) * GEOM.bendOffset * side;
-  const ny = (dx / len) * GEOM.bendOffset * side;
+  const nx = (-dy / len) * offset * side;
+  const ny = (dx / len) * offset * side;
   const control = { x: (from.x + to.x) / 2 + nx, y: (from.y + to.y) / 2 + ny };
 
   const start = pointOnRim(from, control);
@@ -159,6 +175,40 @@ export function groupEdges(
 
   for (const group of groups.values()) group.symbols.sort();
   return [...groups.values()];
+}
+
+/** Perpendicular distance from `p` to the segment `a`–`b`. */
+function distanceToSegment(p: Point, a: Point, b: Point): number {
+  const { dx, dy, len } = delta(a, b);
+  // Projection of ap onto ab, clamped to the segment so endpoints are handled.
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (len * len)));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+/**
+ * Whether a straight edge would pass through, or too near, an unrelated state.
+ *
+ * This is the fourth of the four routing cases that make generated automaton diagrams look
+ * broken, and the least obvious: a straight `q2 → q0` in a left-to-right row runs directly
+ * over `q1`, and the result reads as a double-headed arrow between `q0` and `q1` rather than
+ * as the edge it is. It is a wrong diagram, not merely an ugly one.
+ */
+export function isObstructed(from: Point, to: Point, others: readonly Point[]): boolean {
+  return others.some(
+    (o) => distanceToSegment(o, from, to) < GEOM.radius + GEOM.clearance,
+  );
+}
+
+/**
+ * Which way an obstructed edge should bow: downward, away from self-loops.
+ *
+ * Self-loops sit above their state (Phase 0 places every loop there, and `above` stays first
+ * in Phase 2's preference order), so an edge routed over the top of a state tends to collide
+ * with one. Routing underneath keeps the two apart without needing to know which states
+ * actually have loops.
+ */
+export function bendSideBelow(from: Point, to: Point): 1 | -1 {
+  return to.x >= from.x ? 1 : -1;
 }
 
 /** Whether the reverse edge also exists, meaning both must curve apart. */
