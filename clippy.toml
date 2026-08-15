@@ -1,0 +1,4 @@
+# Traces cross the FFI boundary and get serialized, so oversized enum variants
+# and wide types cost bundle size and copy time. Keep them visible.
+enum-variant-size-threshold = 128
+too-many-arguments-threshold = 6

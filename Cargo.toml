@@ -1,0 +1,29 @@
+[workspace]
+resolver = "3"
+members = ["crates/kleene-core", "crates/kleene-wasm", "crates/kleene-cli"]
+
+# Declared once here and inherited by every crate, so the three crates can never
+# drift into disagreeing about their own version or license.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/PranavShukla2/kleene"
+homepage = "https://kleene.pranavmshukla.in"
+authors = ["Pranav Shukla"]
+
+# Single source of truth for dependency versions across the workspace. Adding a
+# dep to a crate should never mean picking a version.
+[workspace.dependencies]
+kleene-core = { path = "crates/kleene-core", version = "0.1.0" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+indexmap = { version = "2", features = ["serde"] }
+
+[profile.release]
+opt-level = "s"    # size, not speed: this ships as a .wasm over the network
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
