@@ -1,0 +1,39 @@
+# Rust
+/target
+**/*.rs.bk
+*.pdb
+
+# wasm-pack / wasm-bindgen generated bindings
+/crates/kleene-wasm/pkg
+/web/src/wasm/generated
+
+# Node
+node_modules
+.pnpm-store
+*.tsbuildinfo
+
+# Build output
+/web/dist
+/web/dev-dist
+/desktop/target
+/docs-site/dist
+/docs-site/.astro
+
+# Test artifacts
+/web/test-results
+/web/playwright-report
+/web/blob-report
+**/*.snap.new
+proptest-regressions
+
+# Editors / OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Env
+.env
+.env.local
+.dev.vars
