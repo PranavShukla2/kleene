@@ -84,7 +84,7 @@ in [DECISIONS.md](DECISIONS.md).
       makes Phase 3's hover-highlight possible. 🔴 **D4**
 - [ ] **C4.** Reachable / co-reachable pruning, traced. Dead-state removal.
 - [ ] **C5.** Completion with an explicit trap state — required before complement.
-      Whether the trap state is shown by default is a UI question, deferred to Phase 2.
+      Whether the trap state is *shown* by default is a UI question. 🔴 **D5**, Phase 2.
 
 ### Track D — Minimization
 

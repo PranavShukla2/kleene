@@ -104,7 +104,7 @@ formula to memorise.
       into *xyz* → student picks *i* → verdict.
 - [ ] **E2.** The machine must play **well**, not randomly. If it picks a decomposition the
       student can trivially defeat, the student learns nothing and concludes the lemma is
-      easy. 🔴 **DECISION D15** — how adversarial should it be? Always-optimal play is
+      easy. 🔴 **DECISION D19** — how adversarial should it be? Always-optimal play is
       demoralising for a first attempt; random play is useless. This is a teaching judgement.
 - [ ] **E3.** A library of languages to play against — some regular (where the *student*
       must lose, and understanding why is the lesson), some not.
@@ -145,5 +145,5 @@ formula to memorise.
 | **This eats v1** | It is a separate document for a reason. No v1 phase may grow for it, and only the counterexample engine crosses the line. |
 | **"Just a small backend"** | Roadmap §7's classroom-scope-creep row. The rule holds even when a server would obviously be nicer, which is exactly when it will be tested. |
 | Assignment links get used for real grading | The inspectability note (B5) is in the UI, not the docs, and `kleene grade` is presented as the graded path everywhere. |
-| Pumping lemma game plays badly and teaches badly | 🔴 D15 is flagged as a teaching decision, not an implementation detail. Worth playtesting on actual classmates before shipping. |
+| Pumping lemma game plays badly and teaches badly | 🔴 D19 is flagged as a teaching decision, not an implementation detail. Worth playtesting on actual classmates before shipping. |
 | Progress loss from cleared `localStorage` | C3 export/import. There is no server safety net by design, so the export has to exist. |
