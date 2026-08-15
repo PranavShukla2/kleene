@@ -1,10 +1,25 @@
 @import 'tailwindcss';
 
-/* Self-hosted, never CDN-fetched: the app must work fully offline as a PWA and
-   inside the Tauri shell. See design-system.md §3. */
-@import '@fontsource-variable/inter';
-@import '@fontsource/jetbrains-mono/400.css';
-@import '@fontsource/jetbrains-mono/500.css';
+/*
+ * Self-hosted, never CDN-fetched: the app must work fully offline as a PWA and
+ * inside the Tauri shell. See design-system.md §3.
+ *
+ * JetBrains Mono subsets are named explicitly. Greek is not optional despite this
+ * being an English UI: ε (U+03B5) and Σ (U+03A3) are core notation in this product
+ * and live in the Greek block. An epsilon falling back to a system font, sitting
+ * beside JetBrains Mono state labels, is immediately visible and looks broken.
+ *
+ * Inter's variable build ships a single stylesheet whose @font-face rules carry
+ * unicode-range, so a browser fetches only the subsets it actually renders — there
+ * are no per-subset entry points to import instead. The unused Cyrillic and
+ * Vietnamese files are still emitted into dist/, which costs nothing at runtime but
+ * will need excluding from the service worker precache in Phase 5 A2.
+ */
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource/jetbrains-mono/latin-500.css';
+@import '@fontsource/jetbrains-mono/greek-400.css';
+@import '@fontsource/jetbrains-mono/greek-500.css';
 
 /*
  * Design tokens — the single source of truth for colour in this project.
