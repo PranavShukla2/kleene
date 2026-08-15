@@ -1,0 +1,20 @@
+[package]
+name = "kleene-core"
+description = "Automata theory algorithms that return their reasoning alongside their result."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["automata", "dfa", "nfa", "regex", "formal-languages"]
+categories = ["algorithms", "science"]
+
+[dependencies]
+serde = { workspace = true }
+indexmap = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
