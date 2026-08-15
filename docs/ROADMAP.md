@@ -446,6 +446,7 @@ You want these numbers because "3,000 students used this last semester" is a res
 | Risk | Mitigation |
 |---|---|
 | **Scope creep into PDA/TM** | The v1 exclusion list in §1.4 is a hard line. Open GitHub issues for them and close the mental loop. |
+| **Classroom scope creep** | Every §9 feature is static files or CLI — no exceptions. "No backend" is the same kind of hard line §1.4 is for PDA/TM, and it holds even when the feature would clearly be nicer with a server. A database enters this project only when a named professor asks for something specific enough to justify it. |
 | **Edge routing looks bad** | This is the single biggest UX risk and it's easy to underestimate. Budget the full three weeks of Phase 2. Study how Graphviz handles self-loops and parallel edges before writing your own. |
 | **Auto-layout produces spaghetti** | elkjs layered mode with tuned spacing; always let the user drag afterwards; persist manual positions so layout never overwrites intent. |
 | **You abandon it mid-build** | Phases 0–1 alone produce a publishable Rust crate with a strong property-test suite. Every phase boundary is a defensible stopping point. Never be more than two weeks from something shippable. |
