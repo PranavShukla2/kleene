@@ -52,12 +52,15 @@ documents, because they look optional and are not:
 
 ## Phase 0 — De-risk the toolchain
 
-*Status: in progress.*
+*Status: complete except for the deployment, which is blocked on D10.*
 
 | What | Why it did not land | Where it went | Cost of leaving it |
 |---|---|---|---|
-| Free-space-aware self-loop placement (D4) | Planned as `loop above` only. Full direction selection needs the collision logic that Phase 2 builds anyway. | Phase 2 C4 | None. A single hardcoded DFA has one self-loop and nowhere for it to collide. |
-| Cloudflare Pages deployment (E4) | Blocked on 🔴 [D10](docs/plan/DECISIONS.md#d10--cloudflare-pages-account-and-dns) — needs Pranav's Cloudflare account and an API token. | Blocked; `deploy.yml` is written and committed, and goes green the hour the secrets land. | **This is the Phase 0 exit criterion.** Everything else in the phase can complete, but the phase does not close until there is a public URL. |
+| **Deferred** — free-space-aware self-loop placement (D4) | Planned as `loop above` only. Full direction selection needs the collision logic Phase 2 builds anyway. | Phase 2 C4 | None yet. The Phase 0 example has two self-loops and nothing for them to collide with. |
+| **Blocked** — Cloudflare Pages deployment (E4) | 🔴 [D10](docs/plan/DECISIONS.md) — needs Pranav's Cloudflare account and an API token. | `deploy.yml` is written, committed, and skips cleanly with a notice until the secrets exist. | **This is the Phase 0 exit criterion.** Everything else in the phase is done; the phase does not close until there is a public URL. |
+| **Deferred** — Playwright end-to-end tests | Nothing is interactive yet, so an e2e test would assert only that a static page rendered — which `vitest` and the build already cover. Playwright is installed and was used to screenshot and verify both themes. | Phase 2 H4, where there is an interaction worth testing | Low. The render was verified visually at 1366×768 in both themes, and that check found a real routing bug. |
+| **Deferred** — ESLint + Prettier (C5) | Never landed. TypeScript strict mode plus `noUnusedLocals` is catching the class of thing lint would, and the codebase is nine files. | Phase 2, before the editor grows | Low now, rising fast. Worth doing before Phase 2 rather than after. |
+| **Deferred** — branch protection on `main` (E5) | Requires repository settings, not code. | Pranav, whenever convenient | Low while this is a single-contributor repo, but it is what makes CI a gate rather than a suggestion. |
 
 ## Phase 1 — Core engine
 
