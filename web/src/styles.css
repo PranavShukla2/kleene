@@ -1,0 +1,165 @@
+@import 'tailwindcss';
+
+/* Self-hosted, never CDN-fetched: the app must work fully offline as a PWA and
+   inside the Tauri shell. See design-system.md §3. */
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
+/*
+ * Design tokens — the single source of truth for colour in this project.
+ *
+ * Defined as CSS custom properties rather than Tailwind config values so that the
+ * Tauri shell, the docs site, and exported SVG can all read the same palette
+ * without a second definition drifting out of sync.
+ *
+ * Light and dark deliberately use *different hues* for the same semantic role, not
+ * one hue at two lightnesses. #22D3EE on white is 1.81:1 — it fails every contrast
+ * threshold — so light mode uses #0891B2 at 3.68:1 instead. Full reasoning and the
+ * measured contrast per token is in docs/plan/design-system.md §2.
+ */
+@theme {
+  /* Brand */
+  --color-k-primary: #6d5ef8;
+  --color-k-primary-hover: #5b4ce6;
+  --color-k-primary-subtle: #eeebff;
+  --color-k-secondary: #0891b2;
+  --color-k-secondary-subtle: #e0f7fc;
+
+  /* Surfaces */
+  --color-k-bg: #ffffff;
+  --color-k-surface: #f8fafc;
+  --color-k-surface-raised: #ffffff;
+  --color-k-border: #e2e8f0;
+  --color-k-border-strong: #cbd5e1;
+  --color-k-canvas: #fcfcfd;
+  --color-k-grid-dot: #e2e8f0;
+
+  /* Text */
+  --color-k-text: #0f172a;
+  --color-k-text-muted: #475569;
+  --color-k-text-faint: #64748b;
+
+  /* Canvas semantics — these carry algorithmic meaning (design-system §2.4) */
+  --color-k-active: #6d5ef8;
+  --color-k-accepting: #0891b2;
+  --color-k-new: #059669;
+  --color-k-dead: #64748b;
+  --color-k-distinguishing: #e11d48;
+  --color-k-origin: #f59e0b;
+
+  /* Feedback */
+  --color-k-success: #059669;
+  --color-k-warning: #b45309;
+  --color-k-error: #dc2626;
+
+  /* Type */
+  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Motion — the 280ms step transition is tuned so the eye can follow which
+     subset became which state. Faster is unreadable, slower is tedious to scrub. */
+  --ease-k: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-k-hover: 120ms;
+  --duration-k-panel: 180ms;
+  --duration-k-step: 280ms;
+  --duration-k-merge: 420ms;
+}
+
+/* Dark mode is defined twice on purpose: once for the system preference, once for
+   the explicit toggle, so a manual choice wins in both directions. A token defined
+   only inside a media query has no value when the toggle overrides it. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-k-primary: #8b7cff;
+    --color-k-primary-hover: #a394ff;
+    --color-k-primary-subtle: #241f45;
+    --color-k-secondary: #22d3ee;
+    --color-k-secondary-subtle: #0c3540;
+
+    --color-k-bg: #0f1117;
+    --color-k-surface: #161923;
+    --color-k-surface-raised: #1e2230;
+    --color-k-border: #2a3040;
+    --color-k-border-strong: #3a4254;
+    --color-k-canvas: #0b0d13;
+    --color-k-grid-dot: #232838;
+
+    --color-k-text: #e8eaf2;
+    --color-k-text-muted: #9ba3b8;
+    --color-k-text-faint: #6b7488;
+
+    --color-k-active: #8b7cff;
+    --color-k-accepting: #22d3ee;
+    --color-k-new: #34d399;
+    --color-k-dead: #6b7488;
+    --color-k-distinguishing: #fb7185;
+    --color-k-origin: #fbbf24;
+
+    --color-k-success: #34d399;
+    --color-k-warning: #fbbf24;
+    --color-k-error: #f87171;
+  }
+}
+
+[data-theme='dark'] {
+  --color-k-primary: #8b7cff;
+  --color-k-primary-hover: #a394ff;
+  --color-k-primary-subtle: #241f45;
+  --color-k-secondary: #22d3ee;
+  --color-k-secondary-subtle: #0c3540;
+
+  --color-k-bg: #0f1117;
+  --color-k-surface: #161923;
+  --color-k-surface-raised: #1e2230;
+  --color-k-border: #2a3040;
+  --color-k-border-strong: #3a4254;
+  --color-k-canvas: #0b0d13;
+  --color-k-grid-dot: #232838;
+
+  --color-k-text: #e8eaf2;
+  --color-k-text-muted: #9ba3b8;
+  --color-k-text-faint: #6b7488;
+
+  --color-k-active: #8b7cff;
+  --color-k-accepting: #22d3ee;
+  --color-k-new: #34d399;
+  --color-k-dead: #6b7488;
+  --color-k-distinguishing: #fb7185;
+  --color-k-origin: #fbbf24;
+
+  --color-k-success: #34d399;
+  --color-k-warning: #fbbf24;
+  --color-k-error: #f87171;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background-color: var(--color-k-bg);
+  color: var(--color-k-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus rings are never removed — they are also what makes the editor demoable
+   without a mouse and testable in Playwright. */
+:focus-visible {
+  outline: 2px solid var(--color-k-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion becomes an instant cut, but highlights persist. Reduced motion
+   must not mean reduced information (design-system §5). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
