@@ -13,8 +13,7 @@ The [roadmap](../ROADMAP.md) says *what* Kleene is and *why*. These documents sa
 | [phase-3.md](phase-3.md) | The conversion pipeline — Weeks 8–9 |
 | [phase-4.md](phase-4.md) | Export and share — Week 10 |
 | [phase-5.md](phase-5.md) | Ship v1 — Weeks 11–12 |
-| [phase-6.md](phase-6.md) | **Arena** — gamified challenge mode — Weeks 13–15 *(post-v1)* |
-| [phase-7.md](phase-7.md) | **Classroom Lite** — backendless assignments — Weeks 16–19 *(post-v1)* |
+| [teaching-layer.md](teaching-layer.md) | **v1.1 / v1.2** — assignment links, problem set, pumping lemma game *(post-v1)* |
 | [DECISIONS.md](DECISIONS.md) | **Everything that needs Pranav, not Claude** |
 | [design-system.md](design-system.md) | Visual language the UI is held to |
 | [../../LEFTOVERS.md](../../LEFTOVERS.md) | Work deferred out of a phase, with why |
@@ -60,14 +59,11 @@ Each phase document has the same five sections:
 ## Phase dependency graph
 
 ```
-                                                    ┌─> Phase 6  Arena
-Phase 0 ──> Phase 1 ──> Phase 3 ──> Phase 4 ──> Phase 5          │
-   │                       ▲           ▲             └─> Phase 7 Classroom Lite
-   └──────> Phase 2 ───────┘           │                          ▲
-                └──────────────────────┘                          │
-                                       └──────────────────────────┘
-                                        (share + .kln + CLI equiv
-                                         are what Classroom is built on)
+Phase 0 ──> Phase 1 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> v1.0
+   │                       ▲           ▲                      │
+   └──────> Phase 2 ───────┘           │                      ▼
+                └──────────────────────┘              teaching layer
+                                                       v1.1 ──> v1.2
 ```
 
 Phase 2 (editor) and Phase 1 (engine) touch almost nothing in common — the editor
@@ -75,21 +71,19 @@ manipulates a document, the engine transforms an automaton. If a week gets eaten
 coursework, the two can be interleaved without conflict. Phase 3 is the join point and
 needs both.
 
-Phases 6 and 7 are **post-v1 and strictly optional**. They are planned here, and small
-hooks for them are threaded through Phases 1–5, but v1 ships without either. Nothing in
-Phases 0–5 may grow in scope to accommodate them.
+The teaching layer is **post-v1 and strictly optional**. It is planned in
+[teaching-layer.md](teaching-layer.md), and small hooks for it are threaded through
+Phases 1–5, but v1 ships without it and no v1 phase may grow in scope to accommodate it.
 
 ## The v1 line, restated
 
-Roadmap §1.4 excludes pushdown automata, Turing machines, grammars, accounts, cloud
-save, any backend, and collaborative editing. Phases 6–7 do not relax that line for v1:
+Roadmap §1.4 excludes pushdown automata, Turing machines, grammars, accounts, rosters,
+cloud-stored student work, any backend, and collaborative editing. The teaching layer does
+not relax that line — it is built to live inside it. Every v1.1/v1.2 feature is static files
+or CLI: assignment links are URL fragments, progress is `localStorage`, correctness is
+`equiv()` in wasm, and grading happens in the professor's own terminal.
 
-- **Phase 6 (Arena) respects it completely.** Challenges are static JSON shipped with
-  the app, progress is local (IndexedDB), and correctness is decided by `equiv()` running
-  in wasm. No account, no server, works offline. It *could* have shipped in v1; it is
-  after v1 only because v1 should ship on time.
-- **Phase 7 (Classroom Lite) respects it by design, not by compromise.** Assignments are
-  share-links, submissions are self-contained receipt files, and grading happens in the
-  professor's terminal via `kleene grade`. The full hosted classroom — rosters, logins,
-  a database, student PII — is deliberately *not* this phase. See
-  [phase-7.md](phase-7.md) §"The fork in the road" for what adopting it would actually cost.
+One piece of the teaching layer *does* ship in v1: the **counterexample engine**
+(roadmap §2.4, Phase 1 tasks E5/H5). It is v1 core work in its own right — "is this DFA
+correct?" is decidable, so a wrong answer should name the shortest string it gets wrong
+rather than just saying no — and everything in v1.1/v1.2 is built on top of it.
