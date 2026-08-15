@@ -55,10 +55,14 @@ Write this on a sticky note.
 - ❌ Turing machines
 - ❌ Context-free grammars, CYK, CNF conversion
 - ❌ Accounts, login, cloud save, any backend at all
+- ❌ Student rosters, class enrolment, cloud-stored student work
 - ❌ Collaborative editing
 - ❌ Mobile-first editing (view + run on mobile is fine; editing is desktop)
 
 All of these are good v2 ideas. Shipping v1 with them is how the project dies in November.
+
+The classroom and gamification features people will ask for are not excluded forever — see
+§9. They are excluded from *v1*, and when they do arrive they arrive without a backend.
 
 ---
 
