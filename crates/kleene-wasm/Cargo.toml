@@ -1,0 +1,23 @@
+[package]
+name = "kleene-wasm"
+description = "WebAssembly bindings for kleene-core."
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+# cdylib for the wasm artifact; rlib so the bindings stay unit-testable natively.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+kleene-core = { workspace = true }
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6"
+console_error_panic_hook = "0.1"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
