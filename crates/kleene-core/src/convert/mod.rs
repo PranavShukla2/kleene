@@ -15,6 +15,10 @@
 //! pipeline anywhere — drawing an NFA by hand and determinizing it is as well supported as
 //! typing a regular expression.
 
+pub mod complete;
 pub mod epsilon;
+pub mod subset;
 
+pub use complete::complete;
 pub use epsilon::{Closures, epsilon_closure};
+pub use subset::determinize;
