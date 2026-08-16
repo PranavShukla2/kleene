@@ -34,7 +34,11 @@ pub const VERSION: u32 = 1;
 
 /// Where a state sits on screen.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export, export_to = "generated/"))]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/")
+)]
 pub struct Point {
     /// Horizontal position.
     pub x: f64,
@@ -44,7 +48,11 @@ pub struct Point {
 
 /// Descriptive information about a document.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export, export_to = "generated/"))]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/")
+)]
 pub struct Meta {
     /// What the automaton is called — usually its language in words.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -62,7 +70,11 @@ pub struct Meta {
 
 /// A saved automaton: the machine, its layout, and its metadata.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export, export_to = "generated/"))]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/")
+)]
 pub struct Document {
     /// Format version. See [`VERSION`].
     pub version: u32,

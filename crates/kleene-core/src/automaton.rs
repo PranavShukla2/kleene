@@ -33,7 +33,10 @@ pub type Symbol = String;
 /// unambiguously. Keeping them separate is what lets states be an ordered array on disk
 /// without giving up id lookup in memory.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(into = "crate::io::wire::WireAutomaton", from = "crate::io::wire::WireAutomaton")]
+#[serde(
+    into = "crate::io::wire::WireAutomaton",
+    from = "crate::io::wire::WireAutomaton"
+)]
 pub struct Automaton {
     /// The input alphabet, Σ. Order is meaningful — it fixes column order in transition
     /// tables and iteration order in traces.
@@ -107,7 +110,11 @@ fn is_false(value: &bool) -> bool {
 
 /// A transition from one state to another, on a symbol or on ε.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export, export_to = "generated/"))]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/")
+)]
 pub struct Transition {
     /// Source state.
     pub from: StateId,
