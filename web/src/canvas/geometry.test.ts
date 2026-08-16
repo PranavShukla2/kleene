@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import {
   GEOM,
+  LOOP_ORDER,
   bendSideBelow,
+  chooseLoopDirection,
   curvedEdge,
   groupEdges,
   hasReverse,
   isObstructed,
   pointOnRim,
   rowLayout,
+  selfLoop,
 } from '@/canvas/geometry';
 
 describe('groupEdges', () => {
@@ -170,6 +173,85 @@ describe('bendSideBelow', () => {
     expect(
       curvedEdge(right, left, bendSideBelow(right, left), GEOM.bendClearance).label.y,
     ).toBeGreaterThan(100);
+  });
+});
+
+describe('chooseLoopDirection', () => {
+  const at = { x: 100, y: 100 };
+
+  it('prefers above when nothing is in the way', () => {
+    // Automata lay out left to right, so the vertical axis is the emptier one — and
+    // `loop above` is what almost every textbook draws.
+    expect(chooseLoopDirection(at, [])).toBe('above');
+  });
+
+  it('falls through the preference order as directions fill up', () => {
+    const occupied = (d: 'above' | 'right' | 'below') => {
+      const reach = GEOM.radius + GEOM.loopRadius;
+      if (d === 'above') return { x: at.x, y: at.y - reach };
+      if (d === 'right') return { x: at.x + reach, y: at.y };
+      return { x: at.x, y: at.y + reach };
+    };
+
+    expect(chooseLoopDirection(at, [occupied('above')])).toBe('right');
+    expect(chooseLoopDirection(at, [occupied('above'), occupied('right')])).toBe('below');
+    expect(
+      chooseLoopDirection(at, [occupied('above'), occupied('right'), occupied('below')]),
+    ).toBe('left');
+  });
+
+  it('falls back to above when every direction is blocked', () => {
+    // A crowded loop is worse than one overlapping something, but an invisible loop is
+    // worse than both.
+    const reach = GEOM.radius + GEOM.loopRadius;
+    const surrounded = [
+      { x: at.x, y: at.y - reach },
+      { x: at.x + reach, y: at.y },
+      { x: at.x, y: at.y + reach },
+      { x: at.x - reach, y: at.y },
+    ];
+    expect(chooseLoopDirection(at, surrounded)).toBe('above');
+  });
+
+  it('ignores states far enough away to be irrelevant', () => {
+    expect(chooseLoopDirection(at, [{ x: 900, y: 900 }])).toBe('above');
+  });
+
+  it('offers exactly the directions TikZ can name', () => {
+    // Rule 0 of docs/notes/edge-routing.md: the router may only produce shapes the
+    // exporter can express, so screen output and assignment output cannot drift.
+    expect([...LOOP_ORDER].sort()).toEqual(['above', 'below', 'left', 'right']);
+  });
+});
+
+describe('selfLoop', () => {
+  const at = { x: 100, y: 100 };
+
+  it('places the arc on the side it was asked for', () => {
+    expect(selfLoop(at, 'above').label.y).toBeLessThan(at.y);
+    expect(selfLoop(at, 'below').label.y).toBeGreaterThan(at.y);
+    expect(selfLoop(at, 'left').label.x).toBeLessThan(at.x);
+    expect(selfLoop(at, 'right').label.x).toBeGreaterThan(at.x);
+  });
+
+  it('clears the state rim rather than touching it', () => {
+    // An arc touching the circle reads as a rendering artifact rather than a loop.
+    const path = selfLoop(at, 'above').path;
+    const [, sx, sy] = /M ([\d.-]+) ([\d.-]+)/.exec(path) ?? [];
+    const distance = Math.hypot(Number(sx) - at.x, Number(sy) - at.y);
+    expect(distance).toBeGreaterThan(GEOM.radius);
+  });
+
+  it('reports the direction it used, for the TikZ exporter', () => {
+    expect(selfLoop(at, 'left').direction).toBe('left');
+  });
+
+  it('keeps the label clear of the arc in every direction', () => {
+    for (const direction of LOOP_ORDER) {
+      const loop = selfLoop(at, direction);
+      const distance = Math.hypot(loop.label.x - at.x, loop.label.y - at.y);
+      expect(distance).toBeGreaterThan(GEOM.radius + GEOM.loopRadius);
+    }
   });
 });
 

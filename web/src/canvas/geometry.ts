@@ -126,19 +126,130 @@ export function curvedEdge(
 }
 
 /**
- * A self-loop above a state.
+ * The four directions a self-loop can sit in.
  *
- * Phase 0 places every loop above (see LEFTOVERS.md). Phase 2 C4 chooses a free direction
- * from `above, right, below, left` by checking for collisions, which needs the neighbour
- * information the editor has and this renderer does not.
+ * Exactly the set TikZ's automata library can name — `loop above`, `loop below`, `loop left`,
+ * `loop right`. Rule 0 of docs/notes/edge-routing.md: the router may only produce shapes the
+ * exporter can express, so screen and assignment cannot drift.
  */
-export function selfLoop(at: Point) {
+export type LoopDirection = 'above' | 'right' | 'below' | 'left';
+
+/**
+ * Preference order for placing a self-loop.
+ *
+ * `above` first because automata lay out left-to-right, making the vertical axis the emptier
+ * one, and because it is what almost every textbook draws. `left` last because it collides
+ * with the start arrow on the start state.
+ */
+export const LOOP_ORDER: readonly LoopDirection[] = ['above', 'right', 'below', 'left'];
+
+/** How far from a loop's anchor another feature must be for that direction to count as free. */
+const LOOP_CLEARANCE = 40;
+
+/** Where a loop in a given direction sits, relative to the state's centre. */
+function loopAnchor(at: Point, direction: LoopDirection): Point {
+  const reach = GEOM.radius + GEOM.loopRadius;
+  switch (direction) {
+    case 'above':
+      return { x: at.x, y: at.y - reach };
+    case 'below':
+      return { x: at.x, y: at.y + reach };
+    case 'left':
+      return { x: at.x - reach, y: at.y };
+    case 'right':
+      return { x: at.x + reach, y: at.y };
+  }
+}
+
+/**
+ * Choose which side of a state its self-loop should sit on.
+ *
+ * Takes the first direction in {@link LOOP_ORDER} whose anchor is clear of every other state
+ * and of every point an incident edge passes through. Falls back to `above` when a state is
+ * hemmed in on all four sides — a crowded loop is worse than one overlapping something, but
+ * an invisible loop is worse than both.
+ *
+ * `neighbours` are the other states' centres; `incident` are points along edges touching this
+ * state, which the caller samples. Passing empty arrays gives `above`, which is what a
+ * renderer with no layout knowledge should produce.
+ */
+export function chooseLoopDirection(
+  at: Point,
+  neighbours: readonly Point[],
+  incident: readonly Point[] = [],
+): LoopDirection {
+  const obstacles = [...neighbours, ...incident];
+
+  for (const direction of LOOP_ORDER) {
+    const anchor = loopAnchor(at, direction);
+    const blocked = obstacles.some(
+      (o) => Math.hypot(o.x - anchor.x, o.y - anchor.y) < LOOP_CLEARANCE,
+    );
+    if (!blocked) return direction;
+  }
+
+  return 'above';
+}
+
+/**
+ * A self-loop on one side of a state.
+ *
+ * Drawn as a single arc leaving and re-entering the rim. The `1 1` flags make it the major
+ * arc, which is what gives a loop its recognisable circular shape rather than a shallow bump.
+ */
+export function selfLoop(at: Point, direction: LoopDirection = 'above'): SelfLoop {
   const r = GEOM.loopRadius;
-  const top = at.y - GEOM.radius;
-  // Two arcs leaving and re-entering the rim, meeting above the state.
-  const path =
-    `M ${at.x - r * 0.7} ${top - 2} ` + `A ${r} ${r} 0 1 1 ${at.x + r * 0.7} ${top - 2}`;
-  return { path, label: { x: at.x, y: top - r * 1.6 } };
+  const spread = r * 0.7;
+  // 2px clear of the rim: an arc touching the circle reads as a rendering artifact.
+  const gap = GEOM.radius + 2;
+  const labelReach = GEOM.radius + r * 1.9;
+
+  // `sweep` flips per direction so every loop bulges away from the state rather than into it.
+  const [start, end, sweep, label]: [Point, Point, 0 | 1, Point] = (() => {
+    switch (direction) {
+      case 'above':
+        return [
+          { x: at.x - spread, y: at.y - gap },
+          { x: at.x + spread, y: at.y - gap },
+          1,
+          { x: at.x, y: at.y - labelReach },
+        ];
+      case 'below':
+        return [
+          { x: at.x + spread, y: at.y + gap },
+          { x: at.x - spread, y: at.y + gap },
+          1,
+          { x: at.x, y: at.y + labelReach },
+        ];
+      case 'left':
+        return [
+          { x: at.x - gap, y: at.y + spread },
+          { x: at.x - gap, y: at.y - spread },
+          1,
+          { x: at.x - labelReach, y: at.y },
+        ];
+      case 'right':
+        return [
+          { x: at.x + gap, y: at.y - spread },
+          { x: at.x + gap, y: at.y + spread },
+          1,
+          { x: at.x + labelReach, y: at.y },
+        ];
+    }
+  })();
+
+  return {
+    path: `M ${start.x} ${start.y} A ${r} ${r} 0 1 ${sweep} ${end.x} ${end.y}`,
+    label,
+    direction,
+  };
+}
+
+/** A rendered self-loop, with the direction it was placed in. */
+export interface SelfLoop {
+  path: string;
+  label: Point;
+  direction: LoopDirection;
 }
 
 /** Where a label goes for a straight segment: off the midpoint, along the normal. */

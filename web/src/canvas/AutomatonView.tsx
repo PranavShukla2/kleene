@@ -13,6 +13,7 @@ import type { Automaton } from '@/model/automaton';
 import {
   GEOM,
   bendSideBelow,
+  chooseLoopDirection,
   curvedEdge,
   groupEdges,
   hasReverse,
@@ -95,6 +96,12 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
               .filter((id) => id !== edge.from && id !== edge.to)
               .map((id) => positions[id])
               .filter((p): p is Point => p !== undefined)}
+            // A self-loop needs to know where everything else is, so it can pick a side
+            // that is actually free (docs/notes/edge-routing.md, rule 1).
+            neighbours={ids
+              .filter((id) => id !== edge.from)
+              .map((id) => positions[id])
+              .filter((p): p is Point => p !== undefined)}
             pairedWithReverse={hasReverse(edges, edge.from, edge.to)}
             selfLoop={edge.from === edge.to}
           />
@@ -171,6 +178,7 @@ interface EdgeProps {
   to: Point | undefined;
   symbols: string[];
   obstacles: Point[];
+  neighbours: Point[];
   pairedWithReverse: boolean;
   selfLoop: boolean;
 }
@@ -180,12 +188,13 @@ function Edge({
   to,
   symbols,
   obstacles,
+  neighbours,
   pairedWithReverse,
   selfLoop: isLoop,
 }: EdgeProps) {
   if (!from || !to) return null;
 
-  const geom = routeEdge(from, to, obstacles, pairedWithReverse, isLoop);
+  const geom = routeEdge(from, to, obstacles, neighbours, pairedWithReverse, isLoop);
   const text = symbols.join(', ');
 
   return (
@@ -229,10 +238,11 @@ function routeEdge(
   from: Point,
   to: Point,
   obstacles: Point[],
+  neighbours: Point[],
   pairedWithReverse: boolean,
   isLoop: boolean,
 ) {
-  if (isLoop) return selfLoop(from);
+  if (isLoop) return selfLoop(from, chooseLoopDirection(from, neighbours));
   if (pairedWithReverse) return curvedEdge(from, to);
   if (isObstructed(from, to, obstacles)) {
     return curvedEdge(from, to, bendSideBelow(from, to), GEOM.bendClearance);
