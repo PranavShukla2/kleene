@@ -15,12 +15,20 @@ one subset-construction round at a time, with the reasoning attached to every st
 
 ## Status
 
-**Phase 0 complete.** The vertical slice works end to end: `kleene-core` compiles to
-WebAssembly, the browser loads it, a real DFA renders as SVG in both light and dark themes,
-and it is deployed at **[kleene.pranavmshukla.in](https://kleene.pranavmshukla.in)**.
+**Phases 0 and 1 complete.** The engine is finished and the pipeline closes on itself:
 
-There is no editor and no conversion pipeline yet — this is a skeleton with a good posture,
-not a usable tool. **Phase 1 is in progress**: the regex lexer, parser and AST are done.
+```
+regex → ε-NFA → DFA → minimal DFA → regex
+```
+
+Every algorithm returns its reasoning. Every partition split names the string that caused it.
+Two machines that differ report the shortest string they disagree on, and which way. The CLI
+works, the property suite passes at 10,000 cases, and a differential suite checks the whole
+thing against Rust's `regex` crate.
+
+**There is still no editor** — the web app renders one hardcoded machine, deployed at
+**[kleene.pranavmshukla.in](https://kleene.pranavmshukla.in)**. Phase 2 builds the editor and
+Phase 3 puts the traces on screen.
 
 See the [phase plans](docs/plan/README.md) for what is being built and in what order,
 [DECISIONS.md](docs/plan/DECISIONS.md) for the open questions, and
@@ -82,8 +90,12 @@ because it supplies its own `binaryen` and the `wasm-opt` flags in
 `crates/kleene-wasm/Cargo.toml` are only valid for the one it ships.
 
 ```sh
-cargo test --workspace           # core algorithms
+cargo test --workspace           # core algorithms + property suite at 256 cases
 cargo clippy --workspace --all-targets -- -D warnings
+
+# The property and differential suites at the full 10,000 cases, as CI runs them.
+PROPTEST_CASES=10000 cargo test --release -p kleene-core --test properties
+PROPTEST_CASES=10000 cargo test --release -p kleene-core --test differential
 
 cd web
 npm install
@@ -94,6 +106,22 @@ npx vitest run                   # frontend tests
 
 `node scripts/check-wasm-size.mjs` reports the WebAssembly bundle against its 400 KB
 gzipped budget.
+
+### The CLI
+
+```sh
+cargo run -p kleene-cli -- convert "(a+b)*abb" --to regex
+cargo run -p kleene-cli -- minimize "(a+b)*abb" --verbose
+cargo run -p kleene-cli -- equiv reference.kln submission.kln
+```
+
+`equiv` exits 0 when two machines agree and 1 when they do not, so it can drive a grading
+script — and on disagreement it names the shortest string they differ on:
+
+```
+not equivalent
+  `baabb` is in reference.kln, but student-02.kln rejects it.
+```
 
 ## License
 
