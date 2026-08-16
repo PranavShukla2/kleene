@@ -7,8 +7,8 @@ reverse** or **teaches students something different from what the course teaches
 cases a plausible default is worse than an open question, because a default gets built on
 before anyone notices it was never really chosen.
 
-**How to use this file:** answer the 🔥 rows before Phase 1 starts. Everything else can be
-answered the week it blocks. Record answers inline under each decision, with the date, and
+**How to use this file:** the 🔥 rows that blocked Phase 1 are all answered — see
+[Answered](#answered) at the bottom. Everything remaining can be answered the week it blocks. Record answers inline under each decision, with the date, and
 change the status. Do not delete a decision once answered — the reasoning is the valuable
 part, and it is what stops the same question being reopened in week 9.
 
@@ -17,93 +17,6 @@ part, and it is what stops the same question being reopened in week 9.
 | 🔥 **BLOCKING** | Work stops here until answered. |
 | ⏳ **SCHEDULED** | Needed by the phase named; not urgent yet. |
 | 🟡 **DEFAULTED** | Claude picked something to keep moving. Reversible now, expensive later. |
-
----
-
-## 🔥 Answer these before Phase 1
-
-### D1 — Does `+` mean union, or one-or-more?
-
-**Status:** 🔥 BLOCKING · **Blocks:** Phase 1 B2, B3 · **Cost to reverse:** very high
-
-This is the first question because it is the one that cannot be quietly changed later.
-
-- In **Hopcroft–Ullman**, in Kozen, and in most Indian TOC syllabi, `+` is **union**:
-  `a + b` means "a or b", and Kleene plus is written `a⁺` or not used at all.
-- In **every programming regex dialect** — PCRE, RE2, Rust's `regex` — `+` is
-  **one-or-more**, and union is `|`.
-
-One grammar cannot have both. Whichever is chosen, the parser is written against it, every
-saved `.kln` file and every shared URL encodes regexes in it, and the differential test
-against Rust's `regex` crate (roadmap §3.2) compares against it.
-
-| Option | For | Against |
-|---|---|---|
-| **`+` = union** | Matches the textbook and the exam. Students type what the lecture wrote. | Confuses anyone arriving from programming. Differential testing needs a translation layer. |
-| **`+` = one-or-more**, union is `|` only | Matches every tool a student has used. Differential testing is direct. | The syllabus's `a + b` silently means something else — the worst failure mode, since it parses fine and produces a wrong machine. |
-| **Accept both, `+` = union, `⁺` = plus** | Textbook-first with an escape hatch. | Two ways to say one thing; the palette gets confusing. |
-
-**Claude's recommendation:** `+` = **union**, with `|` also accepted as a synonym for union,
-and one-or-more available only as `⁺` (or not at all in v1). Kleene's whole positioning is
-"the tool that matches your course" — a student pasting `a + b` from the lecture slides and
-getting a wrong machine with no error is the single worst outcome available here.
-
-> **Answer:** _(unanswered)_
-
----
-
-### D2 — Are alphabet symbols single characters, or multi-character tokens?
-
-**Status:** 🔥 BLOCKING · **Blocks:** Phase 1 A2, B1 · **Cost to reverse:** high
-
-Single characters (`a`, `b`, `0`, `1`) make the lexer trivial and match nearly all
-coursework. Multi-character tokens (`id`, `num`, `while`) make Kleene usable for lexer
-design, which is the adjacent course.
-
-Reversing this touches the lexer, the parser, the alphabet panel, inline edge editing, TikZ
-label emission, and the `.kln` schema.
-
-**Claude's recommendation:** single characters in v1, but represent `Symbol` as a `String`
-rather than a `char` from the first commit, so the widening is a parser change later rather
-than a data-model migration.
-
-> **Answer:** _(unanswered)_
-
----
-
-### D4 — How are subset-construction states named?
-
-**Status:** 🔥 BLOCKING · **Blocks:** Phase 1 C3, D3 · **Cost to reverse:** low–medium
-
-Options: literal set notation (`{q1,q3}`), sequential relabelling with a legend
-(`A = {q1,q3}`), or set notation on the canvas with relabelling in exports.
-
-Set notation is self-explanatory but unreadable once subsets grow past three states — and
-subset construction's whole drama is subsets growing. Sequential labels stay readable and
-match how the textbook table is usually written, but hide the provenance the `origin` field
-exists to surface.
-
-**Claude's recommendation:** sequential labels (`A`, `B`, `C`) as the visible label, with the
-subset shown in a tooltip, in the transition table, and in the step reasoning. That is what
-`origin` is for (roadmap §2.3), and it keeps the diagram legible at 12 states.
-
-> **Answer:** _(unanswered)_
-
----
-
-### D7 — Is the empty string `ε` or `λ`?
-
-**Status:** 🔥 BLOCKING · **Blocks:** Phase 1 A3, B4 · **Cost to reverse:** low, but it is everywhere
-
-Purely notational, trivially implemented, and wrong-looking to a student whose course uses
-the other one. It appears on edges, in regexes, in step prose, in TikZ output, and in the
-docs.
-
-**Claude's recommendation:** `ε` as the default (roadmap uses it throughout), implemented as
-a **display setting** rather than a constant, so switching is a preference rather than a
-find-and-replace. Cheap now, annoying later.
-
-> **Answer:** _(unanswered)_
 
 ---
 
@@ -313,3 +226,54 @@ marking table's round numbers and the distinguishing strings come out of one mec
 **Consequence worth noting:** this makes the derived table a *property test target* — the
 marking table and the refinement rounds must agree on which pairs are distinguishable and on
 each witness, which is a strong internal consistency check that neither view provides alone.
+
+### D1 — Does `+` mean union, or one-or-more? · **Answered 2026-08-16**
+
+**`+` means union.** `|` is accepted as a synonym. One-or-more is written `aa*`; a
+superscript `⁺` may be added to the symbol palette later without breaking anything already
+saved.
+
+The deciding argument was not "the textbook wins" but an asymmetry in how each choice fails:
+
+- Under **union**, someone assuming the programming convention writes `a+`, the right operand
+  is missing, and they get a **syntax error** — which carries a specific message
+  (*"`+` means union here. For one-or-more, write `aa*`."*) and teaches them something.
+- Under **one-or-more**, someone pasting `a + b` from a lecture slide gets `a⁺b`. It parses
+  cleanly, builds the wrong machine, and **reports nothing**. They then debug their own
+  understanding of subset construction rather than their input.
+
+For a tool whose users do not yet know when they are wrong, a loud failure beats a silent one
+regardless of which convention is more "correct". Phase 1 B3 owes the dedicated error message.
+
+### D2 — Single characters or multi-character tokens? · **Answered 2026-08-16**
+
+**Single characters** in v1 (`a`, `b`, `0`, `1`).
+
+`Symbol` is already `String` rather than `char` in `automaton.rs`, so widening to
+multi-character tokens later is a lexer and parser change rather than a migration of every
+saved `.kln` file and every shared URL. The escape hatch costs nothing today and is already
+in place.
+
+### D4 — How are subset-construction states named? · **Answered 2026-08-16**
+
+**Sequential labels on the canvas, provenance everywhere else.** States read `A`, `B`, `C`;
+the subset appears in a legend, on hover, in the transition table, and in the step prose
+(*"Reading `a` from B = {q1, q3} reaches {q2, q4} — new state C."*).
+
+Set notation is self-explanatory at two elements and unreadable at five, and subset
+construction's entire drama is subsets **growing** — so literal set labels degrade exactly as
+the diagram becomes worth looking at. A 24px state circle cannot hold `{q1,q2,q4,q7}` without
+reflowing the whole diagram on every step.
+
+This is what `State::origin` exists for (roadmap §2.3): the provenance is carried in the
+model, so nothing is lost by keeping the label short. Cheap to expose as a toggle later,
+since it only affects label rendering.
+
+### D7 — Is the empty string `ε` or `λ`? · **Answered 2026-08-16**
+
+**`ε` by default, implemented as a display setting rather than a constant.**
+
+It appears on edges, in regexes, in step prose, in TikZ output (`\varepsilon`) and in the
+docs, so hard-coding it would make a change a find-and-replace across the codebase and every
+exporter. As a setting, a course that writes `λ` flips one preference and every surface
+follows.
