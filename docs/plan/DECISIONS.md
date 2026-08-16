@@ -71,29 +71,6 @@ than a data-model migration.
 
 ---
 
-### D3 — Which minimizer is the *primary*, explainable one?
-
-**Status:** 🔥 BLOCKING · **Blocks:** Phase 1 D1–D4, Phase 3 E5 · **Cost to reverse:** medium
-
-The roadmap says Moore partition refinement, because *"it's what your syllabus teaches — so
-it's the one that must be explainable"* (§2.4). That reasoning is right, which makes the
-real question a factual one: **what does CSE2004 actually teach?**
-
-- **Moore / partition refinement** — iteratively split blocks by where they transition.
-- **Table-filling / Myhill–Nerode marking** — mark distinguishable pairs in a triangular
-  table until closure. Very common in Indian syllabi, and it *looks* completely different on
-  screen even though it computes the same partition.
-
-Phase 3's whole minimization view is built to match one of these. Building the wrong one
-means the tool shows a correct answer by a method the student cannot map onto their notes.
-
-**What Claude needs:** which one Dr. Paras Jain used, and which one the exam asks you to
-show working for. A photo of a lecture slide settles it.
-
-> **Answer:** _(unanswered)_
-
----
-
 ### D4 — How are subset-construction states named?
 
 **Status:** 🔥 BLOCKING · **Blocks:** Phase 1 C3, D3 · **Cost to reverse:** low–medium
@@ -306,3 +283,33 @@ the system by default, with a persisted manual override.
 Chosen for a brighter, lighter feel than the original teal while keeping five semantic hues
 that stay distinguishable as thin strokes. Recorded in full in
 [design-system.md](design-system.md).
+
+### D3 — Which minimizer is the primary, explainable one? · **Answered 2026-08-16**
+
+**Both methods were taught in CSE2004**, so the question dissolves: the tool must be able to
+show either, and neither can be the "alternative view" tucked behind a menu.
+
+That turns out to cost far less than building two minimizers, because **table-filling is the
+dual of partition refinement, not a different algorithm**. A pair `(p, q)` is marked at round
+*k* by the table method exactly when `p` and `q` first fall into different blocks at round *k*
+of refinement — both are computing "distinguishable by some string of length ≤ k", from
+opposite ends.
+
+The witness reconstruction is shared too. If `(p, q)` separates at round *k* via symbol `a`,
+its distinguishing string is `a · w`, where `w` is the witness for
+`(δ(p,a), δ(q,a))` at round *k−1*, bottoming out at `ε` for the round-0 accepting/
+non-accepting split. That is exactly the back-pointer Phase 1 D2 already requires — so the
+marking table's round numbers and the distinguishing strings come out of one mechanism.
+
+**Resolution:**
+
+- `convert/minimize.rs` implements **Moore partition refinement**, traced, as the engine.
+- The marking table is **derived from the refinement trace**, not computed separately. A
+  second implementation would be a second thing to keep correct for no gain.
+- Phase 3 renders **both views as equals**, switchable, from the same `Traced` output.
+- Default view: partition refinement, since it is the engine's natural shape. Trivially
+  changed once there is something to look at.
+
+**Consequence worth noting:** this makes the derived table a *property test target* — the
+marking table and the refinement rounds must agree on which pairs are distinguishable and on
+each witness, which is a strong internal consistency check that neither view provides alone.
