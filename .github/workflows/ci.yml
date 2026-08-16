@@ -45,7 +45,9 @@ jobs:
       - name: Property tests at 10k cases
         env:
           PROPTEST_CASES: 10000
-        run: cargo test --release -p kleene-core --test properties
+        run: |
+          cargo test --release -p kleene-core --test properties
+          cargo test --release -p kleene-core --test differential
 
   wasm:
     name: WebAssembly
