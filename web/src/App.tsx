@@ -87,7 +87,7 @@ export function App() {
 
             <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
               <Fact label="Type" value={determinism(load.automaton)} />
-              <Fact label="States" value={String(load.automaton.states.size)} />
+              <Fact label="States" value={String(load.automaton.states.length)} />
               <Fact label="Alphabet" value={`{${load.automaton.alphabet.join(', ')}}`} />
               <Fact label="Engine" value={`kleene-core ${load.version}`} />
               <Fact label="Theme" value={resolvedTheme(choice)} />

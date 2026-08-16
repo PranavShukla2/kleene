@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { determinism, type Automaton } from '@/model/automaton';
+import { determinism, stateById, type Automaton } from '@/model/automaton';
 
 /** The machine Phase 0 renders, in the shape the engine actually hands over. */
 function endsWithAb(): Automaton {
   return {
     alphabet: ['a', 'b'],
-    states: new Map([
-      [0, { label: 'q0', accepting: false }],
-      [1, { label: 'q1', accepting: false }],
-      [2, { label: 'q2', accepting: true }],
-    ]),
+    states: [
+      { id: 0, label: 'q0', accepting: false },
+      { id: 1, label: 'q1', accepting: false },
+      { id: 2, label: 'q2', accepting: true },
+    ],
     start: 0,
     transitions: [
       { from: 0, to: 1, on: 'a' },
@@ -49,10 +49,30 @@ describe('determinism', () => {
   });
 });
 
-describe('state map', () => {
-  it('preserves insertion order, which traces depend on', () => {
-    // A plain object would reorder integer-like keys and silently lose this.
-    const ids = [...endsWithAb().states.keys()];
-    expect(ids).toEqual([0, 1, 2]);
+describe('state order', () => {
+  it('is carried by the array, not by a key convention', () => {
+    // The reason states are an array. An object keyed by id would leave order to a
+    // convention that JSON, JavaScript and Rust each define differently, and a machine
+    // whose ids are not ascending would round-trip rearranged.
+    expect(endsWithAb().states.map((s) => s.id)).toEqual([0, 1, 2]);
+  });
+
+  it('survives ids that are not in ascending order', () => {
+    // The case an object encoding gets wrong: JavaScript iterates integer-like keys
+    // ascending, so this would come back as 1, 3, 9.
+    const machine = {
+      ...endsWithAb(),
+      states: [
+        { id: 1, label: 'a', accepting: false },
+        { id: 9, label: 'b', accepting: false },
+        { id: 3, label: 'c', accepting: true },
+      ],
+    };
+    expect(machine.states.map((s) => s.id)).toEqual([1, 9, 3]);
+  });
+
+  it('finds a state by id regardless of position', () => {
+    expect(stateById(endsWithAb(), 2)?.label).toBe('q2');
+    expect(stateById(endsWithAb(), 99)).toBeUndefined();
   });
 });

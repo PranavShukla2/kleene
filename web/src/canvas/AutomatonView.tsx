@@ -35,7 +35,7 @@ interface Props {
 }
 
 export function AutomatonView({ automaton, layout, title, className }: Props) {
-  const ids = [...automaton.states.keys()];
+  const ids = automaton.states.map((state) => state.id);
   const positions = layout ?? rowLayout(ids);
   const edges = groupEdges(automaton.transitions);
 
@@ -108,11 +108,12 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
         ))}
       </g>
 
-      {ids.map((id) => {
-        const state = automaton.states.get(id);
-        const at = positions[id];
-        if (!state || !at) return null;
-        return <StateNode key={id} at={at} label={state.label} accepting={state.accepting} />;
+      {automaton.states.map((state) => {
+        const at = positions[state.id];
+        if (!at) return null;
+        return (
+          <StateNode key={state.id} at={at} label={state.label} accepting={state.accepting} />
+        );
       })}
 
       <StartMarker at={positions[automaton.start]} />
