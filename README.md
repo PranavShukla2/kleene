@@ -7,7 +7,7 @@
 Draw an automaton. Type a regular expression. Watch the conversion happen —
 one subset-construction round at a time, with the reasoning attached to every step.
 
-**[kleene.pages.dev](https://kleene.pages.dev)** · [Roadmap](docs/ROADMAP.md) · [Build plan](docs/plan/README.md)
+**[kleene.pranavmshukla.in](https://kleene.pranavmshukla.in)** · [Roadmap](docs/ROADMAP.md) · [Build plan](docs/plan/README.md)
 
 </div>
 
@@ -17,7 +17,7 @@ one subset-construction round at a time, with the reasoning attached to every st
 
 **Phase 0 complete.** The vertical slice works end to end: `kleene-core` compiles to
 WebAssembly, the browser loads it, a real DFA renders as SVG in both light and dark themes,
-and it is deployed at **[kleene.pages.dev](https://kleene.pages.dev)**.
+and it is deployed at **[kleene.pranavmshukla.in](https://kleene.pranavmshukla.in)**.
 
 There is no editor and no conversion pipeline yet — this is a skeleton with a good posture,
 not a usable tool. **Phase 1 is in progress**: the regex lexer, parser and AST are done.
