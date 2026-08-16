@@ -67,17 +67,6 @@ everyone comes for) or **regex | DFA** (input and result).
 **Recommendation:** ε-NFA | DFA, since the pipeline's selling point is the conversion, not
 the endpoints.
 
-### D10 — Cloudflare Pages account and DNS
-
-**Status:** ⏳ **Phase 0 E4** — needed for the Phase 0 exit criterion · **Claude cannot do this**
-
-Needs: a Cloudflare Pages project, an API token added to the repo as a secret
-(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), and a DNS record for
-`kleene.pranavmshukla.in`.
-
-`deploy.yml` is written and committed regardless; it goes green the hour the secrets land.
-Everything else in Phase 0 proceeds without it.
-
 ### D11 — Umami or Plausible?
 
 **Status:** ⏳ Phase 5 H1
@@ -277,3 +266,20 @@ It appears on edges, in regexes, in step prose, in TikZ output (`\varepsilon`) a
 docs, so hard-coding it would make a change a find-and-replace across the codebase and every
 exporter. As a setting, a course that writes `λ` flips one preference and every surface
 follows.
+
+### D10 — Cloudflare Pages account and DNS · **Answered 2026-08-16**
+
+Secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set on the repository, and
+**Phase 0's exit criterion is met**: <https://kleene.pages.dev> renders the `ends_with_ab`
+DFA, in both themes, with no console errors.
+
+The Pages project is created by `deploy.yml` rather than by hand, so the repository needs
+only the two secrets to bootstrap — there is no dashboard setup step to write down and let
+drift.
+
+**The custom domain is still outstanding.** `pranavmshukla.in` is on GoDaddy nameservers
+(`domaincontrol.com`), not Cloudflare, with the apex pointing at Vercel. Attaching
+`kleene.pranavmshukla.in` therefore does **not** require moving the zone, and should not:
+that would put the existing portfolio's DNS through an unnecessary migration for the sake of
+one subdomain. A `CNAME` from `kleene` to `kleene.pages.dev` at GoDaddy, plus adding the
+custom domain in the Pages project, is the whole job.
