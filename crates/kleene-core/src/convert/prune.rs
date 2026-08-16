@@ -156,7 +156,7 @@ pub fn prune(automaton: &Automaton) -> Traced<Automaton> {
 /// Sparse ids are legal — deleting a state in the editor leaves a hole — but they leak into
 /// exports and labels, so any operation that rebuilds a machine is a good moment to tidy.
 ///
-/// Shared with [`minimize`](super::minimize), which needs the reachable-only restriction
+/// Shared with [`minimize`](fn@super::minimize), which needs the reachable-only restriction
 /// without the dead-state removal that [`prune`] also performs. Untraced on purpose: it is
 /// mechanical bookkeeping, and its callers narrate the parts a reader cares about.
 pub fn retaining(automaton: &Automaton, keep: &BTreeSet<StateId>) -> Automaton {

@@ -8,7 +8,7 @@
 //!
 //! Two pieces that already exist, assembled:
 //!
-//! 1. [`symmetric_difference`](crate::ops::symmetric_difference) builds a machine accepting
+//! 1. [`crate::ops::symmetric_difference`] builds a machine accepting
 //!    exactly the strings the two disagree about.
 //! 2. A breadth-first search from its start state to the nearest accepting state reads off a
 //!    shortest such string.
