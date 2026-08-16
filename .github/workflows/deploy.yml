@@ -52,10 +52,30 @@ jobs:
           node scripts/check-wasm-size.mjs
           cd web && npm ci && npx tsc -b --noEmit && npx vite build
 
+      # Creating the project from the workflow rather than by hand in the dashboard, so
+      # the repository is self-bootstrapping: a fork, or a rebuild after the project is
+      # deleted, needs only the two secrets and no setup steps written down somewhere.
+      # Idempotent — it checks before creating.
+      - name: Ensure the Pages project exists
+        if: steps.creds.outputs.present == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if npx --yes wrangler@3 pages project list | grep -qw 'kleene'; then
+            echo "Pages project 'kleene' already exists."
+          else
+            echo "Creating Pages project 'kleene'."
+            npx --yes wrangler@3 pages project create kleene --production-branch=main
+          fi
+
       - name: Publish
         if: steps.creds.outputs.present == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy web/dist --project-name=kleene
+          # --commit-dirty: the build writes web/dist and the wasm pkg/, both gitignored,
+          # but wrangler still reports a dirty tree and warns. In CI the tree is dirty by
+          # construction, so the warning carries no information.
+          command: pages deploy web/dist --project-name=kleene --commit-dirty=true
