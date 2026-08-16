@@ -31,6 +31,7 @@ pub mod builder;
 pub mod convert;
 pub mod counterexample;
 pub mod examples;
+pub mod io;
 pub mod notation;
 pub mod ops;
 pub mod regex;
@@ -44,6 +45,7 @@ pub use convert::{
     Closures, complete, determinize, epsilon_closure, minimize, prune, refine, to_regex,
 };
 pub use counterexample::{Counterexample, Side, counterexample, equivalent};
+pub use io::{Document, to_dot};
 pub use notation::Notation;
 pub use ops::{complement, difference, intersection, symmetric_difference, union};
 pub use regex::{ParseError, Regex, parse, simplify, thompson};
