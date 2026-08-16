@@ -175,7 +175,14 @@ interface EdgeProps {
   selfLoop: boolean;
 }
 
-function Edge({ from, to, symbols, obstacles, pairedWithReverse, selfLoop: isLoop }: EdgeProps) {
+function Edge({
+  from,
+  to,
+  symbols,
+  obstacles,
+  pairedWithReverse,
+  selfLoop: isLoop,
+}: EdgeProps) {
   if (!from || !to) return null;
 
   const geom = routeEdge(from, to, obstacles, pairedWithReverse, isLoop);

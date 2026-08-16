@@ -58,8 +58,8 @@ export function App() {
           <p className="mt-2 max-w-prose text-k-text-muted">
             A deterministic finite automaton over the alphabet{' '}
             <code className="font-mono text-k-text">{'{a, b}'}</code>, accepting exactly those
-            strings whose last two symbols are <code className="font-mono text-k-text">ab</code>.
-            Built in Rust, compiled to WebAssembly, rendered here as SVG.
+            strings whose last two symbols are <code className="font-mono text-k-text">ab</code>
+            . Built in Rust, compiled to WebAssembly, rendered here as SVG.
           </p>
         </section>
 
@@ -101,7 +101,13 @@ export function App() {
   );
 }
 
-function Header({ themeLabel, onCycleTheme }: { themeLabel: string; onCycleTheme: () => void }) {
+function Header({
+  themeLabel,
+  onCycleTheme,
+}: {
+  themeLabel: string;
+  onCycleTheme: () => void;
+}) {
   return (
     <header className="border-b border-k-border">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">

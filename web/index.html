@@ -17,7 +17,8 @@
     <script>
       try {
         var t = localStorage.getItem('kleene.theme');
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        if (t === 'light' || t === 'dark')
+          document.documentElement.setAttribute('data-theme', t);
       } catch (e) {
         /* blocked storage is not worth failing over */
       }

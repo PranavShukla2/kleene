@@ -164,10 +164,12 @@ describe('bendSideBelow', () => {
     const right = { x: 200, y: 100 };
 
     // Self-loops sit above their state, so an edge routed over the top collides.
-    expect(curvedEdge(left, right, bendSideBelow(left, right), GEOM.bendClearance).label.y)
-      .toBeGreaterThan(100);
-    expect(curvedEdge(right, left, bendSideBelow(right, left), GEOM.bendClearance).label.y)
-      .toBeGreaterThan(100);
+    expect(
+      curvedEdge(left, right, bendSideBelow(left, right), GEOM.bendClearance).label.y,
+    ).toBeGreaterThan(100);
+    expect(
+      curvedEdge(right, left, bendSideBelow(right, left), GEOM.bendClearance).label.y,
+    ).toBeGreaterThan(100);
   });
 });
 

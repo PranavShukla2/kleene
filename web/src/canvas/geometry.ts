@@ -137,8 +137,7 @@ export function selfLoop(at: Point) {
   const top = at.y - GEOM.radius;
   // Two arcs leaving and re-entering the rim, meeting above the state.
   const path =
-    `M ${at.x - r * 0.7} ${top - 2} ` +
-    `A ${r} ${r} 0 1 1 ${at.x + r * 0.7} ${top - 2}`;
+    `M ${at.x - r * 0.7} ${top - 2} ` + `A ${r} ${r} 0 1 1 ${at.x + r * 0.7} ${top - 2}`;
   return { path, label: { x: at.x, y: top - r * 1.6 } };
 }
 
@@ -194,9 +193,7 @@ function distanceToSegment(p: Point, a: Point, b: Point): number {
  * as the edge it is. It is a wrong diagram, not merely an ugly one.
  */
 export function isObstructed(from: Point, to: Point, others: readonly Point[]): boolean {
-  return others.some(
-    (o) => distanceToSegment(o, from, to) < GEOM.radius + GEOM.clearance,
-  );
+  return others.some((o) => distanceToSegment(o, from, to) < GEOM.radius + GEOM.clearance);
 }
 
 /**
