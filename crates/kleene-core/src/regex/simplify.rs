@@ -20,6 +20,7 @@
 //! | `∅* → ε` | Zero repetitions of nothing is the empty string. |
 //! | `ε* → ε` | Repeating the empty string gives the empty string. |
 //! | `ε + r* → r*` | `r*` already contains the empty string. |
+//! | `ε + rr* → r*`, `ε + r*r → r*` | "nothing, or one or more" *is* "zero or more". |
 //!
 //! Deliberately **not** included: distributing concatenation over union, reordering unions to
 //! find more matches, or factoring common prefixes. Those find further reductions but can
@@ -87,23 +88,50 @@ fn once(regex: &Regex) -> Regex {
                     return l;
                 }
 
-                // r* already matches the empty string, so offering ε alongside it is
-                // redundant. Common in state-elimination output, where the ε comes from
-                // the added start edge.
-                if let Regex::Epsilon = l
-                    && matches!(r, Regex::Star(_))
+                // `ε + <something that already includes ε>` is that something. Both
+                // shapes below are extremely common in state-elimination output, where the
+                // ε arrives from the added start edge and then sits next to a loop.
+                if matches!(l, Regex::Epsilon)
+                    && let Some(collapsed) = absorbs_epsilon(&r)
                 {
-                    return r;
+                    return collapsed;
                 }
-                if let Regex::Epsilon = r
-                    && matches!(l, Regex::Star(_))
+                if matches!(r, Regex::Epsilon)
+                    && let Some(collapsed) = absorbs_epsilon(&l)
                 {
-                    return l;
+                    return collapsed;
                 }
 
                 Regex::union(l, r)
             }
         },
+    }
+}
+
+/// Whether `regex` already matches the empty string in a shape we can collapse into,
+/// returning what `ε + regex` reduces to.
+///
+/// Recognises `r*` directly, and the two forms state elimination actually emits —
+/// `rr*` and `r*r`, both of which mean "one or more r" and so join with ε to make `r*`.
+/// Deliberately syntactic: proving nullability in general is more machinery than a
+/// readability pass warrants, and these three shapes cover what the algorithm produces.
+fn absorbs_epsilon(regex: &Regex) -> Option<Regex> {
+    match regex {
+        // ε + r* = r*
+        Regex::Star(_) => Some(regex.clone()),
+
+        // ε + rr* = r*, and ε + r*r = r*
+        Regex::Concat(left, right) => match (left.as_ref(), right.as_ref()) {
+            (inner, Regex::Star(starred)) if starred.as_ref() == inner => {
+                Some(Regex::star(inner.clone()))
+            }
+            (Regex::Star(starred), inner) if starred.as_ref() == inner => {
+                Some(Regex::star(inner.clone()))
+            }
+            _ => None,
+        },
+
+        _ => None,
     }
 }
 
@@ -166,6 +194,23 @@ mod tests {
     }
 
     #[test]
+    fn epsilon_joined_with_one_or_more_gives_zero_or_more() {
+        // "nothing, or one or more" is exactly "zero or more". This shape is what state
+        // elimination emits constantly, and leaving it produced `a*(ε + bb*)` where the
+        // answer is plainly `a*b*`.
+        assert_eq!(simplified("ε+bb*"), "b*");
+        assert_eq!(simplified("ε+b*b"), "b*");
+        assert_eq!(simplified("bb*+ε"), "b*");
+        assert_eq!(simplified("a*(ε+bb*)"), "a*b*");
+    }
+
+    #[test]
+    fn absorption_does_not_fire_when_the_repeated_parts_differ() {
+        // `ε + ab*` genuinely contains ε and `ab*`, and is not `b*` or anything smaller.
+        assert_eq!(simplified("ε+ab*"), "ε + ab*");
+    }
+
+    #[test]
     fn rules_that_expose_other_rules_are_applied_to_a_fixed_point() {
         // `∅b → ∅` leaves `a + ∅`, which the union rule then collapses. A single pass
         // would stop after the first of those.
@@ -199,6 +244,10 @@ mod tests {
             "(ε+a)(b+∅)*",
             "a*(ε+b)*",
             "((a+ε)b*)*",
+            "ε+bb*",
+            "ε+b*b",
+            "ε+ab*",
+            "a*(ε+bb*)",
         ];
 
         for input in cases {
