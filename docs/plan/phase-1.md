@@ -79,6 +79,11 @@ the other convention produces for `a + b`.
 - [ ] **C1.** `convert/epsilon.rs` — ε-closure by worklist, **traced** so the closure can
       be shown growing one state at a time.
 - [ ] **C2.** ε-removal producing an equivalent ε-free NFA, traced.
+      🔵 **LEFTOVER CANDIDATE** — *corrected after the fact:* this was scheduled here as
+      though the pipeline needed it. It does not. Subset construction consumes ε-transitions
+      directly through precomputed closures, so ε-NFA → DFA never passes through an ε-free
+      NFA. It is a teaching step — some courses draw ε-NFA → NFA → DFA as three diagrams —
+      and so belongs with the Phase 3 pane that would show it.
 - [ ] **C3.** `convert/subset.rs` — subset construction, **traced per round**. Each step
       records: the subset being expanded, the symbol read, the resulting ε-closure, and
       whether the target was new or already seen. `origin` is populated here — this is what
