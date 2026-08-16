@@ -17,10 +17,12 @@
 
 pub mod complete;
 pub mod epsilon;
+pub mod minimize;
 pub mod prune;
 pub mod subset;
 
 pub use complete::complete;
 pub use epsilon::{Closures, epsilon_closure};
-pub use prune::{co_reachable, prune};
+pub use minimize::{Mark, MarkingTable, Refinement, minimize, refine};
+pub use prune::{co_reachable, prune, retaining};
 pub use subset::determinize;
