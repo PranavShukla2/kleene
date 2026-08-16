@@ -17,8 +17,10 @@
 
 pub mod complete;
 pub mod epsilon;
+pub mod prune;
 pub mod subset;
 
 pub use complete::complete;
 pub use epsilon::{Closures, epsilon_closure};
+pub use prune::{co_reachable, prune};
 pub use subset::determinize;
