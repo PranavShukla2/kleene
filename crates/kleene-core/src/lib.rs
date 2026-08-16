@@ -37,7 +37,7 @@ pub mod validate;
 pub use automaton::{Automaton, Determinism, State, StateId, Symbol, Transition};
 pub use builder::AutomatonBuilder;
 pub use notation::Notation;
-pub use regex::{ParseError, Regex, parse};
+pub use regex::{ParseError, Regex, parse, thompson};
 pub use trace::{Step, StepKind, Traced};
 pub use validate::{Problem, ProblemKind, Report, Severity};
 
