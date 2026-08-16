@@ -1,0 +1,25 @@
+---
+source: crates/kleene-core/src/io/dot.rs
+expression: to_dot(&nfa)
+---
+digraph automaton {
+  rankdir=LR;
+  node [shape=circle, fontname="JetBrains Mono, monospace"];
+  edge [fontname="JetBrains Mono, monospace"];
+
+  __start [shape=none, label="", width=0, height=0];
+  s0 [label="q0"];
+  s1 [label="q1"];
+  s2 [label="q2"];
+  s3 [label="q3"];
+  s4 [label="q4"];
+  s5 [label="q5", shape=doublecircle];
+
+  __start -> s4;
+  s0 -> s1 [label="a"];
+  s1 -> s5 [label="ε"];
+  s2 -> s3 [label="b"];
+  s3 -> s5 [label="ε"];
+  s4 -> s0 [label="ε"];
+  s4 -> s2 [label="ε"];
+}
