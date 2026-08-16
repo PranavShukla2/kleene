@@ -50,6 +50,12 @@ pub struct State {
     /// What the state is called on screen: `q0`, `A`, `{q1,q3}`.
     pub label: String,
     /// Whether the state is accepting.
+    ///
+    /// Omitted from serialized output when false, and defaulted when absent. Most states
+    /// in most machines are non-accepting, so writing `"accepting": false` on every one of
+    /// them is pure waste inside a share link — and a format that *requires* the field
+    /// makes a hand-written `.kln` file needlessly fussy to produce.
+    #[serde(default, skip_serializing_if = "is_false")]
     pub accepting: bool,
     /// Provenance: which states of the *source* machine produced this one.
     ///
@@ -86,6 +92,10 @@ impl State {
         self.origin = Some(origin.into_iter().collect());
         self
     }
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 /// A transition from one state to another, on a symbol or on ε.
@@ -239,6 +249,24 @@ mod tests {
         let s = State::new("A").from_origin([1, 3, 4]);
         let back: State = serde_json::from_str(&serde_json::to_string(&s).unwrap()).unwrap();
         assert_eq!(back.origin, Some(BTreeSet::from([1, 3, 4])));
+    }
+
+    #[test]
+    fn a_non_accepting_state_omits_the_flag_and_reads_back() {
+        // Most states in most machines are non-accepting, so writing the flag on every one
+        // is waste inside a share link. Found by writing the format spec against the real
+        // output rather than against the intended output.
+        let json = serde_json::to_string(&State::new("q0")).unwrap();
+        assert!(!json.contains("accepting"), "{json}");
+
+        let back: State = serde_json::from_str(&json).unwrap();
+        assert!(!back.accepting);
+    }
+
+    #[test]
+    fn an_accepting_state_still_writes_the_flag() {
+        let json = serde_json::to_string(&State::new("q0").accepting()).unwrap();
+        assert!(json.contains("\"accepting\":true"), "{json}");
     }
 
     #[test]
