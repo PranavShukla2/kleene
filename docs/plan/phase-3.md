@@ -64,7 +64,7 @@ The centrepiece control of the product.
       the interaction people will do most; it must be keyboard-first.
 - [ ] **C4.** Step counter and a progress indicator: "Round 3 of 7".
 - [ ] **C5.** **The reasoning panel** — plain-language text for the current step, read from
-      core (Phase 1 D3), never composed in TypeScript:
+      core (Phase 1 task D4), never composed in TypeScript:
       *"Reading `a` from {q1, q3} reaches {q2, q4} — new state, added to the worklist."*
 - [ ] **C6.** The diagram animates *between* steps rather than cutting. Watching a new state
       appear and connect is the thing that teaches; a cut is just a slideshow.
