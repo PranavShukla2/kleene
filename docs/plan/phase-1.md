@@ -20,7 +20,7 @@ stopping point if the semester goes sideways (roadmap §7).
 
 ## The decisions that block this phase
 
-Six questions must be answered before the corresponding task starts. They are notation and
+Five questions must be answered before the corresponding task starts. They are notation and
 pedagogy questions, not engineering ones — Claude picking a default here means the tool
 teaches something subtly different from what the course teaches, which defeats its purpose.
 
@@ -28,8 +28,7 @@ teaches something subtly different from what the course teaches, which defeats i
 |---|---|---|
 | 🔴 **D1** | B2, B3 | Does `+` mean **union** or **one-or-more**? |
 | 🔴 **D2** | A2, B1 | Are alphabet symbols single characters, or multi-character tokens? |
-| 🔴 **D3** | D1–D4 | Is the primary minimizer **Moore partition refinement** or **table-filling (Myhill–Nerode)**? |
-| 🔴 **D4** | C3, D3 | How are subset-construction states named and displayed? |
+| 🔴 **D4** | C3, D4 | How are subset-construction states named and displayed? |
 | 🔴 **D6** | E1 | What order does state elimination remove states in? |
 | 🔴 **D7** | A3, B4 | Is the empty string written **ε** or **λ**? |
 
@@ -88,20 +87,27 @@ in [DECISIONS.md](DECISIONS.md).
 
 ### Track D — Minimization
 
-- [ ] **D1.** `convert/minimize.rs` — the **primary, traced** minimizer. Each step records
-      the partition before, the block being split, the symbol that split it, and the
-      resulting blocks. 🔴 **D3**
+- [ ] **D1.** `convert/minimize.rs` — **Moore partition refinement**, traced. Each step
+      records the partition before, the block being split, the symbol that split it, and the
+      resulting blocks. This is the engine; both taught presentations render from its trace
+      (decision D3, answered).
 - [ ] **D2.** The **distinguishing string** for each split, reconstructed and attached to
       the step. This is the single highest-value line in the whole engine: it is exactly
       what the roadmap §1.1 identifies as the thing JFLAP will not tell you, and what the
       exam actually asks for. It is not free — it needs a witness back-pointer maintained
       through refinement — and it must not be dropped when the week gets tight.
-- [ ] **D3.** Human-readable step rendering: *"Reading `a` from block {q1, q3} reaches two
+- [ ] **D3.** **Derive the Myhill–Nerode marking table from the refinement trace.** Both
+      methods are taught in CSE2004, so both must be renderable — but table-filling is the
+      *dual* of refinement, not a second algorithm: a pair is marked at round *k* exactly
+      when it first falls into different blocks at round *k*. Emitting the table from the
+      trace means one implementation to keep correct, and it reuses D2's back-pointer for
+      the per-pair witness.
+- [ ] **D4.** Human-readable step rendering: *"Reading `a` from block {q1, q3} reaches two
       different blocks, so {q1, q3} splits into {q1} and {q3}. The string `ab` is accepted
       from q1 but not from q3."* Generated in **core**, not in the frontend, so the CLI's
-      verbose mode and the docs get it for free. 🔴 **D4**
-- [ ] **D4.** Hopcroft minimization — untraced, for the CLI on large inputs. Property-tested
-      to agree with the primary minimizer on state count. 🔴 **D3**
+      verbose mode and the docs get it for free. 🔴 **D4** (naming)
+- [ ] **D5.** Hopcroft minimization — untraced, for the CLI on large inputs. Property-tested
+      to agree with the primary minimizer on state count.
 
 ### Track E — Analysis and operations
 
@@ -159,13 +165,18 @@ in [DECISIONS.md](DECISIONS.md).
 - [ ] **H4.** `roundtrip_through_regex` — regex → DFA → regex → DFA must be equivalent.
       The roadmap calls this the strong one and it is right. Expect it to fail first, and
       expect the failures to be real.
-- [ ] **H5.** `counterexample_is_always_a_real_witness` — both directions. A returned
+- [ ] **H5.** `marking_table_agrees_with_refinement` — the derived table and the refinement
+      rounds must agree on which pairs are distinguishable, on the round each pair separates,
+      and on each pair's witness string. Deriving one view from the other makes this a real
+      internal consistency check rather than a tautology, and it is the test that would catch
+      an off-by-one in the round accounting.
+- [ ] **H6.** `counterexample_is_always_a_real_witness` — both directions. A returned
       witness must be accepted by exactly one machine; no witness returned must mean the two
       are genuinely equivalent. A fabricated witness lies to a student who is already
       confused, and a withheld one turns "correct" into an unbacked claim.
-- [ ] **H6.** Differential testing against the `regex` crate on shared syntax.
-- [ ] **H7.** `insta` snapshots for DOT and `.kln`.
-- [ ] **H8.** proptest at 10,000 cases in CI; regressions committed.
+- [ ] **H7.** Differential testing against the `regex` crate on shared syntax.
+- [ ] **H8.** `insta` snapshots for DOT and `.kln`.
+- [ ] **H9.** proptest at 10,000 cases in CI; regressions committed.
 
 ---
 
@@ -199,7 +210,8 @@ in [DECISIONS.md](DECISIONS.md).
 - **G5's `--json`** is the machine-readable surface `kleene grade --format csv` consumes
   in v1.1 (roadmap §9.1).
 - **D2's distinguishing string** is the minimization-time analogue of E5, and what lets a
-  failing attempt be told exactly which pair of states it wrongly merged.
-- **Core-generated step prose (D3)** means CLI verbose output, in-app explanations, and
+  failing attempt be told exactly which pair of states it wrongly merged. It also supplies
+  the per-pair witness in the derived marking table (task D3).
+- **Core-generated step prose (task D4)** means CLI verbose output, in-app explanations, and
   every v1.1/v1.2 teaching feature read from one source, with no second implementation to
   keep in sync.
