@@ -135,8 +135,31 @@ pub fn prune(automaton: &Automaton) -> Traced<Automaton> {
         );
     }
 
-    // Renumber into a dense 0..n range, in the original relative order. Sparse ids are
-    // legal but leak into exports and labels, and a pruned machine is a good moment to tidy.
+    let pruned = retaining(automaton, &keep);
+
+    steps.push(Step::new(
+        StepKind::Note,
+        format!(
+            "{} of {} states removed; {} remain.",
+            removed.len(),
+            automaton.state_count(),
+            pruned.state_count()
+        ),
+    ));
+
+    Traced::new(pruned, steps)
+}
+
+/// Keep only the given states, dropping transitions that touch any of the rest.
+///
+/// Survivors are renumbered into a dense `0..n` range in their original relative order.
+/// Sparse ids are legal — deleting a state in the editor leaves a hole — but they leak into
+/// exports and labels, so any operation that rebuilds a machine is a good moment to tidy.
+///
+/// Shared with [`minimize`](super::minimize), which needs the reachable-only restriction
+/// without the dead-state removal that [`prune`] also performs. Untraced on purpose: it is
+/// mechanical bookkeeping, and its callers narrate the parts a reader cares about.
+pub fn retaining(automaton: &Automaton, keep: &BTreeSet<StateId>) -> Automaton {
     let remap: HashMap<StateId, StateId> = automaton
         .states
         .keys()
@@ -164,24 +187,12 @@ pub fn prune(automaton: &Automaton) -> Traced<Automaton> {
         })
         .collect();
 
-    steps.push(Step::new(
-        StepKind::Note,
-        format!(
-            "{} of {} states removed; {} remain.",
-            removed.len(),
-            automaton.state_count(),
-            states.len()
-        ),
-    ));
-
-    let pruned = Automaton {
+    Automaton {
         alphabet: automaton.alphabet.clone(),
         states,
         start: *remap.get(&automaton.start).unwrap_or(&0),
         transitions,
-    };
-
-    Traced::new(pruned, steps)
+    }
 }
 
 #[cfg(test)]
