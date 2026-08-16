@@ -27,11 +27,13 @@
 #![warn(clippy::all)]
 
 pub mod automaton;
+pub mod builder;
 pub mod examples;
 pub mod notation;
 pub mod trace;
 
 pub use automaton::{Automaton, Determinism, State, StateId, Symbol, Transition};
+pub use builder::AutomatonBuilder;
 pub use notation::Notation;
 pub use trace::{Step, StepKind, Traced};
 
