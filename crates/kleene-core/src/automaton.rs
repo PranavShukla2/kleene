@@ -107,6 +107,7 @@ fn is_false(value: &bool) -> bool {
 
 /// A transition from one state to another, on a symbol or on ε.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export, export_to = "generated/"))]
 pub struct Transition {
     /// Source state.
     pub from: StateId,
@@ -114,6 +115,7 @@ pub struct Transition {
     pub to: StateId,
     /// The symbol read. `None` is an ε-transition.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "ts", ts(optional))]
     pub on: Option<Symbol>,
 }
 

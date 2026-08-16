@@ -17,6 +17,15 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 indexmap = { workspace = true }
 
+# Optional, and behind a feature on purpose. The TypeScript bindings are a build-time
+# artifact, and the wasm bundle is on a 400 KB budget — nothing that only produces a `.ts`
+# file at development time should be linked into what a student downloads.
+ts-rs = { version = "12", optional = true }
+
+[features]
+# Generate TypeScript bindings: `cargo test --features ts export_bindings`.
+ts = ["dep:ts-rs"]
+
 [dev-dependencies]
 insta = "1"
 proptest = "1"

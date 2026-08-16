@@ -40,6 +40,11 @@ use crate::automaton::{Automaton, State, StateId, Symbol, Transition};
 
 /// A state as it appears in a file, carrying its own id.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "State")
+)]
 pub struct WireState {
     /// The state's id, unique within the machine.
     pub id: StateId,
@@ -50,6 +55,7 @@ pub struct WireState {
     pub accepting: bool,
     /// Which states of the source machine produced this one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "ts", ts(optional))]
     pub origin: Option<BTreeSet<StateId>>,
 }
 
@@ -62,6 +68,11 @@ fn is_false(value: &bool) -> bool {
 /// [`Automaton`] serializes and deserializes *through* this type, so every format — `.kln`,
 /// the wasm boundary, a share link — sees the same shape.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Automaton")
+)]
 pub struct WireAutomaton {
     /// The input alphabet, Σ.
     pub alphabet: Vec<Symbol>,
