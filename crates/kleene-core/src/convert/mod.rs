@@ -20,9 +20,11 @@ pub mod epsilon;
 pub mod minimize;
 pub mod prune;
 pub mod subset;
+pub mod to_regex;
 
 pub use complete::complete;
 pub use epsilon::{Closures, epsilon_closure};
 pub use minimize::{Mark, MarkingTable, Refinement, minimize, refine};
 pub use prune::{co_reachable, prune, retaining};
 pub use subset::determinize;
+pub use to_regex::{Order, to_regex, to_regex_with};
