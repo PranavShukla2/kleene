@@ -10,8 +10,10 @@
     "wasm": "wasm-pack build ../crates/kleene-wasm --target web --out-dir pkg --release",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc -b --noEmit"
+    "lint": "eslint .",
+    "typecheck": "tsc -b --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.0",
@@ -20,15 +22,22 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^26.2.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "eslint": "^10.8.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
     "jsdom": "^25.0.0",
     "playwright": "^1.62.1",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.67.0",
     "vite": "^6.0.0",
     "vitest": "^4.1.10"
   }

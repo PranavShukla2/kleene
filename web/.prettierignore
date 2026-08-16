@@ -1,0 +1,5 @@
+dist
+dev-dist
+node_modules
+src/wasm/generated
+package-lock.json
