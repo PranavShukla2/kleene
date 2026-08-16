@@ -29,6 +29,7 @@
 pub mod automaton;
 pub mod builder;
 pub mod convert;
+pub mod counterexample;
 pub mod examples;
 pub mod notation;
 pub mod ops;
@@ -39,6 +40,7 @@ pub mod validate;
 pub use automaton::{Automaton, Determinism, State, StateId, Symbol, Transition};
 pub use builder::AutomatonBuilder;
 pub use convert::{Closures, complete, determinize, epsilon_closure, minimize, prune, refine};
+pub use counterexample::{Counterexample, Side, counterexample, equivalent};
 pub use notation::Notation;
 pub use ops::{complement, difference, intersection, symmetric_difference, union};
 pub use regex::{ParseError, Regex, parse, thompson};
