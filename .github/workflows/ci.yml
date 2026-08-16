@@ -101,6 +101,12 @@ jobs:
 
       - run: npm ci
 
+      - name: Lint
+        run: npx eslint .
+
+      - name: Format
+        run: npx prettier --check .
+
       - name: Typecheck
         run: npx tsc -b --noEmit
 
