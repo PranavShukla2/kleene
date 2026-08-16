@@ -27,10 +27,12 @@ use serde::{Deserialize, Serialize};
 pub mod ast;
 pub mod lexer;
 pub mod parser;
+pub mod simplify;
 pub mod thompson;
 
 pub use ast::Regex;
 pub use parser::{ParseError, parse};
+pub use simplify::simplify;
 pub use thompson::thompson;
 
 /// A range of characters in the source text.
