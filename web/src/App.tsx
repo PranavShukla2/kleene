@@ -11,6 +11,8 @@ import { useEffect, useState } from 'react';
 
 import { AutomatonView } from '@/canvas/AutomatonView';
 import { determinism, type Automaton } from '@/model/automaton';
+import { useActions, useDocument } from '@/store/editor';
+import { recoverDocument, useAutosave } from '@/store/useAutosave';
 import { resolvedTheme, useTheme } from '@/theme';
 import { loadEngine } from '@/wasm/loader';
 
@@ -22,6 +24,21 @@ type Load =
 export function App() {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const { choice, cycle } = useTheme();
+  const autosave = useAutosave();
+  const document = useDocument();
+  const { load: loadDocument } = useActions();
+
+  // Recover whatever the last session left behind. There is no backend, so this is the
+  // only thing standing between a stray refresh and a lost afternoon.
+  useEffect(() => {
+    let live = true;
+    void recoverDocument().then((recovered) => {
+      if (live && recovered) loadDocument(recovered);
+    });
+    return () => {
+      live = false;
+    };
+  }, [loadDocument]);
 
   useEffect(() => {
     let live = true;
@@ -91,6 +108,11 @@ export function App() {
               <Fact label="Alphabet" value={`{${load.automaton.alphabet.join(', ')}}`} />
               <Fact label="Engine" value={`kleene-core ${load.version}`} />
               <Fact label="Theme" value={resolvedTheme(choice)} />
+              <Fact
+                label="Autosave"
+                value={autosave.failed ? 'failed' : autosave.pending ? 'saving…' : 'saved'}
+              />
+              <Fact label="Recovered" value={`${document.automaton.states.length} states`} />
             </dl>
           </>
         )}
