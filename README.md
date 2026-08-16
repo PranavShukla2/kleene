@@ -7,7 +7,7 @@
 Draw an automaton. Type a regular expression. Watch the conversion happen —
 one subset-construction round at a time, with the reasoning attached to every step.
 
-[kleene.pranavmshukla.in](https://kleene.pranavmshukla.in) · [Roadmap](docs/ROADMAP.md) · [Build plan](docs/plan/README.md)
+**[kleene.pages.dev](https://kleene.pages.dev)** · [Roadmap](docs/ROADMAP.md) · [Build plan](docs/plan/README.md)
 
 </div>
 
@@ -15,13 +15,12 @@ one subset-construction round at a time, with the reasoning attached to every st
 
 ## Status
 
-**Phase 0 — de-risking the toolchain.** The vertical slice works: `kleene-core` compiles to
-WebAssembly, the browser loads it, and a real DFA renders as SVG in both light and dark
-themes. There is no editor and no conversion pipeline yet — this is a skeleton with a good
-posture, not a usable tool.
+**Phase 0 complete.** The vertical slice works end to end: `kleene-core` compiles to
+WebAssembly, the browser loads it, a real DFA renders as SVG in both light and dark themes,
+and it is deployed at **[kleene.pages.dev](https://kleene.pages.dev)**.
 
-The one thing standing between Phase 0 and its exit criterion is a public URL, which is
-blocked on a Cloudflare account (decision **D10**).
+There is no editor and no conversion pipeline yet — this is a skeleton with a good posture,
+not a usable tool. **Phase 1 is in progress**: the regex lexer, parser and AST are done.
 
 See the [phase plans](docs/plan/README.md) for what is being built and in what order,
 [DECISIONS.md](docs/plan/DECISIONS.md) for the open questions, and
