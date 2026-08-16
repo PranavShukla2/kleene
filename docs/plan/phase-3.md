@@ -91,8 +91,16 @@ The centrepiece control of the product.
       Phase 1 D2. This is the thing JFLAP does not do (roadmap §1.1), the thing the exam
       asks for, and therefore the single most important element on this screen.
 - [ ] **E4.** Merge animation when equivalent states collapse (420ms, design-system §5).
-- [ ] **E5.** Round-by-round partition table, matching how the syllabus writes it. 🔴 **D3**
-- [ ] **E6.** Highlight the *pair* of states being distinguished, not just the block.
+- [ ] **E5.** **Two switchable presentations of the same trace**, because CSE2004 teaches
+      both and a student revising from their notes needs whichever one their notes use:
+      the round-by-round **partition** view, and the triangular **marking table**
+      (Myhill–Nerode). Neither is a secondary "alternative view" — they are peers, and the
+      switch is visible rather than buried.
+- [ ] **E6.** In the marking table, each marked cell shows the round it was marked and its
+      distinguishing string on hover. This is where the exam's actual question lives.
+- [ ] **E7.** Switching views mid-scrub keeps position — round 3 of the partition view is
+      round 3 of the table. They are the same trace, so the scrubber must not reset.
+- [ ] **E8.** Highlight the *pair* of states being distinguished, not just the block.
 
 ### Track F — DFA → regex
 
@@ -132,7 +140,7 @@ The centrepiece control of the product.
 - [ ] Regex → ε-NFA → DFA → minimal DFA, all four visible and synchronised.
 - [ ] Every step is scrubbable, with reasoning from core, and animated between states.
 - [ ] Hovering a DFA state highlights its origin states in the NFA.
-- [ ] Every partition split names the string that caused it.
+- [ ] Every partition split names the string that caused it, in both presentations.
 - [ ] DFA → regex animates its elimination order.
 - [ ] Works on a 1366×768 screen without horizontal scrolling.
 - [ ] **H3 has actually been run on a real person**, and what they got stuck on is either
