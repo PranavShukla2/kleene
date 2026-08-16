@@ -158,6 +158,22 @@ of steps. Some limit must exist or a tab locks up.
 recording steps past ~500 and say so in the UI. The answer stays correct; only the
 explanation is truncated, which is the right thing to lose.
 
+**Measured 2026-08-16**, so the cap is set from data rather than guessed. Serializing
+`Traced<Automaton>` from subset construction:
+
+| Regex | DFA states | Steps | JSON | ≈gzipped |
+|---|---|---|---|---|
+| `a+b` | 3 | 8 | 1.4 KB | 0.4 KB |
+| `(a+b)*abb` | 5 | 12 | 3.1 KB | 0.8 KB |
+| `(a+b+c)*abc(a+b+c)*` | 11 | 35 | 12.5 KB | 3.1 KB |
+| `(a+b)*a(a+b)(a+b)(a+b)` | 17 | 36 | 13.0 KB | 3.3 KB |
+
+Roughly **0.36 KB of JSON per step**, dominated by the rendered subset text rather than the
+state ids. A 500-step cap is therefore about 180 KB of JSON — large but survivable — while
+the uncapped pathological case (a regex forcing exponential blow-up) would run to megabytes
+and lock the tab. The cap stands, and steps should stay prose-light rather than embedding
+whole automata.
+
 ### D19 — How adversarial is the pumping lemma game?
 
 **Status:** ⏳ v1.2 (teaching layer E2) · **This is a teaching judgement**
