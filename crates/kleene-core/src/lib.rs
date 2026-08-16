@@ -28,6 +28,7 @@
 
 pub mod automaton;
 pub mod builder;
+pub mod convert;
 pub mod examples;
 pub mod notation;
 pub mod regex;
@@ -36,6 +37,7 @@ pub mod validate;
 
 pub use automaton::{Automaton, Determinism, State, StateId, Symbol, Transition};
 pub use builder::AutomatonBuilder;
+pub use convert::{Closures, epsilon_closure};
 pub use notation::Notation;
 pub use regex::{ParseError, Regex, parse, thompson};
 pub use trace::{Step, StepKind, Traced};
