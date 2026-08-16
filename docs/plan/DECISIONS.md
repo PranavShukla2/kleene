@@ -277,9 +277,17 @@ The Pages project is created by `deploy.yml` rather than by hand, so the reposit
 only the two secrets to bootstrap — there is no dashboard setup step to write down and let
 drift.
 
-**The custom domain is still outstanding.** `pranavmshukla.in` is on GoDaddy nameservers
-(`domaincontrol.com`), not Cloudflare, with the apex pointing at Vercel. Attaching
-`kleene.pranavmshukla.in` therefore does **not** require moving the zone, and should not:
-that would put the existing portfolio's DNS through an unnecessary migration for the sake of
-one subdomain. A `CNAME` from `kleene` to `kleene.pages.dev` at GoDaddy, plus adding the
-custom domain in the Pages project, is the whole job.
+**The custom domain is live** at <https://kleene.pranavmshukla.in>, with the zone moved to
+Cloudflare nameservers. The portfolio on the apex was unaffected throughout.
+
+One trap worth recording, because it cost an hour and will recur for anyone repeating this.
+Cloudflare's custom-domain prompt says "connect it to your **Worker**", and following it
+creates a *Worker* rather than binding the *Pages project*. Both then appear under
+"Workers & Pages" with the same name, and the Worker — empty — answers the domain with a
+blank HTTP 200. It also writes a read-only `AAAA → 100::` placeholder record that blocks
+Pages from claiming the hostname, so the Pages side fails with "configured as read only"
+until the Worker is deleted.
+
+Telling them apart: the Pages project lives at `/pages/view/kleene` and its deployments are
+attributed to *wrangler*; the Worker lives at `/workers/services/view/kleene` and says
+*Dashboard*. Only the Pages project serves a non-empty response.
