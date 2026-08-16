@@ -64,7 +64,19 @@ documents, because they look optional and are not:
 
 ## Phase 1 — Core engine
 
-*Not started.*
+*Status: complete. Exit criterion met — `kleene equiv` works from a terminal, prints the
+shortest counterexample, and the property suite passes at 10,000 cases.*
+
+| What | Why it did not land | Where it went | Cost of leaving it |
+|---|---|---|---|
+| **Deferred** — Hopcroft minimization (D5) | Pre-approved as the thing to cut. It is a performance optimisation for large inputs, and partition refinement is instant at teaching sizes — the largest machine in the whole test suite is 17 states. | Whenever a real input is slow enough to notice | None measurable. Revisit only with a profile showing minimization is the bottleneck, which no current input produces. |
+| **Deferred** — ε-removal as a standalone step (C2) | **Not** marked as a leftover candidate, so this is a plan defect rather than a scheduling one — see below. Nothing in the pipeline needs it: subset construction consumes ε-transitions directly via precomputed closures, so ε-NFA → DFA never passes through an ε-free NFA. | Phase 3, alongside the ε-NFA pane | Low. It is a *teaching* step rather than a pipeline step — some courses show ε-NFA → NFA → DFA as three diagrams — so it belongs with the view that would display it. |
+| **Descoped** — `--json` on every subcommand as a separate task (G5) | Landed as part of G1–G4 rather than after them. | Done | — |
+
+**Plan correction.** C2 was scheduled in Phase 1 without a 🔵 marker, which under the rules
+above means the plan was wrong rather than the work. It was listed as though the pipeline
+depended on it; it does not, because `Closures` handles ε directly. [phase-1.md](docs/plan/phase-1.md)
+has been corrected so the mistake is visible rather than quietly absorbed.
 
 ## Phase 2 — The editor
 
