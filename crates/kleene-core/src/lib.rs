@@ -34,6 +34,7 @@ pub mod examples;
 pub mod notation;
 pub mod ops;
 pub mod regex;
+pub mod simulate;
 pub mod trace;
 pub mod validate;
 
@@ -44,6 +45,7 @@ pub use counterexample::{Counterexample, Side, counterexample, equivalent};
 pub use notation::Notation;
 pub use ops::{complement, difference, intersection, symmetric_difference, union};
 pub use regex::{ParseError, Regex, parse, thompson};
+pub use simulate::{Run, Verdict, simulate};
 pub use trace::{Step, StepKind, Traced};
 pub use validate::{Problem, ProblemKind, Report, Severity};
 
