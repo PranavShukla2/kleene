@@ -18,25 +18,24 @@ stopping point if the semester goes sideways (roadmap §7).
 
 ---
 
-## The decisions that block this phase
+## Notation, as decided
 
-Five questions must be answered before the corresponding task starts. They are notation and
-pedagogy questions, not engineering ones — Claude picking a default here means the tool
-teaches something subtly different from what the course teaches, which defeats its purpose.
+These were settled before any code was written (see [DECISIONS.md](DECISIONS.md)), because
+each one is a choice about what the tool *teaches* rather than how it is built, and each one
+is expensive or impossible to reverse once documents and share-links exist.
 
-| | Blocks | Question |
+| | Decision | Consequence for this phase |
 |---|---|---|
-| 🔴 **D1** | B2, B3 | Does `+` mean **union** or **one-or-more**? |
-| 🔴 **D2** | A2, B1 | Are alphabet symbols single characters, or multi-character tokens? |
-| 🔴 **D4** | C3, D4 | How are subset-construction states named and displayed? |
-| 🔴 **D6** | E1 | What order does state elimination remove states in? |
-| 🔴 **D7** | A3, B4 | Is the empty string written **ε** or **λ**? |
+| **D1** | `+` means **union**; `\|` is a synonym; one-or-more is `aa*` | B2 parses it this way. B3 owes a dedicated error for postfix `+`. |
+| **D2** | Alphabet symbols are **single characters** | `Symbol` stays `String` so widening later is a parser change, not a migration. |
+| **D3** | **Both** minimization methods are taught | D1 implements refinement; D3 derives the marking table from its trace. |
+| **D4** | Subset states are labelled **`A`, `B`, `C`** | Provenance goes in the legend, hover, table and prose — carried by `origin`. |
+| **D7** | The empty string is **ε**, as a display setting | Never a hard-coded constant; every surface reads the setting. |
 
-**D1 is the one to answer first.** In Hopcroft–Ullman and in most Indian TOC syllabi, `+`
-is *union* — `a + b` means "a or b". In every programming regex dialect, `+` is *one or
-more*. These are irreconcilable in one grammar, the parser is written against whichever is
-chosen, and changing it later invalidates every saved document and shared URL. Full context
-in [DECISIONS.md](DECISIONS.md).
+D1's error message is worth writing out, since it is the whole justification for the choice:
+a user who types `a+` expecting Kleene plus must be told *"`+` means union here. For
+one-or-more, write `aa*`."* — a loud, teachable failure, rather than the silent wrong machine
+the other convention produces for `a + b`.
 
 ---
 
@@ -51,9 +50,9 @@ in [DECISIONS.md](DECISIONS.md).
 - [ ] **A2.** `automaton.rs` — `Automaton`, `State`, `Transition`, `Symbol`, `StateId`.
       `IndexMap` for deterministic iteration order — **required**, because
       non-deterministic iteration makes traces non-reproducible and snapshot tests flaky.
-      Includes `origin: Option<BTreeSet<StateId>>` from the first commit. 🔴 **D2**
+      Includes `origin: Option<BTreeSet<StateId>>` from the first commit.
 - [ ] **A3.** Alphabet handling, epsilon representation (`Option<Symbol>`, `None` = ε),
-      and the display convention. 🔴 **D7**
+      and the ε/λ display setting (D7) — a setting from the start, never a constant.
 - [ ] **A4.** Validation: `Automaton::validate()` returning structured errors — unreachable
       start, transitions on symbols outside Σ, dangling state ids. Every constructor path
       goes through it.
@@ -62,13 +61,16 @@ in [DECISIONS.md](DECISIONS.md).
 
 ### Track B — Regex front end
 
-- [ ] **B1.** `regex/lexer.rs` — tokens, positions retained for error spans. 🔴 **D2**
+- [ ] **B1.** `regex/lexer.rs` — tokens, positions retained for error spans.
 - [ ] **B2.** `regex/parser.rs` — recursive descent. Precedence: alternation <
-      concatenation < postfix. Supports grouping, `∅`, `ε`. 🔴 **D1**
+      concatenation < postfix. Supports grouping, `∅`, `ε`. `+` and `|` both parse as
+      union (D1).
 - [ ] **B3.** Parse errors carry a byte span and a human sentence, not "unexpected token".
-      The regex bar in Phase 3 underlines the offending character using this. 🔴 **D1**
+      The regex bar in Phase 3 underlines the offending character using this. **Includes the
+      postfix-`+` message** — this error is the entire reason D1 chose union, so shipping the
+      parser without it forfeits the argument.
 - [ ] **B4.** `regex/thompson.rs` — AST → ε-NFA, **traced**: one step per AST node,
-      recording the fragment constructed and why. 🔴 **D7**
+      recording the fragment constructed and why.
 - [ ] **B5.** `Display` for the AST that round-trips through the parser — needed by the
       `to_regex` property test, and by the UI to show a normalized form.
 
@@ -80,7 +82,8 @@ in [DECISIONS.md](DECISIONS.md).
 - [ ] **C3.** `convert/subset.rs` — subset construction, **traced per round**. Each step
       records: the subset being expanded, the symbol read, the resulting ε-closure, and
       whether the target was new or already seen. `origin` is populated here — this is what
-      makes Phase 3's hover-highlight possible. 🔴 **D4**
+      makes Phase 3's hover-highlight possible. States are labelled `A`, `B`, `C` with the
+      subset carried in `origin` (D4).
 - [ ] **C4.** Reachable / co-reachable pruning, traced. Dead-state removal.
 - [ ] **C5.** Completion with an explicit trap state — required before complement.
       Whether the trap state is *shown* by default is a UI question. 🔴 **D5**, Phase 2.
@@ -105,7 +108,8 @@ in [DECISIONS.md](DECISIONS.md).
 - [ ] **D4.** Human-readable step rendering: *"Reading `a` from block {q1, q3} reaches two
       different blocks, so {q1, q3} splits into {q1} and {q3}. The string `ab` is accepted
       from q1 but not from q3."* Generated in **core**, not in the frontend, so the CLI's
-      verbose mode and the docs get it for free. 🔴 **D4** (naming)
+      verbose mode and the docs get it for free. Prose names the subset, not just the
+      label: *"block B = {q1, q3}"*.
 - [ ] **D5.** Hopcroft minimization — untraced, for the CLI on large inputs. Property-tested
       to agree with the primary minimizer on state count.
 
