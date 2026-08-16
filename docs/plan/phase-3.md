@@ -33,8 +33,9 @@ the real definition of done for this phase.
 - [ ] **A2.** Live parse on every keystroke, debounced ~150ms.
 - [ ] **A3.** Parse errors underline the exact offending span, using the byte spans from
       Phase 1 B3, with the human sentence shown inline. Never a red border and "invalid".
-- [ ] **A4.** Symbol palette for `∅`, `ε`, `∪`/`|`, `*` — students on laptop keyboards
-      should not have to hunt for these. 🔴 **D1**, 🔴 **D7** determine what is shown.
+- [ ] **A4.** Symbol palette for `∅`, `ε`, `|`, `*` — students on laptop keyboards should not
+      have to hunt for these. Per D1, `+` and `|` both mean union; per D7 the ε/λ glyph
+      follows the display setting rather than being fixed in the palette markup.
 - [ ] **A5.** Example regexes on the empty state, one click to load. The empty state is the
       most-viewed screen in the app; it should teach rather than sit blank.
 
