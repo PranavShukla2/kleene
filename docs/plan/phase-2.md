@@ -37,7 +37,30 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 
 - [ ] **A1.** The `KleeneDoc` TypeScript type mirroring the Rust `.kln` schema:
       `{ version, automaton, layout, meta }`. Generated from the Rust types via
-      `ts-rs` or `typeshare` — **not hand-written**, or the two drift within a fortnight.
+      `ts-rs` — **not hand-written**, or the two drift within a fortnight.
+
+  **Design note, found while setting this up.** `Automaton.states` is an `IndexMap` in Rust,
+  and it crosses the two boundaries *differently*:
+
+  | Boundary | Shape |
+  |---|---|
+  | `.kln` JSON via `serde_json` | object — `{"0": {…}}` |
+  | wasm via `serde-wasm-bindgen` | JS `Map` |
+
+  So one generated type cannot be correct for both, and generating one anyway would produce
+  a type that silently lies about half its uses. The resolution:
+
+  - **Generate the document shape.** `ts-rs` produces exactly the `.kln` schema, which is the
+    format that is about to be frozen (D8) and the one that needs a guarantee against drift.
+  - **Normalize at the wasm loader.** The loader converts the `Map` it receives into the
+    canonical document shape, so the rest of the app sees one type. That conversion is the
+    only place the difference exists, and it belongs there — it is a fact about the
+    transport, not about the model.
+  - **Do not "fix" this by making wasm emit plain objects.** It would unify the two shapes and
+    quietly reintroduce the ordering hazard: JS objects iterate integer-like keys in ascending
+    numeric order, not insertion order, and trace reproducibility depends on insertion order
+    (Phase 1 A2). It works today only because state ids happen to be allocated ascending, and
+    that is an assumption the editor's delete-and-recreate cycle would eventually break.
 - [ ] **A2.** Zustand store holding one document, with selectors granular enough that
       dragging a state does not re-render every edge.
 - [ ] **A3.** Command stack. Every mutation is a command object with `apply`/`invert`
