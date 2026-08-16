@@ -26,7 +26,14 @@ pub type Symbol = String;
 /// One type covers all three cases rather than three types, because the interesting
 /// operations *move between* them. A DFA is not a different kind of object from the NFA it
 /// was built from; it is the same object with a property that happens to hold.
+///
+/// Serializes through [`WireAutomaton`](crate::io::wire::WireAutomaton) rather than
+/// directly. The in-memory shape is chosen for working with a machine — `IndexMap` gives
+/// O(1) lookup while preserving order — and the wire shape is chosen for writing one down
+/// unambiguously. Keeping them separate is what lets states be an ordered array on disk
+/// without giving up id lookup in memory.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "crate::io::wire::WireAutomaton", from = "crate::io::wire::WireAutomaton")]
 pub struct Automaton {
     /// The input alphabet, Σ. Order is meaningful — it fixes column order in transition
     /// tables and iteration order in traces.

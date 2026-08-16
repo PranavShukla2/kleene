@@ -14,6 +14,8 @@
 
 pub mod dot;
 pub mod json;
+pub mod wire;
 
 pub use dot::to_dot;
 pub use json::{Document, FormatError, Meta, Point};
+pub use wire::{WireAutomaton, WireState};
