@@ -32,12 +32,14 @@ pub mod examples;
 pub mod notation;
 pub mod regex;
 pub mod trace;
+pub mod validate;
 
 pub use automaton::{Automaton, Determinism, State, StateId, Symbol, Transition};
 pub use builder::AutomatonBuilder;
 pub use notation::Notation;
 pub use regex::{ParseError, Regex, parse};
 pub use trace::{Step, StepKind, Traced};
+pub use validate::{Problem, ProblemKind, Report, Severity};
 
 /// The version of this crate, surfaced so the app and CLI can report the engine they
 /// were built against rather than guessing.
