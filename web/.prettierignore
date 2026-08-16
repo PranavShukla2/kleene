@@ -2,4 +2,7 @@ dist
 dev-dist
 node_modules
 src/wasm/generated
+
+# Written by scripts/generate-types.sh; formatting them would show as drift in CI.
+src/model/generated
 package-lock.json

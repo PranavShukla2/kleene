@@ -112,7 +112,13 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
         const at = positions[state.id];
         if (!at) return null;
         return (
-          <StateNode key={state.id} at={at} label={state.label} accepting={state.accepting} />
+          <StateNode
+            key={state.id}
+            at={at}
+            label={state.label}
+            // Absent means non-accepting: the format omits the flag when false.
+            accepting={state.accepting ?? false}
+          />
         );
       })}
 

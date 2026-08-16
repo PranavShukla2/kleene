@@ -5,7 +5,9 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist', 'dev-dist', 'node_modules', 'src/wasm/generated'] },
+  {
+    ignores: ['dist', 'dev-dist', 'node_modules', 'src/wasm/generated', 'src/model/generated'],
+  },
 
   js.configs.recommended,
 
