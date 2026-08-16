@@ -181,8 +181,9 @@ function Footer() {
   return (
     <footer className="border-t border-k-border">
       <div className="mx-auto w-full max-w-5xl px-6 py-4 text-sm text-k-text-faint">
-        Phase 0 — proving the toolchain. The editor, the conversion pipeline and TikZ export
-        come next.
+        Phase 2 — building the editor. The engine is complete: regular expressions convert to
+        NFAs, DFAs and minimal DFAs, and back to regular expressions, with every step explained.
+        Drawing and editing on this canvas comes next.
       </div>
     </footer>
   );
