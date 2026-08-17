@@ -27,6 +27,7 @@ export type ShortcutId =
   | 'undo'
   | 'redo'
   | 'delete'
+  | 'edit'
   | 'selectAll'
   | 'deselect'
   | 'fit'
@@ -98,6 +99,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
     label: 'Delete selection',
     group: 'Editing',
   },
+  { id: 'edit', chord: 'Enter', label: 'Rename selected state', group: 'Editing' },
   {
     id: 'nudgeUp',
     chord: 'ArrowUp',

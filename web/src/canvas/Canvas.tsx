@@ -14,17 +14,19 @@
  * others exist.
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { AutomatonGraphics } from '@/canvas/AutomatonView';
 import { GEOM, pointOnRim, type Layout, type Point } from '@/canvas/geometry';
+import { InlineEditor } from '@/canvas/InlineEditor';
 import { marqueeRect, type Interaction } from '@/canvas/interaction';
 import { useCanvasEditing } from '@/canvas/useCanvasEditing';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { useViewport } from '@/canvas/useViewport';
-import { SNAP } from '@/canvas/viewport';
+import { formatSymbols, newSymbols, parseSymbols } from '@/canvas/symbols';
+import { SNAP, toScreen } from '@/canvas/viewport';
 import type { Automaton, StateId } from '@/model/automaton';
-import { deleteStates, moveStates } from '@/store/commands';
+import { deleteStates, moveStates, renameState, setEdgeSymbols } from '@/store/commands';
 import { useActions } from '@/store/editor';
 
 /** How far an arrow key moves the selection, and how far with shift held. */
@@ -33,6 +35,11 @@ const NUDGE_FAR = GEOM.grid * 2;
 
 /** One notch of keyboard zoom. Matches roughly two wheel notches. */
 const ZOOM_STEP = 1.25;
+
+/** What is being edited inline, and where the input should sit on screen. */
+type Editing =
+  | { kind: 'state'; id: StateId; at: Point }
+  | { kind: 'edge'; from: StateId; to: StateId; at: Point };
 
 interface Props {
   automaton: Automaton;
@@ -62,6 +69,38 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
     [automaton.states, layout],
   );
 
+  const [editing, setEditing] = useState<Editing | undefined>(undefined);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const openEdgeEditor = useCallback((edge: { from: StateId; to: StateId }, rect: DOMRect) => {
+    const box = containerRef.current?.getBoundingClientRect();
+    setEditing({
+      ...edge,
+      kind: 'edge',
+      // The label's own rendered box, made relative to the canvas, so the input opens
+      // exactly over the text it replaces.
+      at: {
+        x: rect.x + rect.width / 2 - (box?.x ?? 0),
+        y: rect.y + rect.height / 2 - (box?.y ?? 0),
+      },
+    });
+  }, []);
+
+  // A freshly drawn edge has no label element until React has rendered it, so opening the
+  // editor waits one frame. The anchor has to come from the *rendered* label — the router
+  // decides where that lands, and any guess would put the input somewhere the text is not.
+  const editNewEdge = useCallback(
+    (edge: { from: StateId; to: StateId }) => {
+      requestAnimationFrame(() => {
+        const label = containerRef.current?.querySelector(
+          `[data-edge-from="${edge.from}"][data-edge-to="${edge.to}"]`,
+        );
+        if (label) openEdgeEditor(edge, label.getBoundingClientRect());
+      });
+    },
+    [openEdgeEditor],
+  );
+
   const { ref: editingRef, interaction } = useCanvasEditing({
     automaton,
     layout,
@@ -69,16 +108,45 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
     toWorld: pointerToWorld,
     scale: viewport.scale,
     panning,
+    onEditEdge: openEdgeEditor,
+    onConnected: editNewEdge,
   });
 
   // Both hooks want the same element, and a DOM ref can only be handed to one prop.
   const ref = useCallback(
     (element: HTMLDivElement | null) => {
+      containerRef.current = element;
       viewportRef(element);
       editingRef(element);
     },
     [viewportRef, editingRef],
   );
+
+  const closeEditor = useCallback(() => {
+    setEditing(undefined);
+  }, []);
+
+  const commitEditor = useCallback(
+    (text: string) => {
+      if (!editing) return;
+      run(
+        editing.kind === 'state'
+          ? renameState(editing.id, text.trim())
+          : setEdgeSymbols(editing.from, editing.to, parseSymbols(text)),
+      );
+      setEditing(undefined);
+    },
+    [editing, run],
+  );
+
+  /** Rename the selected state, when there is exactly one. */
+  const renameSelected = useCallback(() => {
+    const [id, ...rest] = selection;
+    if (id === undefined || rest.length > 0) return;
+    const at = layout[id];
+    if (!at) return;
+    setEditing({ kind: 'state', id, at: toScreen(viewport, at) });
+  }, [selection, layout, viewport]);
 
   const nudge = useCallback(
     (dx: number, dy: number) => {
@@ -99,11 +167,18 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
   );
 
   useShortcuts({
+    edit: renameSelected,
     delete: () => {
       if (selection.length > 0) run(deleteStates(selection));
     },
     selectAll,
     deselect: () => {
+      // Escape while editing closes the editor, and does not also clear the selection —
+      // one press, one effect.
+      if (editing) {
+        closeEditor();
+        return;
+      }
       select([]);
     },
     fit: () => {
@@ -178,6 +253,17 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
         </g>
       </svg>
 
+      {editing && (
+        <InlineEditor
+          at={editing.at}
+          value={editorValue(editing, automaton)}
+          placeholder={editing.kind === 'edge' ? 'a, b' : 'q0'}
+          hint={editorHint(editing, automaton)}
+          onCommit={commitEditor}
+          onCancel={closeEditor}
+        />
+      )}
+
       <div className="absolute right-3 bottom-3 flex gap-2">
         <CanvasButton
           onClick={() => {
@@ -191,6 +277,35 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
       </div>
     </div>
   );
+}
+
+/** What the input should start with. */
+function editorValue(editing: Editing, automaton: Automaton): string {
+  if (editing.kind === 'state') {
+    return automaton.states.find((state) => state.id === editing.id)?.label ?? '';
+  }
+  return formatSymbols(
+    automaton.transitions
+      .filter((t) => t.from === editing.from && t.to === editing.to)
+      .map((t) => t.on),
+  );
+}
+
+/**
+ * What an edit is about to add to the alphabet, said while it is still being typed.
+ *
+ * Extending the alphabet is the right behaviour — someone drawing a machine types the symbol
+ * they mean, and refusing it before they have declared one is a rule enforced for its own
+ * sake. Extending it *silently* is how the alphabet fills with typos nobody can account for.
+ * Saying so as they type is the difference between a helpful default and an invisible one.
+ */
+function editorHint(editing: Editing, automaton: Automaton) {
+  if (editing.kind !== 'edge') return undefined;
+
+  return (text: string): string | undefined => {
+    const added = newSymbols(parseSymbols(text), automaton.alphabet);
+    return added.length === 0 ? undefined : `adds ${added.join(', ')} to \u03a3`;
+  };
 }
 
 /**
