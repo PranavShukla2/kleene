@@ -157,14 +157,28 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 
 ### Track E — Panels
 
-- [ ] **E1.** Alphabet panel: view Σ, add/remove symbols, warn before removing a symbol
+- [x] **E1.** Alphabet panel: view Σ, add/remove symbols, warn before removing a symbol
       still in use and offer to delete the affected transitions.
-- [ ] **E2.** Properties panel for the selection — state label, accepting, start; edge
+- [x] **E2.** Properties panel for the selection — state label, accepting, start; edge
       symbols. Deliberately thin: the canvas is the primary interface, not the panel.
-- [ ] **E3.** Validation surface — a non-modal strip listing problems ("q2 has no outgoing
+- [x] **E3.** Validation surface — a non-modal strip listing problems ("q2 has no outgoing
       transition on `b`") with click-to-focus. Never a blocking dialog.
-- [ ] **E4.** Determinism indicator: a persistent badge reading **DFA** / **NFA** / **ε-NFA**,
+- [x] **E4.** Determinism indicator: a persistent badge reading **DFA** / **NFA** / **ε-NFA**,
       recomputed live. It teaches the distinction for free, every time an edit changes it.
+
+> **Track E is closed**, and closing it removed a duplicate the architecture had been carrying
+> since Phase 0.
+>
+> `determinism` was reimplemented in TypeScript because Phase 0 had no conversions to call
+> through to, with a comment saying E4 would fix it. It now comes from wasm, along with
+> `validate` — and the comment was right about why it mattered: a definition of "is this a DFA"
+> living in two languages would have drifted *invisibly*. Both sides compile, both return one
+> of three plausible answers, and the badge would simply have disagreed with the preconditions
+> the algorithms enforce, on some machine nobody had tried.
+>
+> The validation strip pays off a decision made back in `validate.rs`: every problem already
+> named the states it concerned, "because the editor's validation strip is click-to-focus". It
+> is, and it did not need a single change to the core to become so.
 
 ### Track F — Input tester
 
