@@ -20,6 +20,11 @@ use crate::automaton::{Automaton, StateId};
 
 /// How much a problem matters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Severity")
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum Severity {
     /// The machine is malformed. Algorithms must not run.
@@ -30,6 +35,11 @@ pub enum Severity {
 
 /// What kind of problem was found.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "ProblemKind")
+)]
 #[serde(rename_all = "kebab-case")]
 #[non_exhaustive]
 pub enum ProblemKind {
@@ -51,6 +61,11 @@ pub enum ProblemKind {
 
 /// One problem found in an automaton.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Problem")
+)]
 pub struct Problem {
     /// Whether this blocks algorithms or is merely suspicious.
     pub severity: Severity,
@@ -85,6 +100,11 @@ impl Problem {
 
 /// Everything found wrong with an automaton.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Report")
+)]
 pub struct Report {
     /// Problems, errors first.
     pub problems: Vec<Problem>,
