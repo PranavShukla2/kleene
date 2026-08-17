@@ -29,6 +29,12 @@ export type { Report } from '@/model/generated/Report';
 export type { Problem } from '@/model/generated/Problem';
 export type { ProblemKind } from '@/model/generated/ProblemKind';
 export type { Severity } from '@/model/generated/Severity';
+export type { Simulation } from '@/model/generated/Simulation';
+export type { Run } from '@/model/generated/Run';
+export type { Configuration } from '@/model/generated/Configuration';
+export type { Verdict } from '@/model/generated/Verdict';
+export type { Step } from '@/model/generated/Step';
+export type { StepKind } from '@/model/generated/StepKind';
 
 /** Identifies a state within one automaton. */
 export type StateId = number;
