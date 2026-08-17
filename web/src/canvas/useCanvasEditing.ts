@@ -24,6 +24,7 @@ import { stateAt } from '@/canvas/selection';
 import { snapPoint } from '@/canvas/viewport';
 import type { Automaton, StateId } from '@/model/automaton';
 import { addState, addTransition, moveStates, toggleAccepting } from '@/store/commands';
+import { nextStateId } from '@/store/document';
 import { useActions } from '@/store/editor';
 
 /** Which mouse button edits. Middle is pan, right opens a context menu. */
@@ -66,6 +67,7 @@ export function useCanvasEditing({
   // drag, and rebinding on each frame of a 60-state drag is exactly the work Track B's
   // performance floor was measured without.
   const scene = useRef<Scene>({ ids: [], layout, selection, snap: snapPoint });
+  const automatonRef = useRef(automaton);
   const scaleRef = useRef(scale);
   const panningRef = useRef(panning);
 
@@ -80,6 +82,7 @@ export function useCanvasEditing({
       selection,
       snap: snapPoint,
     };
+    automatonRef.current = automaton;
     scaleRef.current = scale;
     panningRef.current = panning;
   });
@@ -133,7 +136,15 @@ export function useCanvasEditing({
 
       // D1 and D3 share this gesture, which reads naturally: double-click a state to change
       // what it is, double-click the canvas to put something there.
-      run(hit === undefined ? addState(snapPoint(at)) : toggleAccepting(hit));
+      if (hit !== undefined) {
+        run(toggleAccepting(hit));
+        return;
+      }
+
+      run(addState(snapPoint(at)));
+      // Selected on creation, so it can be renamed or nudged straight away without first
+      // having to click the thing that just appeared under the pointer.
+      select([nextStateId(automatonRef.current)]);
     }) as EventListener;
 
     element.addEventListener('pointerdown', onPointerDown);
@@ -142,7 +153,7 @@ export function useCanvasEditing({
       element.removeEventListener('pointerdown', onPointerDown);
       element.removeEventListener('dblclick', onDoubleClick);
     };
-  }, [apply, run, toWorld]);
+  }, [apply, run, select, toWorld]);
 
   // Move and release are on the window, so a fast drag that leaves the canvas keeps working
   // rather than stopping dead at the edge — and so releasing outside still ends the drag
