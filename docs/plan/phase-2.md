@@ -79,8 +79,8 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 - [x] **B2.** Dot grid at 24px, snapping at 8px, per [design-system.md](design-system.md) §4.4.
 - [x] **B3.** Viewport transform as a single matrix; screen↔world helpers used everywhere so
       hit-testing and rendering can never disagree.
-- [ ] **B4.** "Fit to content" and "reset zoom", both keyboard-bound.
-- [ ] **B5.** Marquee selection; multi-select with shift; multi-drag.
+- [x] **B4.** "Fit to content" and "reset zoom", both keyboard-bound.
+- [x] **B5.** Marquee selection; multi-select with shift; multi-drag.
 - [x] **B6.** Render performance floor: **60fps while dragging a 60-state automaton**.
       Measured, not assumed. If SVG cannot hold it, that is worth knowing in week 5 rather
       than week 9.
@@ -120,18 +120,35 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 
 ### Track D — Editing interactions
 
-- [ ] **D1.** Create state: double-click empty canvas. Delete: select + `Delete`.
-- [ ] **D2.** Drag states, with snapping and multi-select support.
-- [ ] **D3.** Toggle accepting (double-click a state), set start (context menu + keyboard).
-- [ ] **D4.** Draw a transition by dragging from a state's rim to another state, with a live
+- [x] **D1.** Create state: double-click empty canvas. Delete: select + `Delete`.
+- [x] **D2.** Drag states, with snapping and multi-select support.
+- [x] **D3.** Toggle accepting (double-click a state), set start (context menu + keyboard).
+- [x] **D4.** Draw a transition by dragging from a state's rim to another state, with a live
       preview edge following the cursor and a clear valid/invalid drop indication.
-- [ ] **D5.** Inline symbol editing on an edge — click the label, type, `Enter` commits,
+- [x] **D5.** Inline symbol editing on an edge — click the label, type, `Enter` commits,
       `Escape` cancels. Validates against the alphabet and offers to extend it.
-- [ ] **D6.** Rename a state inline; enforce label uniqueness.
+- [x] **D6.** Rename a state inline; enforce label uniqueness.
 - [ ] **D7.** Context menus on state, edge, and canvas.
 - [ ] **D8.** Full keyboard model: `Tab` cycles states, `Enter` edits, arrows nudge,
       `Cmd/Ctrl+Z`/`Shift+Z` undo/redo, `Cmd/Ctrl+A` select all. Also the Playwright surface.
-- [ ] **D9.** A discoverable `?` shortcut sheet.
+      *(All bound except `Tab` cycling, which is what remains.)*
+- [x] **D9.** A discoverable `?` shortcut sheet.
+
+> **Where Track D stands.** D1–D6 and D9 are done and driven end to end in Chromium: create,
+> delete, drag, multi-drag, marquee, draw a transition, edit its symbols, rename a state.
+>
+> Two things came out of building it that the plan did not anticipate.
+>
+> **A drawn edge was silently changing what the machine is.** Committing a transition with no
+> symbol makes it an ε-transition, so every edge drawn on the canvas turned a DFA into an
+> ε-NFA with no indication anything had happened. Demanding a symbol mid-drag would mean a
+> modal inside a gesture, so the transition commits without one and the symbol editor opens on
+> it immediately.
+>
+> **Multi-drag sheared the selection.** Snapping each state independently sends two states
+> 100px apart to grid points 96px apart, so a group deforms slightly on every drag until a
+> layout somebody arranged deliberately has rearranged itself — with no moment where it looks
+> broken. Only the grabbed state snaps now; the rest follow its delta.
 
 ### Track E — Panels
 
