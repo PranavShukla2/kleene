@@ -13,16 +13,21 @@ import { rowLayout } from '@/canvas/geometry';
 import { ShortcutSheet } from '@/canvas/ShortcutSheet';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { requestedPerfSize, syntheticMachine } from '@/canvas/synthetic';
-import { determinism } from '@/model/automaton';
+import type { Determinism, Report, StateId } from '@/model/automaton';
+import { Alphabet } from '@/panels/Alphabet';
+import { DeterminismBadge } from '@/panels/DeterminismBadge';
+import { Properties } from '@/panels/Properties';
+import { Validation } from '@/panels/Validation';
+import { addSymbol, deleteSymbol, setStart, toggleAccepting } from '@/store/commands';
 import { normalize } from '@/store/document';
 import { useActions, useDocument, useSelection, useUndoState } from '@/store/editor';
 import { recoverDocument, useAutosave } from '@/store/useAutosave';
 import { resolvedTheme, useTheme } from '@/theme';
-import { loadEngine } from '@/wasm/loader';
+import { loadEngine, type Engine } from '@/wasm/loader';
 
 type Load =
   | { status: 'loading' }
-  | { status: 'ready'; version: string }
+  | { status: 'ready'; engine: Engine }
   | { status: 'failed'; message: string };
 
 export function App() {
@@ -33,7 +38,7 @@ export function App() {
   const document = useDocument();
   const selection = useSelection();
   const undoState = useUndoState();
-  const { load: loadDocument, undo, redo } = useActions();
+  const { load: loadDocument, undo, redo, run, select } = useActions();
 
   // A measurement instrument, not a feature: `?perf=60` renders a synthetic machine of that
   // size so the Phase 2 B6 frame-rate floor can be measured rather than assumed.
@@ -65,7 +70,7 @@ export function App() {
           );
         }
 
-        setLoad({ status: 'ready', version: engine.version() });
+        setLoad({ status: 'ready', engine });
       })
       .catch((error: unknown) => {
         if (!live) return;
@@ -79,6 +84,28 @@ export function App() {
       live = false;
     };
   }, [loadDocument]);
+
+  const engine = load.status === 'ready' ? load.engine : undefined;
+
+  // Recomputed whenever the machine changes, and *only* when the machine changes — dragging a
+  // state moves the layout and must not re-run validation on every pointer frame.
+  const report = useMemo<Report | undefined>(
+    () => engine?.validate(document.automaton),
+    [engine, document.automaton],
+  );
+  const kind = useMemo<Determinism | undefined>(
+    () => engine?.determinism(document.automaton),
+    [engine, document.automaton],
+  );
+
+  // Clicking a problem selects the states it names. Selecting rather than merely scrolling to
+  // them: the next thing anyone does after finding the broken state is edit it.
+  const focusStates = useCallback(
+    (states: StateId[]) => {
+      select(states);
+    },
+    [select],
+  );
 
   const openHelp = useCallback(() => {
     setHelpOpen(true);
@@ -107,7 +134,8 @@ export function App() {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <DeterminismBadge value={kind} />
             <ToolButton onClick={undo} disabled={!undoState.canUndo}>
               {undoState.undoLabel ? `Undo ${undoState.undoLabel}` : 'Undo'}
             </ToolButton>
@@ -144,27 +172,66 @@ export function App() {
 
         {!perf && load.status === 'ready' && (
           <>
-            <div className="overflow-hidden rounded-[10px] border border-k-border">
-              <Canvas
-                automaton={document.automaton}
-                layout={document.layout}
-                selection={selection}
-                title="The automaton being edited"
-                className="h-[480px] w-full"
-                onHelp={openHelp}
-              />
+            {/*
+              Canvas and sidebar, not canvas and a stack of panels underneath. The panels are
+              a reference the user glances at *while* editing — the determinism badge only
+              teaches anything if it is visible at the moment an edit changes it, which it
+              cannot be if it lives below the fold.
+            */}
+            <div className="flex flex-col gap-4 lg:flex-row">
+              <div className="min-w-0 flex-1 overflow-hidden rounded-[10px] border border-k-border">
+                <Canvas
+                  automaton={document.automaton}
+                  layout={document.layout}
+                  selection={selection}
+                  title="The automaton being edited"
+                  className="h-[480px] w-full"
+                  onHelp={openHelp}
+                />
+              </div>
+
+              <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-72">
+                <Properties
+                  automaton={document.automaton}
+                  selection={selection}
+                  onToggleAccepting={(id) => {
+                    run(toggleAccepting(id));
+                  }}
+                  onSetStart={(id) => {
+                    run(setStart(id));
+                  }}
+                  // Renaming is an inline edit on the canvas, so the panel asks for it by
+                  // selecting the state and letting the canvas's own Enter binding do the
+                  // work. A second rename field here would be a second place for the
+                  // uniqueness rule to be enforced, or forgotten.
+                  onRename={(id) => {
+                    select([id]);
+                  }}
+                />
+                <Alphabet
+                  automaton={document.automaton}
+                  onAdd={(symbol) => {
+                    run(addSymbol(symbol));
+                  }}
+                  onRemove={(symbol) => {
+                    run(deleteSymbol(symbol));
+                  }}
+                />
+              </aside>
             </div>
-            <p className="-mt-3 text-sm text-k-text-faint">
+
+            <Validation report={report} onFocus={focusStates} />
+
+            <p className="text-sm text-k-text-faint">
               Scroll to zoom about the cursor. Hold space, or drag with the middle button, to
               pan. Press <kbd className="font-mono">?</kbd> for every shortcut.
             </p>
 
             <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
-              <Fact label="Type" value={determinism(document.automaton)} />
               <Fact label="States" value={String(document.automaton.states.length)} />
               <Fact label="Selected" value={String(selection.length)} />
-              <Fact label="Alphabet" value={`{${document.automaton.alphabet.join(', ')}}`} />
-              <Fact label="Engine" value={`kleene-core ${load.version}`} />
+              <Fact label="Transitions" value={String(document.automaton.transitions.length)} />
+              <Fact label="Engine" value={`kleene-core ${load.engine.version()}`} />
               <Fact label="Theme" value={resolvedTheme(choice)} />
               <Fact
                 label="Autosave"
