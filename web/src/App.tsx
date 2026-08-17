@@ -13,9 +13,11 @@ import { rowLayout } from '@/canvas/geometry';
 import { ShortcutSheet } from '@/canvas/ShortcutSheet';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { requestedPerfSize, syntheticMachine } from '@/canvas/synthetic';
-import type { Determinism, Report, StateId } from '@/model/automaton';
+import type { Determinism, Report, Simulation, StateId } from '@/model/automaton';
 import { Alphabet } from '@/panels/Alphabet';
 import { DeterminismBadge } from '@/panels/DeterminismBadge';
+import { InputTester } from '@/panels/InputTester';
+import { activeStates, clampStep } from '@/panels/simulation';
 import { Properties } from '@/panels/Properties';
 import { Validation } from '@/panels/Validation';
 import { addSymbol, deleteSymbol, setStart, toggleAccepting } from '@/store/commands';
@@ -33,6 +35,8 @@ type Load =
 export function App() {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [helpOpen, setHelpOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [storedStep, setStep] = useState(0);
   const { choice, cycle } = useTheme();
   const autosave = useAutosave();
   const document = useDocument();
@@ -97,6 +101,21 @@ export function App() {
     () => engine?.determinism(document.automaton),
     [engine, document.automaton],
   );
+
+  // Only run once the machine is well-formed enough to run. Simulating a document with a
+  // dangling transition would ask the engine a question about a machine that does not exist,
+  // and the honest answer to "does this accept ab?" while it is malformed is "fix it first" —
+  // which the strip is already saying.
+  const runnable = report !== undefined && !report.problems.some((p) => p.severity === 'error');
+
+  const simulation = useMemo<Simulation | undefined>(
+    () => (engine && runnable ? engine.simulate(document.automaton, input) : undefined),
+    [engine, runnable, document.automaton, input],
+  );
+
+  // Clamped on read rather than corrected when the run changes — see `clampStep`.
+  const step = clampStep(storedStep, simulation?.run.configurations.length ?? 0);
+  const active = activeStates(simulation, step);
 
   // Clicking a problem selects the states it names. Selecting rather than merely scrolling to
   // them: the next thing anyone does after finding the broken state is edit it.
@@ -184,6 +203,7 @@ export function App() {
                   automaton={document.automaton}
                   layout={document.layout}
                   selection={selection}
+                  active={active}
                   title="The automaton being edited"
                   className="h-[480px] w-full"
                   onHelp={openHelp}
@@ -207,6 +227,13 @@ export function App() {
                   onRename={(id) => {
                     select([id]);
                   }}
+                />
+                <InputTester
+                  simulation={simulation}
+                  input={input}
+                  onInput={setInput}
+                  step={step}
+                  onStep={setStep}
                 />
                 <Alphabet
                   automaton={document.automaton}
