@@ -24,6 +24,11 @@ use crate::trace::{Step, StepKind, Traced};
 
 /// How a run ended.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Verdict")
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum Verdict {
     /// The whole input was read and at least one reachable state accepts.
@@ -44,6 +49,11 @@ impl Verdict {
 
 /// The machine's situation after reading some prefix of the input.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Configuration")
+)]
 pub struct Configuration {
     /// Every state the machine could currently be in.
     pub states: BTreeSet<StateId>,
@@ -51,11 +61,17 @@ pub struct Configuration {
     pub consumed: usize,
     /// The symbol that produced this configuration. `None` for the initial one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "ts", ts(optional))]
     pub read: Option<String>,
 }
 
 /// The full record of a run.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Run")
+)]
 pub struct Run {
     /// The string that was run.
     pub input: String,
@@ -90,6 +106,38 @@ impl Run {
     /// The part of the input still to be read at a given point.
     pub fn remaining_at(&self, index: usize) -> &str {
         &self.input[self.consumed_at(index).len()..]
+    }
+}
+
+/// A run and its trace, side by side.
+///
+/// `Traced<T>` is generic, and a generic type cannot be exported to TypeScript in a form the
+/// frontend can name — so the boundary carries this instead: the same two fields, flattened,
+/// for one concrete `T`. Exactly the role `io::wire` plays for `Automaton`.
+///
+/// This is the first of these. Every traced algorithm Phase 3 exposes will want one, and the
+/// honest options at that point are a wire type per algorithm or teaching ts-rs to emit a
+/// generic. That decision belongs where there is more than one case to look at; guessing now
+/// would be designing against a single example.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Simulation")
+)]
+pub struct Simulation {
+    /// What happened.
+    pub run: Run,
+    /// Why, one sentence at a time.
+    pub steps: Vec<Step>,
+}
+
+impl From<Traced<Run>> for Simulation {
+    fn from(traced: Traced<Run>) -> Self {
+        Self {
+            run: traced.result,
+            steps: traced.steps,
+        }
     }
 }
 

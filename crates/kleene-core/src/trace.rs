@@ -77,6 +77,11 @@ impl<T> Traced<T> {
 /// rather than assembled by a frontend — a sentence that cannot be built from a `Step` is
 /// a missing field on `Step`, not a frontend problem.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Step")
+)]
 pub struct Step {
     /// Which algorithm produced this step, and what kind of move it was.
     pub kind: StepKind,
@@ -119,6 +124,11 @@ impl Step {
 /// Deliberately an enum rather than a string: the UI switches on it to choose an icon and a
 /// highlight colour, and a typo in a string would fail silently at render time.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "StepKind")
+)]
 #[serde(rename_all = "kebab-case")]
 #[non_exhaustive]
 pub enum StepKind {
