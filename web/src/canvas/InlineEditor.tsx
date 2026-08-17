@@ -24,13 +24,30 @@ interface Props {
    * right now — "adds c to the alphabet" is only worth saying while `c` is on screen.
    */
   hint?: (text: string) => string | undefined;
+  /**
+   * Why the current text cannot be committed, if it cannot.
+   *
+   * Enter does nothing while this is set, and the field says why. Refusing to close would trap
+   * someone who cannot think of a free name, so Escape still cancels and clicking away still
+   * commits — which, for a refused edit, means the old value survives untouched.
+   */
+  error?: (text: string) => string | undefined;
   onCommit: (value: string) => void;
   onCancel: () => void;
 }
 
-export function InlineEditor({ at, value, placeholder, hint, onCommit, onCancel }: Props) {
+export function InlineEditor({
+  at,
+  value,
+  placeholder,
+  hint,
+  error,
+  onCommit,
+  onCancel,
+}: Props) {
   const [text, setText] = useState(value);
-  const message = hint?.(text);
+  const problem = error?.(text);
+  const message = problem ?? hint?.(text);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Composing is true while an IME is mid-word. Enter then means "accept this candidate", not
@@ -80,7 +97,7 @@ export function InlineEditor({ at, value, placeholder, hint, onCommit, onCancel 
 
           if (event.key === 'Enter' && !composing.current) {
             event.preventDefault();
-            onCommit(text);
+            if (!problem) onCommit(text);
           } else if (event.key === 'Escape') {
             event.preventDefault();
             onCancel();
@@ -93,10 +110,16 @@ export function InlineEditor({ at, value, placeholder, hint, onCommit, onCancel 
           onCommit(text);
         }}
         size={Math.max(4, text.length + 1)}
-        className="rounded-md border border-k-primary bg-k-surface-raised px-2 py-1 text-center font-mono text-[13px] text-k-text shadow-sm outline-none"
+        className={`rounded-md border bg-k-surface-raised px-2 py-1 text-center font-mono text-[13px] text-k-text shadow-sm outline-none ${
+          problem ? 'border-k-error' : 'border-k-primary'
+        }`}
       />
       {message && (
-        <p className="pointer-events-none absolute top-full left-1/2 mt-1 -translate-x-1/2 rounded bg-k-surface-raised px-1.5 py-0.5 text-center font-mono text-[11px] whitespace-nowrap text-k-text-faint shadow-sm">
+        <p
+          className={`pointer-events-none absolute top-full left-1/2 mt-1 -translate-x-1/2 rounded bg-k-surface-raised px-1.5 py-0.5 text-center font-mono text-[11px] whitespace-nowrap shadow-sm ${
+            problem ? 'text-k-error' : 'text-k-text-faint'
+          }`}
+        >
           {message}
         </p>
       )}

@@ -28,6 +28,7 @@ export type ShortcutId =
   | 'redo'
   | 'delete'
   | 'edit'
+  | 'setStart'
   | 'selectAll'
   | 'deselect'
   | 'fit'
@@ -100,6 +101,8 @@ export const SHORTCUTS: readonly Shortcut[] = [
     group: 'Editing',
   },
   { id: 'edit', chord: 'Enter', label: 'Rename selected state', group: 'Editing' },
+  // A bare letter, which is safe because every shortcut stands down inside a text field.
+  { id: 'setStart', chord: 'KeyS', label: 'Make selected the start state', group: 'Editing' },
   {
     id: 'nudgeUp',
     chord: 'ArrowUp',

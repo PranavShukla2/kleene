@@ -26,7 +26,14 @@ import { useViewport } from '@/canvas/useViewport';
 import { formatSymbols, newSymbols, parseSymbols } from '@/canvas/symbols';
 import { SNAP, toScreen } from '@/canvas/viewport';
 import type { Automaton, StateId } from '@/model/automaton';
-import { deleteStates, moveStates, renameState, setEdgeSymbols } from '@/store/commands';
+import {
+  deleteStates,
+  moveStates,
+  renameState,
+  setEdgeSymbols,
+  setStart,
+} from '@/store/commands';
+import { labelTaken } from '@/store/document';
 import { useActions } from '@/store/editor';
 
 /** How far an arrow key moves the selection, and how far with shift held. */
@@ -168,6 +175,12 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
 
   useShortcuts({
     edit: renameSelected,
+    setStart: () => {
+      // Only with exactly one state selected. "Make these four the start state" has no
+      // meaning, and picking one of them for the user would be a guess.
+      const [id, ...rest] = selection;
+      if (id !== undefined && rest.length === 0) run(setStart(id));
+    },
     delete: () => {
       if (selection.length > 0) run(deleteStates(selection));
     },
@@ -259,6 +272,7 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
           value={editorValue(editing, automaton)}
           placeholder={editing.kind === 'edge' ? 'a, b' : 'q0'}
           hint={editorHint(editing, automaton)}
+          error={editorError(editing, automaton)}
           onCommit={commitEditor}
           onCancel={closeEditor}
         />
@@ -305,6 +319,23 @@ function editorHint(editing: Editing, automaton: Automaton) {
   return (text: string): string | undefined => {
     const added = newSymbols(parseSymbols(text), automaton.alphabet);
     return added.length === 0 ? undefined : `adds ${added.join(', ')} to \u03a3`;
+  };
+}
+
+/**
+ * Why the typed text cannot be committed, if it cannot.
+ *
+ * State labels must be unique: two states called `q1` make a diagram that cannot be read and a
+ * TikZ export that cannot be compiled. The command refuses the rename anyway, so this exists to
+ * make the refusal visible *before* someone commits and wonders why nothing happened.
+ */
+function editorError(editing: Editing, automaton: Automaton) {
+  if (editing.kind !== 'state') return undefined;
+
+  return (text: string): string | undefined => {
+    const label = text.trim();
+    if (label.length === 0) return 'a state needs a name';
+    return labelTaken(automaton, label, editing.id) ? `${label} is taken` : undefined;
   };
 }
 
