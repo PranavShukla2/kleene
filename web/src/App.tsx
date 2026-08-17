@@ -1,34 +1,39 @@
 /**
- * Phase 0's whole deliverable: prove the vertical slice.
+ * The editor.
  *
- * Rust compiles to wasm, wasm loads in React, React renders an automaton, and the result is
- * a URL that can be sent to someone. The scope is deliberately tiny — one machine, no
- * interaction — but the quality bar is not lowered, because this renderer is the one Phase 2
- * extends and this screen is what every screenshot shows for the next three months.
+ * The document in the store is the single source of truth on screen. The engine's example is
+ * *loaded into* that document on a first visit rather than rendered beside it — which is what
+ * makes every edit undoable, autosaved and recoverable without anything here knowing that.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Canvas } from '@/canvas/Canvas';
 import { rowLayout } from '@/canvas/geometry';
+import { ShortcutSheet } from '@/canvas/ShortcutSheet';
+import { useShortcuts } from '@/canvas/useShortcuts';
 import { requestedPerfSize, syntheticMachine } from '@/canvas/synthetic';
-import { determinism, type Automaton } from '@/model/automaton';
-import { useActions, useDocument } from '@/store/editor';
+import { determinism } from '@/model/automaton';
+import { normalize } from '@/store/document';
+import { useActions, useDocument, useSelection, useUndoState } from '@/store/editor';
 import { recoverDocument, useAutosave } from '@/store/useAutosave';
 import { resolvedTheme, useTheme } from '@/theme';
 import { loadEngine } from '@/wasm/loader';
 
 type Load =
   | { status: 'loading' }
-  | { status: 'ready'; automaton: Automaton; version: string }
+  | { status: 'ready'; version: string }
   | { status: 'failed'; message: string };
 
 export function App() {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
+  const [helpOpen, setHelpOpen] = useState(false);
   const { choice, cycle } = useTheme();
   const autosave = useAutosave();
   const document = useDocument();
-  const { load: loadDocument } = useActions();
+  const selection = useSelection();
+  const undoState = useUndoState();
+  const { load: loadDocument, undo, redo } = useActions();
 
   // A measurement instrument, not a feature: `?perf=60` renders a synthetic machine of that
   // size so the Phase 2 B6 frame-rate floor can be measured rather than assumed.
@@ -37,29 +42,30 @@ export function App() {
     return size ? syntheticMachine(size) : undefined;
   }, []);
 
-  // Recover whatever the last session left behind. There is no backend, so this is the
-  // only thing standing between a stray refresh and a lost afternoon.
-  useEffect(() => {
-    let live = true;
-    void recoverDocument().then((recovered) => {
-      if (live && recovered) loadDocument(recovered);
-    });
-    return () => {
-      live = false;
-    };
-  }, [loadDocument]);
-
+  // Load the engine, and seed the document from its example only when nothing was recovered.
+  // Both are awaited together deliberately: recovery is asynchronous, and seeding before it
+  // resolves would overwrite the work the user is coming back to — the one thing autosave
+  // exists to prevent.
   useEffect(() => {
     let live = true;
 
-    loadEngine()
-      .then((engine) => {
+    Promise.all([loadEngine(), recoverDocument()])
+      .then(([engine, recovered]) => {
         if (!live) return;
-        setLoad({
-          status: 'ready',
-          automaton: engine.example('ends_with_ab'),
-          version: engine.version(),
-        });
+
+        if (recovered && recovered.automaton.states.length > 0) {
+          loadDocument(recovered);
+        } else {
+          const automaton = engine.example('ends_with_ab');
+          loadDocument(
+            normalize({
+              automaton,
+              layout: rowLayout(automaton.states.map((state) => state.id)),
+            }),
+          );
+        }
+
+        setLoad({ status: 'ready', version: engine.version() });
       })
       .catch((error: unknown) => {
         if (!live) return;
@@ -72,21 +78,44 @@ export function App() {
     return () => {
       live = false;
     };
+  }, [loadDocument]);
+
+  const openHelp = useCallback(() => {
+    setHelpOpen(true);
   }, []);
+  const closeHelp = useCallback(() => {
+    setHelpOpen(false);
+  }, []);
+
+  // Undo and redo live here rather than on the canvas, because they are document-level and
+  // must keep working when the pointer is nowhere near the diagram. Two `useShortcuts` calls
+  // compose without conflict: each claims only the ids it has a handler for.
+  useShortcuts({ undo, redo });
 
   return (
     <div className="flex min-h-dvh flex-col bg-k-bg text-k-text">
       <Header themeLabel={themeLabel(choice)} onCycleTheme={cycle} />
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
-        <section>
-          <h1 className="text-2xl font-semibold tracking-tight">Strings ending in ab</h1>
-          <p className="mt-2 max-w-prose text-k-text-muted">
-            A deterministic finite automaton over the alphabet{' '}
-            <code className="font-mono text-k-text">{'{a, b}'}</code>, accepting exactly those
-            strings whose last two symbols are <code className="font-mono text-k-text">ab</code>
-            . Built in Rust, compiled to WebAssembly, rendered here as SVG.
-          </p>
+        <section className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Editor</h1>
+            <p className="mt-2 max-w-prose text-k-text-muted">
+              Double-click to add a state, or a state to toggle whether it accepts. Drag from a
+              state&rsquo;s edge to draw a transition. Everything is undoable and saved as you
+              work — there is no server, so it never leaves this browser.
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <ToolButton onClick={undo} disabled={!undoState.canUndo}>
+              {undoState.undoLabel ? `Undo ${undoState.undoLabel}` : 'Undo'}
+            </ToolButton>
+            <ToolButton onClick={redo} disabled={!undoState.canRedo}>
+              Redo
+            </ToolButton>
+            <ToolButton onClick={openHelp}>?</ToolButton>
+          </div>
         </section>
 
         {load.status === 'loading' && <Panel>Loading the engine…</Panel>}
@@ -106,6 +135,7 @@ export function App() {
             <Canvas
               automaton={perf.automaton}
               layout={perf.layout}
+              selection={[]}
               title={`Synthetic ${perf.automaton.states.length}-state machine`}
               className="h-[520px] w-full"
             />
@@ -116,35 +146,59 @@ export function App() {
           <>
             <div className="overflow-hidden rounded-[10px] border border-k-border">
               <Canvas
-                automaton={load.automaton}
-                layout={rowLayout(load.automaton.states.map((state) => state.id))}
-                title="DFA accepting strings over {a, b} that end in ab"
-                className="h-[420px] w-full"
+                automaton={document.automaton}
+                layout={document.layout}
+                selection={selection}
+                title="The automaton being edited"
+                className="h-[480px] w-full"
+                onHelp={openHelp}
               />
             </div>
             <p className="-mt-3 text-sm text-k-text-faint">
               Scroll to zoom about the cursor. Hold space, or drag with the middle button, to
-              pan.
+              pan. Press <kbd className="font-mono">?</kbd> for every shortcut.
             </p>
 
             <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
-              <Fact label="Type" value={determinism(load.automaton)} />
-              <Fact label="States" value={String(load.automaton.states.length)} />
-              <Fact label="Alphabet" value={`{${load.automaton.alphabet.join(', ')}}`} />
+              <Fact label="Type" value={determinism(document.automaton)} />
+              <Fact label="States" value={String(document.automaton.states.length)} />
+              <Fact label="Selected" value={String(selection.length)} />
+              <Fact label="Alphabet" value={`{${document.automaton.alphabet.join(', ')}}`} />
               <Fact label="Engine" value={`kleene-core ${load.version}`} />
               <Fact label="Theme" value={resolvedTheme(choice)} />
               <Fact
                 label="Autosave"
                 value={autosave.failed ? 'failed' : autosave.pending ? 'saving…' : 'saved'}
               />
-              <Fact label="Recovered" value={`${document.automaton.states.length} states`} />
             </dl>
           </>
         )}
       </main>
 
       <Footer />
+      <ShortcutSheet open={helpOpen} onClose={closeHelp} />
     </div>
+  );
+}
+
+function ToolButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-md border border-k-border px-3 py-1.5 text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text disabled:opacity-40 disabled:hover:border-k-border"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -208,7 +262,7 @@ function Footer() {
       <div className="mx-auto w-full max-w-5xl px-6 py-4 text-sm text-k-text-faint">
         Phase 2 — building the editor. The engine is complete: regular expressions convert to
         NFAs, DFAs and minimal DFAs, and back to regular expressions, with every step explained.
-        Drawing and editing on this canvas comes next.
+        Panels, the input tester and automatic layout come next.
       </div>
     </footer>
   );
