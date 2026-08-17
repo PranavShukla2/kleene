@@ -181,7 +181,7 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 |---|---|
 | **Edge routing consumes the phase** | Expected. It has its own track, it goes first, and it starts with reading Graphviz rather than guessing. The 12-fixture snapshot suite is what makes it *stay* fixed. |
 | Undo/redo retrofit | Commands from A3, before any interaction exists. Non-negotiable. |
-| SVG too slow at scale | Measured in B6 in week 5, not discovered in week 9. Fallback: virtualise off-screen edges; automata are <100 nodes so this is unlikely to be needed. |
+| ~~SVG too slow at scale~~ **Closed 2026-08-17** | Measured, as B6 required. Continuous zoom in real Chromium holds a 16.7ms median — a solid 60fps — at 10, 30, 60 **and 120** states. Roughly double the headroom the floor asked for, so no virtualisation is needed and the fallback is not required. |
 | Auto-layout destroys work | G2 is a correctness requirement, not a nicety. Layout is a command and is undoable. |
 | The phase gets interrupted | Roadmap §7 designates this the interruptible one. Track order is chosen so that stopping after Track D still leaves a usable editor. |
 | Simulation logic duplicated in TS | F2 forbids it. All simulation comes from wasm traces. |
