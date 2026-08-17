@@ -58,6 +58,20 @@ export interface Shortcut {
   label: string;
   group: Group;
   /**
+   * Groups this row with the ones sharing the id, in the sheet only.
+   *
+   * Four arrow keys are one shortcut with four directions, and listing them separately turns
+   * the sheet into a wall of near-identical rows — which is how a reference stops being read.
+   * Binding is unaffected: each direction is still its own shortcut with its own handler.
+   */
+  family?: string;
+  /**
+   * What the sheet shows instead of the chord, for the first member of a family.
+   *
+   * The alternative is joining four formatted chords, which is accurate and unreadable.
+   */
+  display?: string;
+  /**
    * Whether it fires while a text field has focus.
    *
    * Almost nothing should. Someone renaming a state expects `Backspace` to delete a
@@ -84,28 +98,63 @@ export const SHORTCUTS: readonly Shortcut[] = [
     label: 'Delete selection',
     group: 'Editing',
   },
-  { id: 'nudgeUp', chord: 'ArrowUp', label: 'Nudge selection', group: 'Editing' },
-  { id: 'nudgeDown', chord: 'ArrowDown', label: 'Nudge selection down', group: 'Editing' },
-  { id: 'nudgeLeft', chord: 'ArrowLeft', label: 'Nudge selection left', group: 'Editing' },
-  { id: 'nudgeRight', chord: 'ArrowRight', label: 'Nudge selection right', group: 'Editing' },
-  { id: 'nudgeUpFar', chord: 'Shift+ArrowUp', label: 'Nudge further', group: 'Editing' },
+  {
+    id: 'nudgeUp',
+    chord: 'ArrowUp',
+    label: 'Nudge selection',
+    group: 'Editing',
+    family: 'nudge',
+    display: '\u2190\u2191\u2193\u2192',
+  },
+  {
+    id: 'nudgeDown',
+    chord: 'ArrowDown',
+    label: 'Nudge down',
+    group: 'Editing',
+    family: 'nudge',
+  },
+  {
+    id: 'nudgeLeft',
+    chord: 'ArrowLeft',
+    label: 'Nudge left',
+    group: 'Editing',
+    family: 'nudge',
+  },
+  {
+    id: 'nudgeRight',
+    chord: 'ArrowRight',
+    label: 'Nudge right',
+    group: 'Editing',
+    family: 'nudge',
+  },
+  {
+    id: 'nudgeUpFar',
+    chord: 'Shift+ArrowUp',
+    label: 'Nudge by a grid square',
+    group: 'Editing',
+    family: 'nudge-far',
+    display: '\u21e7\u2190\u2191\u2193\u2192',
+  },
   {
     id: 'nudgeDownFar',
     chord: 'Shift+ArrowDown',
     label: 'Nudge further down',
     group: 'Editing',
+    family: 'nudge-far',
   },
   {
     id: 'nudgeLeftFar',
     chord: 'Shift+ArrowLeft',
     label: 'Nudge further left',
     group: 'Editing',
+    family: 'nudge-far',
   },
   {
     id: 'nudgeRightFar',
     chord: 'Shift+ArrowRight',
     label: 'Nudge further right',
     group: 'Editing',
+    family: 'nudge-far',
   },
 
   { id: 'selectAll', chord: 'Mod+KeyA', label: 'Select all states', group: 'Selection' },
@@ -231,7 +280,40 @@ export function formatChord(chord: string, mac = isMac()): string {
   return mac ? parts.join('') : parts.join('+');
 }
 
-/** The shortcuts in one group, for rendering the sheet. */
+/** The shortcuts in one group. */
 export function shortcutsIn(group: Group): Shortcut[] {
   return SHORTCUTS.filter((shortcut) => shortcut.group === group);
+}
+
+/** One line in the shortcut sheet. */
+export interface SheetRow {
+  id: ShortcutId;
+  label: string;
+  /** Ready to print — either a formatted chord or a family's own notation. */
+  keys: string;
+}
+
+/**
+ * A group as the sheet should show it, with families collapsed to one row each.
+ *
+ * Only the first member of a family survives, carrying the family's label and notation. The
+ * other three still bind; they simply do not each earn a line in a reference someone is
+ * scanning.
+ */
+export function sheetRowsIn(group: Group, mac = isMac()): SheetRow[] {
+  const seen = new Set<string>();
+
+  return shortcutsIn(group).flatMap((shortcut) => {
+    if (shortcut.family !== undefined) {
+      if (seen.has(shortcut.family)) return [];
+      seen.add(shortcut.family);
+    }
+    return [
+      {
+        id: shortcut.id,
+        label: shortcut.label,
+        keys: shortcut.display ?? formatChord(shortcut.chord, mac),
+      },
+    ];
+  });
 }

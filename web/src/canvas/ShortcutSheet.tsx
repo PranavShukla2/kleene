@@ -8,7 +8,7 @@
 
 import { useEffect, useRef } from 'react';
 
-import { GROUPS, formatChord, isMac, shortcutsIn, type Shortcut } from '@/canvas/shortcuts';
+import { GROUPS, isMac, sheetRowsIn, type SheetRow } from '@/canvas/shortcuts';
 
 export function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -67,7 +67,7 @@ export function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () =>
 
         <div className="mt-5 grid gap-x-10 gap-y-6 sm:grid-cols-2">
           {GROUPS.map((group) => {
-            const rows = shortcutsIn(group);
+            const rows = sheetRowsIn(group, mac);
             if (rows.length === 0) return null;
             return (
               <section key={group}>
@@ -75,8 +75,8 @@ export function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () =>
                   {group}
                 </h3>
                 <ul className="mt-2 space-y-1.5">
-                  {rows.map((shortcut) => (
-                    <Row key={shortcut.id} shortcut={shortcut} mac={mac} />
+                  {rows.map((row) => (
+                    <Row key={row.id} row={row} />
                   ))}
                 </ul>
               </section>
@@ -94,12 +94,12 @@ export function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () =>
   );
 }
 
-function Row({ shortcut, mac }: { shortcut: Shortcut; mac: boolean }) {
+function Row({ row }: { row: SheetRow }) {
   return (
     <li className="flex items-baseline justify-between gap-4">
-      <span className="text-sm text-k-text-muted">{shortcut.label}</span>
+      <span className="text-sm text-k-text-muted">{row.label}</span>
       <kbd className="rounded border border-k-border bg-k-surface px-1.5 py-0.5 font-mono text-xs whitespace-nowrap text-k-text">
-        {formatChord(shortcut.chord, mac)}
+        {row.keys}
       </kbd>
     </li>
   );

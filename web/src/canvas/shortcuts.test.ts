@@ -6,6 +6,7 @@ import {
   formatChord,
   matchesChord,
   shortcutFor,
+  sheetRowsIn,
   shortcutsIn,
 } from '@/canvas/shortcuts';
 
@@ -123,9 +124,40 @@ describe('the table itself', () => {
     expect(GROUPS.flatMap((group) => shortcutsIn(group))).toHaveLength(SHORTCUTS.length);
   });
 
+  it('gives every family a member carrying its notation', () => {
+    // A family whose first member has no `display` collapses to one row showing one chord,
+    // which claims three of the four directions do not exist.
+    const families = new Set(SHORTCUTS.flatMap((s) => (s.family ? [s.family] : [])));
+    for (const family of families) {
+      const first = SHORTCUTS.find((s) => s.family === family);
+      expect(first?.display, family).toBeTruthy();
+    }
+  });
+
   it('labels every shortcut', () => {
     for (const shortcut of SHORTCUTS)
       expect(shortcut.label.length, shortcut.id).toBeGreaterThan(2);
+  });
+});
+
+describe('sheetRowsIn', () => {
+  it('collapses an arrow family to a single row', () => {
+    // Eight near-identical nudge rows is how a reference stops being read.
+    const rows = sheetRowsIn('Editing', true);
+    expect(rows.filter((row) => row.label.startsWith('Nudge'))).toHaveLength(2);
+  });
+
+  it('keeps every family member bound even though only one is listed', () => {
+    expect(shortcutFor(key({ code: 'ArrowLeft' }), true)?.id).toBe('nudgeLeft');
+  });
+
+  it('shows the family notation rather than one of its chords', () => {
+    const nudge = sheetRowsIn('Editing', true).find((row) => row.label === 'Nudge selection');
+    expect(nudge?.keys).toBe('\u2190\u2191\u2193\u2192');
+  });
+
+  it('leaves ungrouped shortcuts alone', () => {
+    expect(sheetRowsIn('View', true)).toHaveLength(4);
   });
 });
 
