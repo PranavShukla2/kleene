@@ -11,13 +11,30 @@ import { isTypingTarget, shortcutFor, type ShortcutId } from '@/canvas/shortcuts
 
 export type ShortcutHandlers = Partial<Record<ShortcutId, () => void>>;
 
+export interface ShortcutOptions {
+  /** Off entirely — used while a dialog owns the keyboard. */
+  enabled?: boolean;
+  /**
+   * The element to listen on, and the scope of shortcuts to claim.
+   *
+   * Omitted means the window, and only unscoped shortcuts. Passing an element claims that
+   * element's scope instead, so `Tab` inside a focused canvas cycles states while `Tab`
+   * anywhere else still moves between the page's controls.
+   */
+  target?: HTMLElement | null;
+  scope?: 'canvas';
+}
+
 /**
  * Bind the shortcut table.
  *
  * Handlers are read through a ref, so passing a fresh object every render — which every caller
  * will do — does not detach and reattach the listener on each keystroke.
  */
-export function useShortcuts(handlers: ShortcutHandlers, enabled = true): void {
+export function useShortcuts(
+  handlers: ShortcutHandlers,
+  { enabled = true, target, scope }: ShortcutOptions = {},
+): void {
   const handlersRef = useRef(handlers);
 
   // After commit rather than during render: a render that gets discarded must not leave the
@@ -30,7 +47,7 @@ export function useShortcuts(handlers: ShortcutHandlers, enabled = true): void {
     if (!enabled) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      const shortcut = shortcutFor(event);
+      const shortcut = shortcutFor(event, undefined, scope);
       if (!shortcut) return;
 
       // A shortcut that has no handler is not handled — it must fall through to the browser
@@ -48,9 +65,10 @@ export function useShortcuts(handlers: ShortcutHandlers, enabled = true): void {
       handler();
     };
 
-    window.addEventListener('keydown', onKeyDown);
+    const element: EventTarget = target ?? window;
+    element.addEventListener('keydown', onKeyDown as EventListener);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
+      element.removeEventListener('keydown', onKeyDown as EventListener);
     };
-  }, [enabled]);
+  }, [enabled, target, scope]);
 }

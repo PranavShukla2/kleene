@@ -29,6 +29,8 @@ export type ShortcutId =
   | 'delete'
   | 'edit'
   | 'setStart'
+  | 'focusNext'
+  | 'focusPrev'
   | 'selectAll'
   | 'deselect'
   | 'fit'
@@ -73,6 +75,16 @@ export interface Shortcut {
    * The alternative is joining four formatted chords, which is accurate and unreadable.
    */
   display?: string;
+  /**
+   * Where this shortcut listens.
+   *
+   * `canvas` means it only fires while the canvas itself has focus, and it is for keys the
+   * page as a whole must keep. `Tab` is the case: taking it globally would break moving
+   * between the page's own controls, which is how anyone navigating by keyboard reaches the
+   * canvas in the first place. Inside a focused canvas it means something else entirely, and
+   * that is exactly the bargain a focusable widget makes.
+   */
+  scope?: 'canvas';
   /**
    * Whether it fires while a text field has focus.
    *
@@ -162,6 +174,23 @@ export const SHORTCUTS: readonly Shortcut[] = [
     family: 'nudge-far',
   },
 
+  {
+    id: 'focusNext',
+    chord: 'Tab',
+    label: 'Next state',
+    group: 'Selection',
+    scope: 'canvas',
+    family: 'cycle',
+    display: '\u21e5 / \u21e7\u21e5',
+  },
+  {
+    id: 'focusPrev',
+    chord: 'Shift+Tab',
+    label: 'Previous state',
+    group: 'Selection',
+    scope: 'canvas',
+    family: 'cycle',
+  },
   { id: 'selectAll', chord: 'Mod+KeyA', label: 'Select all states', group: 'Selection' },
   { id: 'deselect', chord: 'Escape', label: 'Deselect', group: 'Selection' },
 
@@ -217,10 +246,22 @@ export function matchesChord(chord: string, event: KeyboardEvent, mac = isMac())
   return event.code === want.key;
 }
 
-/** Which shortcut, if any, a key event fires. */
-export function shortcutFor(event: KeyboardEvent, mac = isMac()): Shortcut | undefined {
-  return SHORTCUTS.find((shortcut) =>
-    chordsOf(shortcut).some((chord) => matchesChord(chord, event, mac)),
+/**
+ * Which shortcut, if any, a key event fires within a scope.
+ *
+ * The scope must match exactly rather than a global listener accepting everything. A
+ * canvas-scoped chord reaching the window listener has, by definition, not been claimed by a
+ * focused canvas, and handling it there would defeat the point of scoping it.
+ */
+export function shortcutFor(
+  event: KeyboardEvent,
+  mac = isMac(),
+  scope?: 'canvas',
+): Shortcut | undefined {
+  return SHORTCUTS.find(
+    (shortcut) =>
+      shortcut.scope === scope &&
+      chordsOf(shortcut).some((chord) => matchesChord(chord, event, mac)),
   );
 }
 

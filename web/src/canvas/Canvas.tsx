@@ -78,6 +78,9 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
 
   const [editing, setEditing] = useState<Editing | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // State, not a ref, because the canvas-scoped shortcuts bind to it and therefore need a
+  // render once it exists.
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
 
   const openEdgeEditor = useCallback((edge: { from: StateId; to: StateId }, rect: DOMRect) => {
     const box = containerRef.current?.getBoundingClientRect();
@@ -121,10 +124,11 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
 
   // Both hooks want the same element, and a DOM ref can only be handed to one prop.
   const ref = useCallback(
-    (element: HTMLDivElement | null) => {
-      containerRef.current = element;
-      viewportRef(element);
-      editingRef(element);
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node;
+      setElement(node);
+      viewportRef(node);
+      editingRef(node);
     },
     [viewportRef, editingRef],
   );
@@ -154,6 +158,27 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
     if (!at) return;
     setEditing({ kind: 'state', id, at: toScreen(viewport, at) });
   }, [selection, layout, viewport]);
+
+  /**
+   * Move the selection to the next state in document order.
+   *
+   * Document order rather than spatial order. Spatial cycling sounds better and is worse: it
+   * changes as states are dragged, so the same key produces a different route through the same
+   * machine depending on where things happen to sit. Document order is stable and is also the
+   * order every other list in the editor uses.
+   */
+  const cycle = useCallback(
+    (step: 1 | -1) => {
+      const ids = automaton.states.map((state) => state.id);
+      if (ids.length === 0) return;
+
+      const current = selection.length === 1 ? ids.indexOf(selection[0]!) : -1;
+      // From nothing selected, forward starts at the first state and back at the last.
+      const next = current === -1 ? (step === 1 ? 0 : ids.length - 1) : current + step;
+      select([ids[(next + ids.length) % ids.length]!]);
+    },
+    [automaton.states, selection, select],
+  );
 
   const nudge = useCallback(
     (dx: number, dy: number) => {
@@ -231,10 +256,31 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
     ...(onHelp ? { help: onHelp } : {}),
   });
 
+  // Canvas-scoped, so Tab only cycles states while the canvas has focus. Taking Tab globally
+  // would break moving between the page's own controls — which is how anyone navigating by
+  // keyboard reaches the canvas at all.
+  useShortcuts(
+    {
+      focusNext: () => {
+        cycle(1);
+      },
+      focusPrev: () => {
+        cycle(-1);
+      },
+    },
+    { target: element, scope: 'canvas' },
+  );
+
   return (
     <div
       ref={ref}
-      className={`relative overflow-hidden bg-k-canvas ${className ?? ''}`}
+      // Focusable, because it is a widget rather than a picture: Tab reaches it, and Tab
+      // inside it means something else. The focus ring is drawn inset so it does not sit on
+      // the border the surrounding panel already provides.
+      tabIndex={0}
+      role="application"
+      aria-label={title}
+      className={`relative overflow-hidden bg-k-canvas outline-none focus-visible:ring-2 focus-visible:ring-k-primary/40 focus-visible:ring-inset ${className ?? ''}`}
       style={{ cursor: cursorFor(panning, interaction), touchAction: 'none' }}
     >
       {/*
