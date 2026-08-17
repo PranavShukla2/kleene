@@ -332,6 +332,11 @@ function layOut(
  * A self-loop is its own shape. A bidirectional pair must bow apart — both halves pass the
  * same side and rely on the direction vector flipping. An edge that would cross an unrelated
  * state bows below it, far enough to actually clear it. Everything else is a straight line.
+ *
+ * The two bending rules are not exclusive, which is the case fixture 05 exists for. An edge
+ * can be half of a pair *and* have a state in the way, and the pair's gentle bend is nowhere
+ * near enough to clear one — so which rule applies decides the *side*, and whether anything is
+ * obstructed decides *how far*.
  */
 function routeEdge(
   from: Point,
@@ -342,10 +347,16 @@ function routeEdge(
   isLoop: boolean,
 ) {
   if (isLoop) return selfLoop(from, chooseLoopDirection(from, neighbours));
-  if (pairedWithReverse) return curvedEdge(from, to);
-  if (isObstructed(from, to, obstacles)) {
-    return curvedEdge(from, to, bendSideBelow(from, to), GEOM.bendClearance);
+
+  const blocked = isObstructed(from, to, obstacles);
+
+  if (pairedWithReverse) {
+    // Still the pair's own side — both halves pass 1 and separate on the direction vector's
+    // flip — but widened to a clearance bend when there is something to clear.
+    return curvedEdge(from, to, 1, blocked ? GEOM.bendClearance : GEOM.bendOffset);
   }
+  if (blocked) return curvedEdge(from, to, bendSideBelow(from, to), GEOM.bendClearance);
+
   return straightEdge(from, to);
 }
 
