@@ -283,6 +283,60 @@ export function deleteTransition(from: StateId, to: StateId, on?: string): Comma
   };
 }
 
+/**
+ * Replace every symbol on one edge.
+ *
+ * One command rather than a delete followed by an add, because the two halves are never
+ * separately meaningful: an edge briefly carrying no symbols is not a state of the document
+ * anyone asked for, and undo landing there would be baffling. Editing a label is one edit.
+ */
+export function setEdgeSymbols(
+  from: StateId,
+  to: StateId,
+  symbols: readonly (string | undefined)[],
+): Command {
+  return {
+    kind: 'add-transition',
+    label: 'edit transition',
+    apply(document) {
+      const existing = document.automaton.transitions.filter(
+        (transition) => transition.from === from && transition.to === to,
+      );
+
+      const wanted = symbols.map((on) => ({ from, to, on }));
+      const unchanged =
+        existing.length === wanted.length &&
+        existing.every((transition, index) => transition.on === wanted[index]?.on);
+      if (unchanged) return document;
+
+      // The edge keeps its position in the transition list rather than jumping to the end.
+      // Order is what makes traces reproducible (Phase 1 A2), so an edit that reshuffles it
+      // would change the order steps are reported in for reasons the user cannot see.
+      const first = document.automaton.transitions.findIndex(
+        (transition) => transition.from === from && transition.to === to,
+      );
+      const rest = document.automaton.transitions.filter(
+        (transition) => !(transition.from === from && transition.to === to),
+      );
+      const at = first === -1 ? rest.length : Math.min(first, rest.length);
+
+      const added = symbols.filter(
+        (symbol): symbol is string =>
+          symbol !== undefined && !document.automaton.alphabet.includes(symbol),
+      );
+
+      return withAutomaton(document, {
+        ...document.automaton,
+        alphabet:
+          added.length > 0
+            ? [...document.automaton.alphabet, ...added]
+            : document.automaton.alphabet,
+        transitions: [...rest.slice(0, at), ...wanted, ...rest.slice(at)],
+      });
+    },
+  };
+}
+
 /** Add a symbol to the alphabet. */
 export function addSymbol(symbol: string): Command {
   return {
