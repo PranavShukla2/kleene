@@ -64,6 +64,8 @@ interface Props {
   automaton: Automaton;
   layout: Layout;
   selection: readonly StateId[];
+  /** Which states the simulator is currently in, if a run is being stepped through. */
+  active?: readonly StateId[];
   /** Accessible description of the diagram. */
   title: string;
   className?: string;
@@ -71,7 +73,15 @@ interface Props {
   onHelp?: () => void;
 }
 
-export function Canvas({ automaton, layout, selection, title, className, onHelp }: Props) {
+export function Canvas({
+  automaton,
+  layout,
+  selection,
+  active,
+  title,
+  className,
+  onHelp,
+}: Props) {
   const {
     viewport,
     ref: viewportRef,
@@ -456,7 +466,12 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
             Drawn in diagram coordinates; the group transform above does the rest, so
             nothing inside has to know that pan or zoom exist.
           */}
-          <AutomatonGraphics automaton={automaton} layout={layout} selection={selection} />
+          <AutomatonGraphics
+            automaton={automaton}
+            layout={layout}
+            selection={selection}
+            active={active}
+          />
           <PreviewEdge interaction={interaction} layout={layout} />
           <Marquee interaction={interaction} />
         </g>

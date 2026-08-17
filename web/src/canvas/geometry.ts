@@ -42,6 +42,16 @@ export const GEOM = {
   selectionGap: 5,
   /** Selection ring width. Heavier than the state outline, so it reads as an overlay. */
   selectionStroke: 2,
+  /**
+   * Outline width for a state the simulator is currently in.
+   *
+   * 3px, from design-system §2.4, where "stroke 3px + glow" is listed as active's *second
+   * channel* — the thing that carries the meaning when the colour does not, for anyone who
+   * cannot separate violet from grey. Colour alone is never the only signal.
+   */
+  activeStroke: 3,
+  /** How far the active glow extends past the rim. */
+  activeGlow: 7,
   /** Length of the start arrow, entering from the left. */
   startArrow: 22,
   /** Gap between the start arrowhead and the state — never 0; touching looks like a bug. */

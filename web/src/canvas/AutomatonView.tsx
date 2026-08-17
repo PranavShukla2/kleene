@@ -86,6 +86,7 @@ export function AutomatonGraphics({
   layout: positions,
   grid = false,
   selection,
+  active,
 }: {
   automaton: Automaton;
   layout: Layout;
@@ -93,6 +94,8 @@ export function AutomatonGraphics({
   grid?: boolean;
   /** Which states are selected. Omitted for a static diagram, which has no selection. */
   selection?: readonly StateId[];
+  /** Which states the simulator is currently in. */
+  active?: readonly StateId[];
 }) {
   const box = viewBoxFor(Object.values(positions));
 
@@ -169,6 +172,7 @@ export function AutomatonGraphics({
             // Absent means non-accepting: the format omits the flag when false.
             accepting={state.accepting ?? false}
             selected={selection?.includes(state.id) ?? false}
+            active={active?.includes(state.id) ?? false}
           />
         );
       })}
@@ -189,14 +193,33 @@ function StateNode({
   label,
   accepting,
   selected,
+  active,
 }: {
   at: Point;
   label: string;
   accepting: boolean;
   selected: boolean;
+  active: boolean;
 }) {
   return (
     <g>
+      {/*
+        The active glow. A soft disc behind the state rather than a filter, because an SVG
+        blur filter is the one thing here that would cost real time per frame — and the
+        simulator repaints this on every step.
+
+        Active uses the state's *own* outline (thicker, and in the active colour) while
+        selection stays an outer ring. Two meanings, two channels, so a state that is both
+        selected and active still reads as both.
+      */}
+      {active && (
+        <circle
+          cx={at.x}
+          cy={at.y}
+          r={GEOM.radius + GEOM.activeGlow}
+          className="fill-k-active/15"
+        />
+      )}
       {/*
         Selection is drawn *outside* the state and accepting is drawn *inside* it. That is
         the whole reason the two never fight: a selected accepting state shows three rings
@@ -218,11 +241,13 @@ function StateNode({
         cx={at.x}
         cy={at.y}
         r={GEOM.radius}
-        strokeWidth={GEOM.stateStroke}
+        strokeWidth={active ? GEOM.activeStroke : GEOM.stateStroke}
         className={
-          accepting
-            ? 'fill-k-surface-raised stroke-k-accepting'
-            : 'fill-k-surface-raised stroke-k-text-muted'
+          active
+            ? 'fill-k-surface-raised stroke-k-active'
+            : accepting
+              ? 'fill-k-surface-raised stroke-k-accepting'
+              : 'fill-k-surface-raised stroke-k-text-muted'
         }
       />
       {accepting && (
