@@ -56,6 +56,44 @@ pub fn example_automaton(name: &str) -> Result<JsValue, JsError> {
     serde_wasm_bindgen::to_value(&automaton).map_err(|e| JsError::new(&e.to_string()))
 }
 
+/// Everything wrong with an automaton, as a structured report.
+///
+/// Routed through wasm rather than reimplemented in TypeScript, and that is the whole point.
+/// "Is this machine well-formed?" is a definition, not a convenience — a second copy in
+/// another language would drift, and the drift would be silent because both sides still
+/// compile and both still return plausible answers. The editor's validation strip and every
+/// algorithm's precondition must agree, so there is one implementation and it lives in the
+/// core.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton, or if the report cannot be
+/// serialized.
+#[wasm_bindgen]
+pub fn validate(automaton: JsValue) -> Result<JsValue, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    serde_wasm_bindgen::to_value(&automaton.validate()).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Whether a machine is a DFA, an NFA, or an ε-NFA.
+///
+/// Returns the badge text directly — `DFA`, `NFA`, `ε-NFA` — because the badge is the only
+/// consumer and a caller that had to map three variants onto three strings would be a fourth
+/// place for the definition to live.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton.
+#[wasm_bindgen]
+pub fn determinism(automaton: JsValue) -> Result<String, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    Ok(automaton.determinism().label().to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use kleene_core::{Determinism, examples};
