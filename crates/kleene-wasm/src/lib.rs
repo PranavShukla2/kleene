@@ -94,6 +94,34 @@ pub fn determinism(automaton: JsValue) -> Result<String, JsError> {
     Ok(automaton.determinism().label().to_string())
 }
 
+/// Run a string through a machine, returning the trace as well as the answer.
+///
+/// The trace is the payload this whole boundary was designed around: a run over a modest NFA
+/// produces a configuration per symbol plus a step of prose for each, and `serde_wasm_bindgen`
+/// builds those directly rather than through a JSON string parsed twice.
+///
+/// The input tester steps through the result rather than simulating anything itself. A
+/// simulator that existed in both Rust and TypeScript could disagree about ε-closures or about
+/// what "stuck" means, and the two would be tested separately and believed equally.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton, or if the run cannot be serialized.
+#[wasm_bindgen]
+pub fn simulate(automaton: JsValue, input: &str) -> Result<JsValue, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let traced = kleene_core::simulate::simulate(&automaton, input);
+
+    // `Simulation` rather than `Traced<Run>`: a generic type has no TypeScript name the
+    // frontend can use, so the core carries a flattened wire shape for it — the same role
+    // `io::wire` plays for `Automaton`.
+    let simulation = kleene_core::simulate::Simulation::from(traced);
+
+    serde_wasm_bindgen::to_value(&simulation).map_err(|e| JsError::new(&e.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use kleene_core::{Determinism, examples};
