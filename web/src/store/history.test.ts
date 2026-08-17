@@ -6,6 +6,8 @@ import {
   deleteState,
   deleteSymbol,
   moveState,
+  moveStates,
+  deleteStates,
   renameState,
   setStart,
   toggleAccepting,
@@ -236,5 +238,60 @@ describe('every command is reversible', () => {
 
     for (let i = 0; i < depth; i += 1) history = redo(history);
     expect(history.present).toEqual(end);
+  });
+});
+
+describe('batched commands', () => {
+  const three = historyOf(seeded());
+
+  it('collapse a multi-state move into one undo entry', () => {
+    // Without this a three-state drag emits three commands per pointer frame, so undoing a
+    // group drag takes dozens of presses and takes the group apart one state at a time on
+    // the way back — a sequence of documents the user never had.
+    const moved = run(
+      three,
+      moveStates([
+        { id: 0, to: { x: 8, y: 8 } },
+        { id: 1, to: { x: 108, y: 8 } },
+      ]),
+    );
+
+    expect(moved.past).toHaveLength(1);
+    expect(undo(moved).present.layout).toEqual(three.present.layout);
+  });
+
+  it('coalesce with the next frame of the same drag', () => {
+    const first = run(three, moveStates([{ id: 0, to: { x: 8, y: 0 } }]), 1000);
+    const second = run(first, moveStates([{ id: 0, to: { x: 16, y: 0 } }]), 1100);
+
+    expect(second.past).toHaveLength(1);
+    // Undo returns to where the drag began, not to the previous frame.
+    expect(undo(second).present.layout[0]).toEqual(three.present.layout[0]);
+  });
+
+  it('do not coalesce a drag of a different group', () => {
+    const first = run(three, moveStates([{ id: 0, to: { x: 8, y: 0 } }]), 1000);
+    const second = run(first, moveStates([{ id: 1, to: { x: 108, y: 0 } }]), 1100);
+
+    expect(second.past).toHaveLength(2);
+  });
+
+  it('are not recorded when every part is a no-op', () => {
+    // The reduce returns the identical object, which is the contract `run` tests for.
+    const nothing = run(three, moveStates([{ id: 0, to: three.present.layout[0]! }]));
+    expect(nothing).toBe(three);
+  });
+
+  it('delete a whole selection in one press', () => {
+    const deleted = run(three, deleteStates([0, 1]));
+
+    expect(deleted.present.automaton.states.map((s) => s.id)).toEqual([2]);
+    expect(deleted.past).toHaveLength(1);
+    expect(undo(deleted).present.automaton.states).toHaveLength(3);
+  });
+
+  it('label a batch by how much it touches', () => {
+    expect(deleteStates([0]).label).toBe('delete state');
+    expect(deleteStates([0, 1]).label).toBe('delete 2 states');
   });
 });
