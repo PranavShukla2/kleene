@@ -1,0 +1,53 @@
+<style>
+  svg { --color-k-canvas: #fbfbfd; background: var(--color-k-canvas); }
+  .fill-k-surface-raised { fill: #ffffff; }
+  .stroke-k-text-muted { stroke: #4c5570; }
+  .stroke-k-accepting { stroke: #14b8c4; }
+  .fill-k-text { fill: #1a1d2b; }
+  .fill-k-grid-dot { fill: #dcdde6; }
+  text { font-family: ui-monospace, monospace; }
+</style>
+<svg viewBox="14 54 364 172" class="w-full" role="img" aria-label="The baseline. Three states, straight edges, nothing clever. If this snapshot moves, something fundamental changed and every other diff is noise." preserveAspectRatio="xMidYMid meet">
+<title>The baseline. Three states, straight edges, nothing clever. If this snapshot moves, something fundamental changed and every other diff is noise.</title>
+<defs>
+<marker id="k-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke">
+</path>
+</marker>
+<pattern id="k-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+<circle cx="1" cy="1" r="1" class="fill-k-grid-dot">
+</circle>
+</pattern>
+</defs>
+<rect x="14" y="54" width="364" height="172" fill="url(#k-grid)" class="text-k-grid-dot">
+</rect>
+<g class="stroke-k-text-muted">
+<path d="M 124 140 L 172 140" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 220 140 L 268 140" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+</g>
+<g>
+<circle cx="100" cy="140" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="100" y="140" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q0</text>
+</g>
+<g>
+<circle cx="196" cy="140" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="196" y="140" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q1</text>
+</g>
+<g>
+<circle cx="292" cy="140" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-accepting">
+</circle>
+<circle cx="292" cy="140" r="19.5" fill="none" stroke-width="1.75" class="stroke-k-accepting">
+</circle>
+<text x="292" y="140" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q2</text>
+</g>
+<line x1="52" y1="140" x2="74" y2="140" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</line>
+<g>
+<text x="148" y="152" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="244" y="152" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+</g>
+</svg>

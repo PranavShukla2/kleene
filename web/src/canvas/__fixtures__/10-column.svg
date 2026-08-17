@@ -1,0 +1,64 @@
+<style>
+  svg { --color-k-canvas: #fbfbfd; background: var(--color-k-canvas); }
+  .fill-k-surface-raised { fill: #ffffff; }
+  .stroke-k-text-muted { stroke: #4c5570; }
+  .stroke-k-accepting { stroke: #14b8c4; }
+  .fill-k-text { fill: #1a1d2b; }
+  .fill-k-grid-dot { fill: #dcdde6; }
+  text { font-family: ui-monospace, monospace; }
+</style>
+<svg viewBox="54 4 172 460" class="w-full" role="img" aria-label="States stacked vertically. Every normal points horizontally instead of vertically, which is the orientation the left-to-right assumptions in routing are least tested against." preserveAspectRatio="xMidYMid meet">
+<title>States stacked vertically. Every normal points horizontally instead of vertically, which is the orientation the left-to-right assumptions in routing are least tested against.</title>
+<defs>
+<marker id="k-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke">
+</path>
+</marker>
+<pattern id="k-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+<circle cx="1" cy="1" r="1" class="fill-k-grid-dot">
+</circle>
+</pattern>
+</defs>
+<rect x="54" y="4" width="172" height="460" fill="url(#k-grid)" class="text-k-grid-dot">
+</rect>
+<g class="stroke-k-text-muted">
+<path d="M 140 114 L 140 162" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 140 210 L 140 258" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 140 306 L 140 354" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 153.3128047094055 358.0307929358918 Q 236 234 153.3128047094055 109.96920706410825" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+</g>
+<g>
+<circle cx="140" cy="90" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="140" y="90" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q0</text>
+</g>
+<g>
+<circle cx="140" cy="186" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="140" y="186" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q1</text>
+</g>
+<g>
+<circle cx="140" cy="282" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="140" y="282" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q2</text>
+</g>
+<g>
+<circle cx="140" cy="378" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-accepting">
+</circle>
+<circle cx="140" cy="378" r="19.5" fill="none" stroke-width="1.75" class="stroke-k-accepting">
+</circle>
+<text x="140" y="378" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q3</text>
+</g>
+<line x1="92" y1="90" x2="114" y2="90" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</line>
+<g>
+<text x="128" y="138" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="128" y="234" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+<text x="128" y="330" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="206.65640235470278" y="234" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+</g>
+</svg>

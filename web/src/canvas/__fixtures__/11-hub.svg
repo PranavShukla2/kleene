@@ -1,0 +1,103 @@
+<style>
+  svg { --color-k-canvas: #fbfbfd; background: var(--color-k-canvas); }
+  .fill-k-surface-raised { fill: #ffffff; }
+  .stroke-k-text-muted { stroke: #4c5570; }
+  .stroke-k-accepting { stroke: #14b8c4; }
+  .fill-k-text { fill: #1a1d2b; }
+  .fill-k-grid-dot { fill: #dcdde6; }
+  text { font-family: ui-monospace, monospace; }
+</style>
+<svg viewBox="14 1.4166975080229776 432 397.1666049839541" class="w-full" role="img" aria-label="One state joined to six around it, out and back. Edges leave at every angle and all twelve labels crowd the same annulus, so a placement rule that only works horizontally fails visibly here." preserveAspectRatio="xMidYMid meet">
+<title>One state joined to six around it, out and back. Edges leave at every angle and all twelve labels crowd the same annulus, so a placement rule that only works horizontally fails visibly here.</title>
+<defs>
+<marker id="k-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke">
+</path>
+</marker>
+<pattern id="k-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+<circle cx="1" cy="1" r="1" class="fill-k-grid-dot">
+</circle>
+</pattern>
+</defs>
+<rect x="14" y="1.4166975080229776" width="432" height="397.1666049839541" fill="url(#k-grid)" class="text-k-grid-dot">
+</rect>
+<g class="stroke-k-text-muted">
+<path d="M 252.04190277946415 209.49497350499993 Q 295 228 337.9580972205359 209.49497350499993" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 337.9580972205359 190.50502649500007 Q 295 172 252.04190277946415 190.50502649500007" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 232.79806312614195 223.83633450726273 Q 238.25128869403574 270.29165124598853 275.7561603466778 298.24194148971424" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 292.201936873858 288.7469679847143 Q 286.74871130596426 242.29165124598853 249.2438396533222 214.3413610022628" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 210.7561603466778 214.3413610022628 Q 173.2512886940357 242.29165124598853 167.79806312614195 288.74696798471433" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 184.2438396533222 298.24194148971424 Q 221.7487113059643 270.29165124598853 227.20193687385805 223.83633450726273" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 207.95809722053585 190.50502649500007 Q 165 172 122.04190277946414 190.5050264950001" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 122.04190277946415 209.49497350499996 Q 165 228 207.95809722053585 209.49497350499993" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 227.20193687385805 176.16366549273727 Q 221.74871130596426 129.7083487540115 184.24383965332214 101.75805851028579" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 167.7980631261419 111.25303201528574 Q 173.25128869403568 157.7083487540115 210.7561603466778 185.6586389977372" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 249.2438396533222 185.6586389977372 Q 286.74871130596426 157.7083487540115 292.201936873858 111.25303201528573" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+<path d="M 275.7561603466778 101.75805851028578 Q 238.2512886940357 129.7083487540115 232.79806312614195 176.16366549273727" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</path>
+</g>
+<g>
+<circle cx="230" cy="200" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="230" y="200" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q0</text>
+</g>
+<g>
+<circle cx="360" cy="200" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="360" y="200" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q1</text>
+</g>
+<g>
+<circle cx="295" cy="312.583302491977" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="295" y="312.583302491977" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q2</text>
+</g>
+<g>
+<circle cx="165.00000000000003" cy="312.58330249197707" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="165.00000000000003" y="312.58330249197707" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q3</text>
+</g>
+<g>
+<circle cx="100" cy="200.00000000000003" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-accepting">
+</circle>
+<circle cx="100" cy="200.00000000000003" r="19.5" fill="none" stroke-width="1.75" class="stroke-k-accepting">
+</circle>
+<text x="100" y="200.00000000000003" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q4</text>
+</g>
+<g>
+<circle cx="164.99999999999994" cy="87.41669750802299" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="164.99999999999994" y="87.41669750802299" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q5</text>
+</g>
+<g>
+<circle cx="295" cy="87.41669750802298" r="24" stroke-width="1.75" class="fill-k-surface-raised stroke-k-text-muted">
+</circle>
+<text x="295" y="87.41669750802298" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q6</text>
+</g>
+<line x1="182" y1="200" x2="204" y2="200" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+</line>
+<g>
+<text x="295" y="230.74748675249998" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="295" y="169.25251324750002" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+<text x="235.87189536980955" y="271.6653946222385" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="268.34349493936395" y="252.91790786973854" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+<text x="170.87189536980955" y="240.91790786973854" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="203.34349493936392" y="259.6653946222385" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+<text x="165" y="169.25251324750002" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="165" y="206.74748675249998" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+<text x="224.12810463019042" y="128.3346053777615" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="191.65650506063602" y="147.0820921302615" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+<text x="268.34349493936395" y="147.0820921302615" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
+<text x="245.6850491675575" y="114.01945911644135" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+</g>
+</svg>
