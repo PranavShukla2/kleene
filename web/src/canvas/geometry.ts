@@ -68,6 +68,66 @@ function delta(a: Point, b: Point) {
   return { dx, dy, len };
 }
 
+/** A vector scaled to unit length. Zero-length input gives a zero vector rather than NaN. */
+function unit(v: Point): Point {
+  const len = Math.hypot(v.x, v.y);
+  return len === 0 ? { x: 0, y: 0 } : { x: v.x / len, y: v.y / len };
+}
+
+/** A drawn edge: the path, and where its label may go. */
+export interface EdgeGeometry {
+  /** SVG path data. */
+  path: string;
+  /** The preferred label position — always `anchors[0]`. */
+  label: Point;
+  /**
+   * Candidate label positions, best first.
+   *
+   * The router proposes; {@link placeLabels} disposes. An edge cannot know what the rest of
+   * the diagram looks like, so instead of choosing one position it offers several and lets a
+   * pass that *does* see everything pick between them.
+   */
+  anchors: Point[];
+}
+
+/**
+ * Fractions along an edge at which a label may sit.
+ *
+ * The midpoint first, because a label anywhere else reads as belonging to a different edge.
+ * The other two are far enough from centre to escape a collision but still unambiguously on
+ * this edge — a quarter of the way along, and the label starts looking like it labels the
+ * state it is nearer to.
+ */
+const ANCHOR_STOPS = [0.5, 0.32, 0.68] as const;
+
+/**
+ * Label candidates along a path, in preference order.
+ *
+ * The order encodes C6's rule: **offset along the normal first, then slide along the edge.**
+ * Both sides of the midpoint are tried before any slide, because a label that has hopped to
+ * the other side of its edge still obviously belongs to it, whereas one that has slid toward
+ * an endpoint is already a little ambiguous. Trying the cheap fix exhaustively before the
+ * expensive one is what keeps the common case looking deliberate.
+ */
+function anchorsAlong(
+  pointAt: (t: number) => Point,
+  normalAt: (t: number) => Point,
+  offset = GEOM.labelOffset,
+): Point[] {
+  const at = (t: number, side: 1 | -1): Point => {
+    const p = pointAt(t);
+    const n = normalAt(t);
+    return { x: p.x + n.x * offset * side, y: p.y + n.y * offset * side };
+  };
+
+  return [
+    at(0.5, 1),
+    at(0.5, -1),
+    ...ANCHOR_STOPS.slice(1).map((t) => at(t, 1)),
+    ...ANCHOR_STOPS.slice(1).map((t) => at(t, -1)),
+  ];
+}
+
 /**
  * Move a point from a state's centre out to its rim, in the direction of `toward`.
  *
@@ -81,10 +141,18 @@ export function pointOnRim(centre: Point, toward: Point, inset = 0): Point {
 }
 
 /** A straight edge between two states, clipped to both rims. */
-export function straightEdge(from: Point, to: Point) {
+export function straightEdge(from: Point, to: Point): EdgeGeometry {
   const start = pointOnRim(from, to);
   const end = pointOnRim(to, from);
-  return { path: `M ${start.x} ${start.y} L ${end.x} ${end.y}`, label: labelFor(start, end) };
+
+  const { dx, dy, len } = delta(start, end);
+  const normal = { x: -dy / len, y: dx / len };
+  const anchors = anchorsAlong(
+    (t) => ({ x: start.x + dx * t, y: start.y + dy * t }),
+    () => normal,
+  );
+
+  return { path: `M ${start.x} ${start.y} L ${end.x} ${end.y}`, label: anchors[0]!, anchors };
 }
 
 /**
@@ -104,7 +172,7 @@ export function curvedEdge(
   to: Point,
   side: 1 | -1 = 1,
   offset: number = GEOM.bendOffset,
-) {
+): EdgeGeometry {
   const { dx, dy, len } = delta(from, to);
   // Unit normal to the line joining the two centres.
   const nx = (-dy / len) * offset * side;
@@ -114,14 +182,39 @@ export function curvedEdge(
   const start = pointOnRim(from, control);
   const end = pointOnRim(to, control);
 
+  // The quadratic and its derivative, so a label can sit anywhere along the curve rather than
+  // only at its midpoint. Evaluating the curve is what keeps a slid label *on* the line;
+  // interpolating the chord instead would leave it floating in the gap the bend opens up.
+  const pointAt = (t: number): Point => {
+    const u = 1 - t;
+    return {
+      x: u * u * start.x + 2 * u * t * control.x + t * t * end.x,
+      y: u * u * start.y + 2 * u * t * control.y + t * t * end.y,
+    };
+  };
+
+  // "Outward" means away from the chord — the side the curve already bows toward, and so the
+  // side with room, since the bow exists precisely because something was in the way on the
+  // other one. Taken from the control point rather than from `side`, because `side` composes
+  // with the direction vector's own flip and on its own does not say which way is out.
+  const chordMid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+  const outward = unit({ x: control.x - chordMid.x, y: control.y - chordMid.y });
+
+  const normalAt = (t: number): Point => {
+    const tangent = unit({
+      x: 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x),
+      y: 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y),
+    });
+    const n = { x: -tangent.y, y: tangent.x };
+    return n.x * outward.x + n.y * outward.y >= 0 ? n : { x: -n.x, y: -n.y };
+  };
+
+  const anchors = anchorsAlong(pointAt, normalAt);
+
   return {
     path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
-    // The label follows the curve's actual midpoint, which is the quadratic evaluated at
-    // t = 0.5 — not the midpoint of the chord, which would sit off the line.
-    label: {
-      x: 0.25 * start.x + 0.5 * control.x + 0.25 * end.x,
-      y: 0.25 * start.y + 0.5 * control.y + 0.25 * end.y,
-    },
+    label: anchors[0]!,
+    anchors,
   };
 }
 
@@ -241,24 +334,38 @@ export function selfLoop(at: Point, direction: LoopDirection = 'above'): SelfLoo
   return {
     path: `M ${start.x} ${start.y} A ${r} ${r} 0 1 ${sweep} ${end.x} ${end.y}`,
     label,
+    anchors: loopAnchors(at, label, direction),
     direction,
   };
 }
 
 /** A rendered self-loop, with the direction it was placed in. */
-export interface SelfLoop {
-  path: string;
-  label: Point;
+export interface SelfLoop extends EdgeGeometry {
   direction: LoopDirection;
 }
 
-/** Where a label goes for a straight segment: off the midpoint, along the normal. */
-function labelFor(start: Point, end: Point): Point {
-  const { dx, dy, len } = delta(start, end);
-  return {
-    x: (start.x + end.x) / 2 + (-dy / len) * GEOM.labelOffset,
-    y: (start.y + end.y) / 2 + (dx / len) * GEOM.labelOffset,
-  };
+/**
+ * Label candidates for a self-loop.
+ *
+ * A loop has already picked the freest of four sides, so its label starts where that side
+ * points and moves outward rather than around: sliding *along* the loop would put the label
+ * over the state, and hopping to another side would contradict the choice
+ * {@link chooseLoopDirection} just made. Small lateral shifts come first because they keep the
+ * label visually attached to the loop; pushing further out is the last resort.
+ */
+function loopAnchors(at: Point, label: Point, direction: LoopDirection): Point[] {
+  const vertical = direction === 'above' || direction === 'below';
+  const along = vertical ? { x: 1, y: 0 } : { x: 0, y: 1 };
+  const out = unit({ x: label.x - at.x, y: label.y - at.y });
+
+  const slide = GEOM.loopRadius + 4;
+  const push = GEOM.labelOffset;
+  const shift = (a: number, o: number): Point => ({
+    x: label.x + along.x * a + out.x * o,
+    y: label.y + along.y * a + out.y * o,
+  });
+
+  return [label, shift(slide, 0), shift(-slide, 0), shift(0, push), shift(slide, push)];
 }
 
 /**
