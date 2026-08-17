@@ -128,14 +128,19 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 - [x] **D5.** Inline symbol editing on an edge — click the label, type, `Enter` commits,
       `Escape` cancels. Validates against the alphabet and offers to extend it.
 - [x] **D6.** Rename a state inline; enforce label uniqueness.
-- [ ] **D7.** Context menus on state, edge, and canvas.
-- [ ] **D8.** Full keyboard model: `Tab` cycles states, `Enter` edits, arrows nudge,
+- [x] **D7.** Context menus on state, edge, and canvas.
+- [x] **D8.** Full keyboard model: `Tab` cycles states, `Enter` edits, arrows nudge,
       `Cmd/Ctrl+Z`/`Shift+Z` undo/redo, `Cmd/Ctrl+A` select all. Also the Playwright surface.
-      *(All bound except `Tab` cycling, which is what remains.)*
 - [x] **D9.** A discoverable `?` shortcut sheet.
 
-> **Where Track D stands.** D1–D6 and D9 are done and driven end to end in Chromium: create,
-> delete, drag, multi-drag, marquee, draw a transition, edit its symbols, rename a state.
+> **Track D is closed.** Driven end to end in Chromium: create, delete, drag, multi-drag,
+> marquee, draw a transition, edit its symbols, rename a state, right-click any of the three
+> targets, and cycle with `Tab`.
+>
+> `Tab` is the one key that could not be taken globally — moving between the page's own
+> controls is how anyone navigating by keyboard reaches the canvas at all. So the shortcut
+> table grew a *scope*, and the canvas became genuinely focusable, which is the honest
+> description of what it now is: a widget rather than a picture.
 >
 > Two things came out of building it that the plan did not anticipate.
 >
