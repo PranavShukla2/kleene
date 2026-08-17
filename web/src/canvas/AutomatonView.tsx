@@ -34,11 +34,15 @@ interface Props {
   className?: string;
 }
 
+/**
+ * A standalone diagram, sized to its content by a viewBox.
+ *
+ * For displaying a machine. The interactive canvas uses {@link AutomatonGraphics} instead,
+ * because it supplies its own transform and cannot have a nested viewBox refitting itself
+ * underneath.
+ */
 export function AutomatonView({ automaton, layout, title, className }: Props) {
-  const ids = automaton.states.map((state) => state.id);
-  const positions = layout ?? rowLayout(ids);
-  const edges = groupEdges(automaton.transitions);
-
+  const positions = layout ?? rowLayout(automaton.states.map((state) => state.id));
   const box = viewBoxFor(Object.values(positions));
 
   return (
@@ -51,7 +55,34 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
       preserveAspectRatio="xMidYMid meet"
     >
       <title>{title}</title>
+      <AutomatonGraphics automaton={automaton} layout={positions} grid />
+    </svg>
+  );
+}
 
+/**
+ * The diagram itself, in diagram coordinates, with no `<svg>` of its own.
+ *
+ * Splitting this out is what lets the same drawing code serve a static view and a panned,
+ * zoomed canvas: the canvas wraps it in a transformed `<g>`, and nothing in here has to know
+ * that pan or zoom exist.
+ */
+export function AutomatonGraphics({
+  automaton,
+  layout: positions,
+  grid = false,
+}: {
+  automaton: Automaton;
+  layout: Layout;
+  /** Draw the dot grid. The interactive canvas draws its own, in screen space. */
+  grid?: boolean;
+}) {
+  const ids = automaton.states.map((state) => state.id);
+  const edges = groupEdges(automaton.transitions);
+  const box = viewBoxFor(Object.values(positions));
+
+  return (
+    <>
       <defs>
         {/*
           `context-stroke` makes one marker inherit whichever colour its own edge uses,
@@ -75,14 +106,16 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
         </pattern>
       </defs>
 
-      <rect
-        x={box.x}
-        y={box.y}
-        width={box.width}
-        height={box.height}
-        fill="url(#k-grid)"
-        className="text-k-grid-dot"
-      />
+      {grid && (
+        <rect
+          x={box.x}
+          y={box.y}
+          width={box.width}
+          height={box.height}
+          fill="url(#k-grid)"
+          className="text-k-grid-dot"
+        />
+      )}
 
       <g className="stroke-k-text-muted">
         {edges.map((edge) => (
@@ -123,7 +156,7 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
       })}
 
       <StartMarker at={positions[automaton.start]} />
-    </svg>
+    </>
   );
 }
 

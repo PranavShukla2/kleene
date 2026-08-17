@@ -7,9 +7,11 @@
  * extends and this screen is what every screenshot shows for the next three months.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { AutomatonView } from '@/canvas/AutomatonView';
+import { Canvas } from '@/canvas/Canvas';
+import { rowLayout } from '@/canvas/geometry';
+import { requestedPerfSize, syntheticMachine } from '@/canvas/synthetic';
 import { determinism, type Automaton } from '@/model/automaton';
 import { useActions, useDocument } from '@/store/editor';
 import { recoverDocument, useAutosave } from '@/store/useAutosave';
@@ -27,6 +29,13 @@ export function App() {
   const autosave = useAutosave();
   const document = useDocument();
   const { load: loadDocument } = useActions();
+
+  // A measurement instrument, not a feature: `?perf=60` renders a synthetic machine of that
+  // size so the Phase 2 B6 frame-rate floor can be measured rather than assumed.
+  const perf = useMemo(() => {
+    const size = requestedPerfSize(window.location.search);
+    return size ? syntheticMachine(size) : undefined;
+  }, []);
 
   // Recover whatever the last session left behind. There is no backend, so this is the
   // only thing standing between a stray refresh and a lost afternoon.
@@ -92,15 +101,31 @@ export function App() {
           </Panel>
         )}
 
-        {load.status === 'ready' && (
+        {perf && (
+          <div className="overflow-hidden rounded-[10px] border border-k-border">
+            <Canvas
+              automaton={perf.automaton}
+              layout={perf.layout}
+              title={`Synthetic ${perf.automaton.states.length}-state machine`}
+              className="h-[520px] w-full"
+            />
+          </div>
+        )}
+
+        {!perf && load.status === 'ready' && (
           <>
-            <div className="overflow-hidden rounded-[10px] border border-k-border bg-k-canvas">
-              <AutomatonView
+            <div className="overflow-hidden rounded-[10px] border border-k-border">
+              <Canvas
                 automaton={load.automaton}
+                layout={rowLayout(load.automaton.states.map((state) => state.id))}
                 title="DFA accepting strings over {a, b} that end in ab"
-                className="h-[320px] w-full"
+                className="h-[420px] w-full"
               />
             </div>
+            <p className="-mt-3 text-sm text-k-text-faint">
+              Scroll to zoom about the cursor. Hold space, or drag with the middle button, to
+              pan.
+            </p>
 
             <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
               <Fact label="Type" value={determinism(load.automaton)} />
