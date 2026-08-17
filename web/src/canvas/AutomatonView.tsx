@@ -85,11 +85,14 @@ export function AutomatonGraphics({
   automaton,
   layout: positions,
   grid = false,
+  selection,
 }: {
   automaton: Automaton;
   layout: Layout;
   /** Draw the dot grid. The interactive canvas draws its own, in screen space. */
   grid?: boolean;
+  /** Which states are selected. Omitted for a static diagram, which has no selection. */
+  selection?: readonly StateId[];
 }) {
   const box = viewBoxFor(Object.values(positions));
 
@@ -165,6 +168,7 @@ export function AutomatonGraphics({
             label={state.label}
             // Absent means non-accepting: the format omits the flag when false.
             accepting={state.accepting ?? false}
+            selected={selection?.includes(state.id) ?? false}
           />
         );
       })}
@@ -180,9 +184,36 @@ export function AutomatonGraphics({
   );
 }
 
-function StateNode({ at, label, accepting }: { at: Point; label: string; accepting: boolean }) {
+function StateNode({
+  at,
+  label,
+  accepting,
+  selected,
+}: {
+  at: Point;
+  label: string;
+  accepting: boolean;
+  selected: boolean;
+}) {
   return (
     <g>
+      {/*
+        Selection is drawn *outside* the state and accepting is drawn *inside* it. That is
+        the whole reason the two never fight: a selected accepting state shows three rings
+        that each mean one thing, rather than two conventions competing for the same band of
+        pixels. It also means selection can never be mistaken for a change to the machine —
+        nothing about the automaton lives outside the circle.
+      */}
+      {selected && (
+        <circle
+          cx={at.x}
+          cy={at.y}
+          r={GEOM.radius + GEOM.selectionGap}
+          fill="none"
+          strokeWidth={GEOM.selectionStroke}
+          className="stroke-k-primary"
+        />
+      )}
       <circle
         cx={at.x}
         cy={at.y}

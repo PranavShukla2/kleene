@@ -31,6 +31,17 @@ export const GEOM = {
    * unrelated. This is the detail that separates a hand-made diagram from a generated one.
    */
   acceptingInset: 4.5,
+  /**
+   * How far outside the rim the selection ring sits.
+   *
+   * Outside, where the accepting double-ring is inside. Keeping the two conventions on
+   * opposite sides of the outline is what stops a selected accepting state turning into an
+   * unreadable stack of circles — and it means nothing drawn outside the rim ever says
+   * anything about the machine itself.
+   */
+  selectionGap: 5,
+  /** Selection ring width. Heavier than the state outline, so it reads as an overlay. */
+  selectionStroke: 2,
   /** Length of the start arrow, entering from the left. */
   startArrow: 22,
   /** Gap between the start arrowhead and the state — never 0; touching looks like a bug. */
