@@ -62,6 +62,37 @@ export interface Command {
   apply(document: EditorDocument): EditorDocument;
 }
 
+/**
+ * Several commands as one undo entry.
+ *
+ * Needed the moment more than one state can be selected. Dragging three states emits three
+ * moves *per pointer frame*, and without this each one is its own history entry — undoing a
+ * drag of a group would take dozens of presses and would take the group apart state by state
+ * on the way back, which is not a thing the user ever did.
+ *
+ * The coalesce key is built from the parts', so dragging the same group keeps coalescing and
+ * dragging a *different* group starts a new entry. A batch of commands that cannot all
+ * coalesce does not coalesce at all, which is the safe direction: an extra undo press is a
+ * small cost, and merging two edits that should have stayed separate loses work.
+ */
+export function batch(kind: CommandKind, label: string, parts: readonly Command[]): Command {
+  const keys = parts.map((part) => part.coalesceKey);
+  const coalesceKey = keys.every((key) => key !== undefined)
+    ? `batch:${keys.join('|')}`
+    : undefined;
+
+  return {
+    kind,
+    label,
+    coalesceKey,
+    apply(document) {
+      // Returns the same object when every part was a no-op, which is the contract history.ts
+      // relies on to keep a do-nothing edit out of the undo stack.
+      return parts.reduce((current, part) => part.apply(current), document);
+    },
+  };
+}
+
 /** Add a state at a point on the canvas. */
 export function addState(at: Point, label?: string): Command {
   return {
@@ -136,6 +167,24 @@ export function moveState(id: StateId, to: Point): Command {
       return { ...document, layout: { ...document.layout, [id]: to } };
     },
   };
+}
+
+/** Move several states as one edit — a multi-drag, or an arrow-key nudge of a selection. */
+export function moveStates(moves: readonly { id: StateId; to: Point }[]): Command {
+  return batch(
+    'move-state',
+    moves.length === 1 ? 'move state' : `move ${moves.length} states`,
+    moves.map((move) => moveState(move.id, move.to)),
+  );
+}
+
+/** Delete several states as one edit, so `Delete` on a selection is one undo press. */
+export function deleteStates(ids: readonly StateId[]): Command {
+  return batch(
+    'delete-state',
+    ids.length === 1 ? 'delete state' : `delete ${ids.length} states`,
+    ids.map(deleteState),
+  );
 }
 
 /** Rename a state. Coalesces per state, so typing a label is one undo entry. */
