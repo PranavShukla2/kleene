@@ -26,6 +26,7 @@
 import type { Point, StateId } from '@/model/automaton';
 import {
   hasTransition,
+  labelTaken,
   mapState,
   nextStateId,
   nextStateLabel,
@@ -197,6 +198,12 @@ export function renameState(id: StateId, label: string): Command {
       const state = document.automaton.states.find((candidate) => candidate.id === id);
       // Committing an inline edit without changing the text is not an edit.
       if (!state || state.label === label) return document;
+
+      // Two states called `q1` make a diagram that cannot be read and a TikZ export that
+      // cannot be compiled. Refused rather than silently disambiguated: a name the user did
+      // not choose appearing on their diagram is worse than a rename that did not take, and
+      // the editor warns before they commit.
+      if (label.length === 0 || labelTaken(document.automaton, label, id)) return document;
 
       return withAutomaton(
         document,

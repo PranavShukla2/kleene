@@ -60,6 +60,20 @@ export function nextStateLabel(automaton: Automaton): string {
 }
 
 /** Replace the automaton, leaving everything else alone. */
+/**
+ * Whether a label is already used by some *other* state.
+ *
+ * Excluding the state being renamed matters: without it, committing a rename that changes
+ * nothing would report the state's own name as taken, and the field would refuse to close.
+ *
+ * Comparison is case-sensitive and exact. `q0` and `Q0` are different names in every textbook
+ * this tool sits beside, and quietly treating them as the same would be a stronger claim than
+ * uniqueness needs to make.
+ */
+export function labelTaken(automaton: Automaton, label: string, exceptId?: StateId): boolean {
+  return automaton.states.some((state) => state.id !== exceptId && state.label === label);
+}
+
 export function withAutomaton(document: EditorDocument, automaton: Automaton): EditorDocument {
   return { ...document, automaton };
 }
