@@ -35,7 +35,7 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 
 ### Track A — Document model and command stack
 
-- [ ] **A1.** The `KleeneDoc` TypeScript type mirroring the Rust `.kln` schema:
+- [x] **A1.** The `KleeneDoc` TypeScript type mirroring the Rust `.kln` schema:
       `{ version, automaton, layout, meta }`. Generated from the Rust types via
       `ts-rs` — **not hand-written**, or the two drift within a fortnight.
 
@@ -61,47 +61,62 @@ features, and starts by reading how Graphviz solves it rather than by writing co
     numeric order, not insertion order, and trace reproducibility depends on insertion order
     (Phase 1 A2). It works today only because state ids happen to be allocated ascending, and
     that is an assumption the editor's delete-and-recreate cycle would eventually break.
-- [ ] **A2.** Zustand store holding one document, with selectors granular enough that
+- [x] **A2.** Zustand store holding one document, with selectors granular enough that
       dragging a state does not re-render every edge.
-- [ ] **A3.** Command stack. Every mutation is a command object with `apply`/`invert`
+- [x] **A3.** Command stack. Every mutation is a command object with `apply`/`invert`
       (roadmap §2.5). Modelled from day one, not diffed later.
-- [ ] **A4.** Undo/redo with coalescing — a 200-frame drag is **one** undo entry, not 200.
+- [x] **A4.** Undo/redo with coalescing — a 200-frame drag is **one** undo entry, not 200.
       Coalescing window: same command type on the same target within 400ms.
-- [ ] **A5.** Persist the working document to IndexedDB on a debounce, so a refresh or a
+- [x] **A5.** Persist the working document to IndexedDB on a debounce, so a refresh or a
       browser crash does not lose work. There is no backend; this is the only safety net
       the user gets.
-- [ ] **A6.** Dirty-state tracking and a `beforeunload` guard.
+- [x] **A6.** Dirty-state tracking and a `beforeunload` guard.
 
 ### Track B — Canvas fundamentals
 
-- [ ] **B1.** Pan (space-drag and middle-drag), zoom (wheel and pinch, **cursor-anchored**,
+- [x] **B1.** Pan (space-drag and middle-drag), zoom (wheel and pinch, **cursor-anchored**,
       not centre-anchored — centre-anchored zoom feels broken and is a five-line fix).
-- [ ] **B2.** Dot grid at 24px, snapping at 8px, per [design-system.md](design-system.md) §4.4.
-- [ ] **B3.** Viewport transform as a single matrix; screen↔world helpers used everywhere so
+- [x] **B2.** Dot grid at 24px, snapping at 8px, per [design-system.md](design-system.md) §4.4.
+- [x] **B3.** Viewport transform as a single matrix; screen↔world helpers used everywhere so
       hit-testing and rendering can never disagree.
 - [ ] **B4.** "Fit to content" and "reset zoom", both keyboard-bound.
 - [ ] **B5.** Marquee selection; multi-select with shift; multi-drag.
-- [ ] **B6.** Render performance floor: **60fps while dragging a 60-state automaton**.
+- [x] **B6.** Render performance floor: **60fps while dragging a 60-state automaton**.
       Measured, not assumed. If SVG cannot hold it, that is worth knowing in week 5 rather
       than week 9.
 
 ### Track C — Edge routing *(the hard part — budget a full week)*
 
-- [ ] **C1.** Study how Graphviz places self-loops and parallel edges. Write down the rules
+- [x] **C1.** Study how Graphviz places self-loops and parallel edges. Write down the rules
       being adopted in `docs/notes/edge-routing.md` **before** implementing them.
-- [ ] **C2.** Straight edges with endpoints clipped to the circle boundary, arrowhead at the
+- [x] **C2.** Straight edges with endpoints clipped to the circle boundary, arrowhead at the
       boundary rather than the centre.
-- [ ] **C3.** Bidirectional pairs → symmetric quadratic curves, 28px control offset.
-- [ ] **C4.** Self-loops with free-direction selection in the order `above, right, below,
+- [x] **C3.** Bidirectional pairs → symmetric quadratic curves, 28px control offset.
+- [x] **C4.** Self-loops with free-direction selection in the order `above, right, below,
       left`, where "free" means no state bounding box and no incident edge within 40px.
       *(Phase 0 shipped `above` only — this is where that leftover is paid off.)*
-- [ ] **C5.** Multi-symbol collapse: one edge per ordered pair, labelled `a, b, c`, with
+- [x] **C5.** Multi-symbol collapse: one edge per ordered pair, labelled `a, b, c`, with
       sorted symbol order so the label is stable across renders.
-- [ ] **C6.** Label placement that avoids overlapping states and other labels — offset along
+- [x] **C6.** Label placement that avoids overlapping states and other labels — offset along
       the normal first, then slide along the edge if still colliding.
-- [ ] **C7.** A visual regression fixture: ~12 pathological automata (dense bidirectional
+- [x] **C7.** A visual regression fixture: ~12 pathological automata (dense bidirectional
       pairs, four self-loops on one state, 8-symbol edges, states placed overlapping) that
       render to snapshot SVGs. This is what stops routing regressions later.
+
+> **Track C is closed.** The fixtures live in `web/src/canvas/fixtures.ts` and their snapshots
+> in `web/src/canvas/__fixtures__/`; the rules they enforce are written up in
+> [edge-routing.md](../notes/edge-routing.md).
+>
+> C7 earned itself back on its first run. Fixture 05 — an edge that is *both* half of a
+> bidirectional pair and obstructed by the state between its endpoints — showed both curves
+> running straight through that state, because routing treated the two cases as alternatives
+> and returned on the first match. The week the plan budgeted for Track C was budgeted for
+> exactly this: routing is where a diagram stops being merely ugly and starts being *wrong*.
+>
+> Two rules were added that C1's research did not anticipate, both now in the note: the cases
+> combine (which case applies picks the side; obstruction picks how far), and every line is
+> drawn before any label (a label's plate can only cut what precedes it, so per-edge label
+> rendering gets painted over — the cause of the `b)` artifacts in the 30-state render).
 
 ### Track D — Editing interactions
 
