@@ -106,6 +106,29 @@ describe('shortcutFor', () => {
   });
 });
 
+describe('scoping', () => {
+  it('does not let a canvas-scoped chord fire globally', () => {
+    // Tab must keep moving between the page's own controls, which is how anyone navigating
+    // by keyboard reaches the canvas in the first place.
+    expect(shortcutFor(key({ code: 'Tab' }), true)).toBeUndefined();
+  });
+
+  it('fires a canvas-scoped chord within the canvas', () => {
+    expect(shortcutFor(key({ code: 'Tab' }), true, 'canvas')?.id).toBe('focusNext');
+    expect(shortcutFor(key({ code: 'Tab', shiftKey: true }), true, 'canvas')?.id).toBe(
+      'focusPrev',
+    );
+  });
+
+  it('does not let a global chord fire from the canvas scope', () => {
+    // The scopes are exclusive both ways. A canvas listener claiming everything would
+    // double-handle keys the window listener already owns.
+    expect(
+      shortcutFor(key({ key: 'z', code: 'KeyZ', metaKey: true }), true, 'canvas'),
+    ).toBeUndefined();
+  });
+});
+
 describe('the table itself', () => {
   it('binds each chord to exactly one shortcut', () => {
     // Two shortcuts sharing a chord means one of them silently never fires, and which one
