@@ -9,7 +9,9 @@
  * rendered is already the thing to export.
  */
 
-import type { Automaton } from '@/model/automaton';
+import { useMemo } from 'react';
+
+import type { Automaton, StateId } from '@/model/automaton';
 import {
   GEOM,
   bendSideBelow,
@@ -24,6 +26,13 @@ import {
   type Layout,
   type Point,
 } from '@/canvas/geometry';
+import {
+  placeLabels,
+  startArrowRect,
+  stateRect,
+  type PlacedLabel,
+  type Rect,
+} from '@/canvas/labels';
 
 interface Props {
   automaton: Automaton;
@@ -42,7 +51,12 @@ interface Props {
  * underneath.
  */
 export function AutomatonView({ automaton, layout, title, className }: Props) {
-  const positions = layout ?? rowLayout(automaton.states.map((state) => state.id));
+  // Memoised so the fallback layout keeps its identity between renders. It feeds
+  // `AutomatonGraphics`'s own memo, and a fresh object every render would defeat it.
+  const positions = useMemo(
+    () => layout ?? rowLayout(automaton.states.map((state) => state.id)),
+    [layout, automaton.states],
+  );
   const box = viewBoxFor(Object.values(positions));
 
   return (
@@ -77,9 +91,13 @@ export function AutomatonGraphics({
   /** Draw the dot grid. The interactive canvas draws its own, in screen space. */
   grid?: boolean;
 }) {
-  const ids = automaton.states.map((state) => state.id);
-  const edges = groupEdges(automaton.transitions);
   const box = viewBoxFor(Object.values(positions));
+
+  // Routing and label placement depend only on the machine and where its states sit — never
+  // on the viewport. Without this memo, panning or zooming would redo both on every frame,
+  // and label placement is the more expensive of the two because it compares every label
+  // against every state and every label placed before it.
+  const { paths, labels } = useMemo(() => layOut(automaton, positions), [automaton, positions]);
 
   return (
     <>
@@ -117,26 +135,22 @@ export function AutomatonGraphics({
         />
       )}
 
+      {/*
+        Every path first, then every state, then every label. The order is the fix for a
+        real defect, not housekeeping: labels used to be drawn with their own edge, so a
+        later edge's curve painted straight through an earlier edge's text — which is why
+        the 30-state render showed labels reading as `b)` and `a|`. A label's plate can only
+        cut what was drawn before it, so all the lines have to come first.
+      */}
       <g className="stroke-k-text-muted">
-        {edges.map((edge) => (
-          <Edge
-            key={`${edge.from}->${edge.to}`}
-            from={positions[edge.from]}
-            to={positions[edge.to]}
-            symbols={edge.symbols}
-            // Every state that is not an endpoint of this edge is a potential obstacle.
-            obstacles={ids
-              .filter((id) => id !== edge.from && id !== edge.to)
-              .map((id) => positions[id])
-              .filter((p): p is Point => p !== undefined)}
-            // A self-loop needs to know where everything else is, so it can pick a side
-            // that is actually free (docs/notes/edge-routing.md, rule 1).
-            neighbours={ids
-              .filter((id) => id !== edge.from)
-              .map((id) => positions[id])
-              .filter((p): p is Point => p !== undefined)}
-            pairedWithReverse={hasReverse(edges, edge.from, edge.to)}
-            selfLoop={edge.from === edge.to}
+        {paths.map((edge) => (
+          <path
+            key={edge.key}
+            d={edge.path}
+            fill="none"
+            strokeWidth={GEOM.edgeStroke}
+            markerEnd="url(#k-arrow)"
+            className="stroke-k-text-muted"
           />
         ))}
       </g>
@@ -156,6 +170,12 @@ export function AutomatonGraphics({
       })}
 
       <StartMarker at={positions[automaton.start]} />
+
+      <g>
+        {labels.map((label) => (
+          <EdgeLabel key={label.key} label={label} />
+        ))}
+      </g>
     </>
   );
 }
@@ -213,58 +233,97 @@ function StartMarker({ at }: { at: Point | undefined }) {
   );
 }
 
-interface EdgeProps {
-  from: Point | undefined;
-  to: Point | undefined;
-  symbols: string[];
-  obstacles: Point[];
-  neighbours: Point[];
-  pairedWithReverse: boolean;
-  selfLoop: boolean;
+function EdgeLabel({ label }: { label: PlacedLabel }) {
+  return (
+    /*
+      The label sits on a plate — a canvas-coloured stroke painted under the fill — that cuts
+      the line behind it. Without this the stroke runs straight through the glyphs and both
+      become hard to read: the single most common way a generated automaton diagram looks
+      amateur. `labels.ts` counts this halo as part of what the label occupies, so two labels
+      it judges clear of each other really are.
+    */
+    <text
+      x={label.at.x}
+      y={label.at.y}
+      textAnchor="middle"
+      dominantBaseline="central"
+      stroke="var(--color-k-canvas)"
+      strokeWidth="4"
+      paintOrder="stroke"
+      className="fill-k-text font-mono text-[12px] select-none"
+    >
+      {label.text}
+    </text>
+  );
 }
 
-function Edge({
-  from,
-  to,
-  symbols,
-  obstacles,
-  neighbours,
-  pairedWithReverse,
-  selfLoop: isLoop,
-}: EdgeProps) {
-  if (!from || !to) return null;
+/** One drawn edge: its path, and the label that belongs to it. */
+interface RoutedEdge {
+  key: string;
+  path: string;
+  text: string;
+  anchors: Point[];
+}
 
-  const geom = routeEdge(from, to, obstacles, neighbours, pairedWithReverse, isLoop);
-  const text = symbols.join(', ');
+/**
+ * Route every edge, then place every label.
+ *
+ * Two passes rather than one, because they need different scopes. Routing is per-edge: an
+ * edge bends around the states between its own endpoints and needs to know nothing else.
+ * Placement is global: a label's position depends on where every *other* label ended up, so
+ * it cannot be decided until all the shapes exist.
+ */
+function layOut(
+  automaton: Automaton,
+  positions: Layout,
+): { paths: RoutedEdge[]; labels: PlacedLabel[] } {
+  const ids = automaton.states.map((state) => state.id);
+  const edges = groupEdges(automaton.transitions);
 
-  return (
-    <g>
-      <path
-        d={geom.path}
-        fill="none"
-        strokeWidth={GEOM.edgeStroke}
-        markerEnd="url(#k-arrow)"
-        className="stroke-k-text-muted"
-      />
-      {/*
-        The label sits on a filled plate that cuts the line behind it. Without this the
-        stroke runs straight through the glyphs and both become hard to read — the single
-        most common way a generated automaton diagram looks amateur.
-      */}
-      <text
-        x={geom.label.x}
-        y={geom.label.y}
-        textAnchor="middle"
-        dominantBaseline="central"
-        stroke="var(--color-k-canvas)"
-        strokeWidth="4"
-        paintOrder="stroke"
-        className="fill-k-text font-mono text-[12px] select-none"
-      >
-        {text}
-      </text>
-    </g>
-  );
+  const pointsExcept = (...exclude: StateId[]): Point[] =>
+    ids
+      .filter((id) => !exclude.includes(id))
+      .map((id) => positions[id])
+      .filter((p): p is Point => p !== undefined);
+
+  const paths = edges.flatMap((edge): RoutedEdge[] => {
+    const from = positions[edge.from];
+    const to = positions[edge.to];
+    if (!from || !to) return [];
+
+    const geom = routeEdge(
+      from,
+      to,
+      // Every state that is not an endpoint of this edge is a potential obstacle.
+      pointsExcept(edge.from, edge.to),
+      // A self-loop needs to know where everything else is, so it can pick a side that is
+      // actually free (docs/notes/edge-routing.md, rule 1).
+      pointsExcept(edge.from),
+      hasReverse(edges, edge.from, edge.to),
+      edge.from === edge.to,
+    );
+
+    return [
+      {
+        key: `${edge.from}->${edge.to}`,
+        path: geom.path,
+        text: edge.symbols.join(', '),
+        anchors: geom.anchors,
+      },
+    ];
+  });
+
+  const obstacles: Rect[] = pointsExcept().map(stateRect);
+  const start = positions[automaton.start];
+  if (start) obstacles.push(startArrowRect(start));
+
+  return {
+    paths,
+    labels: placeLabels(
+      paths.map((edge) => ({ key: edge.key, text: edge.text, candidates: edge.anchors })),
+      obstacles,
+    ),
+  };
 }
 
 /**
