@@ -295,3 +295,40 @@ describe('batched commands', () => {
     expect(deleteStates([0, 1]).label).toBe('delete 2 states');
   });
 });
+
+describe('state labels stay unique', () => {
+  const three = historyOf(seeded());
+
+  it('refuses a rename to a name another state already has', () => {
+    // Two states called q1 make a diagram that cannot be read and a TikZ export that cannot
+    // be compiled. Refused rather than silently disambiguated: a name the user did not
+    // choose appearing on their own diagram is the worse outcome.
+    const labels = three.present.automaton.states.map((s) => s.label);
+    const taken = labels[1]!;
+
+    expect(run(three, renameState(0, taken))).toBe(three);
+  });
+
+  it('allows renaming a state to the name it already has, as a no-op', () => {
+    // The state's own name must not count as taken, or committing an unchanged edit would
+    // be refused and the field would appear stuck.
+    const own = three.present.automaton.states[0]!.label;
+    expect(run(three, renameState(0, own))).toBe(three);
+  });
+
+  it('refuses an empty name', () => {
+    expect(run(three, renameState(0, ''))).toBe(three);
+  });
+
+  it('allows a name that is free', () => {
+    const renamed = run(three, renameState(0, 'start'));
+    expect(renamed.present.automaton.states[0]?.label).toBe('start');
+  });
+
+  it('treats case as significant', () => {
+    // q0 and Q0 are different names in every textbook this sits beside, and collapsing them
+    // would be a stronger claim than uniqueness needs to make.
+    const upper = three.present.automaton.states[1]!.label.toUpperCase();
+    expect(run(three, renameState(0, upper)).present.automaton.states[0]?.label).toBe(upper);
+  });
+});
