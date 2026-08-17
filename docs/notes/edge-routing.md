@@ -103,6 +103,30 @@ for [task C7](../plan/phase-2.md).
 
 ---
 
+## The cases combine
+
+**Rule:** the four cases are not alternatives. An edge can be half of a bidirectional pair
+*and* have a state in the way, and both facts have to be honoured.
+
+They are honoured by splitting what each decides:
+
+- **Which case applies chooses the side.** A pair keeps its own convention — both halves pass
+  the same side and separate on the direction vector's own flip. An unpaired obstructed edge
+  bows downward.
+- **Whether anything is obstructed chooses how far.** `bendClearance` when there is something
+  to clear, `bendOffset` when there is not.
+
+Written down because the code got this wrong first: routing checked "is this a pair?" and
+returned, so a paired edge never asked whether it was also obstructed, and both halves of
+`q0 ↔ q2` ran through `q1` at 14px of deviation. It is the same defect the 96px number exists
+to prevent, arriving by the one path that skipped the check — and reading the function does
+not show it, because the two branches look like a tidy priority order and the bug is entirely
+in the question the first one fails to ask.
+
+Caught by fixture 05 on its first run.
+
+---
+
 ## Label placement
 
 **Rule:** 12px off the edge along its normal, on a plate filled with the canvas colour so the
@@ -115,6 +139,34 @@ amateur. For curves the label rides the curve's true midpoint — the quadratic 
 When a label still collides after the normal offset, slide it along the edge before growing
 the offset: moving *along* the line keeps the association between label and edge obvious,
 where pushing it further away weakens it.
+
+**Rule: the edge proposes, a global pass disposes.** An edge knows its own shape and nothing
+about the rest of the diagram, so it cannot tell whether the spot it picked is already taken.
+Each edge therefore offers *ordered candidates* and a separate pass, which sees every state
+and every label at once, chooses between them. Ordered as: both sides of the midpoint first,
+then positions slid toward either end — a label on the far side of its edge still obviously
+belongs to it, while one slid toward an endpoint is already slightly ambiguous.
+
+**Rule: greedy, in a fixed order.** Not because it is easier but because it is *stable*.
+Adding a transition at the end of a machine must not rearrange the labels at the start, and an
+optimiser would do exactly that. A diagram whose labels move while you edit it is worse than
+one placed slightly suboptimally.
+
+**Rule: never drop a label.** When every candidate collides, take the least-bad one. A diagram
+missing a transition symbol is a *different machine*; a cramped one is only ugly. State
+collisions are weighted above label collisions, because covering a state costs its name too.
+
+**Rule: every line is drawn before any label.** A label's plate can only cut what was drawn
+before it, so labels rendered per-edge get painted over by edges that come later — which is
+what made symbols read as `b)` and `a|` in the 30-state render. The plate was working exactly
+as designed and simply had nothing left to cut.
+
+The plate counts as part of what a label occupies. Sizing to the glyphs alone lets two labels
+pass the collision test while visibly touching.
+
+Labels are monospace for a reason beyond style: every glyph has the same advance, so
+`length × 7.2px` is exact rather than estimated, and placement needs no DOM measurement. It
+stays a pure function, testable without a browser.
 
 ---
 
@@ -131,9 +183,21 @@ where pushing it further away weakens it.
 
 ## How these stay true
 
-A rule nobody checks is a rule that decays. [Task C7](../plan/phase-2.md) builds ~12
-pathological fixtures — dense bidirectional pairs, four self-loops on one state, eight-symbol
-edges, deliberately overlapping states — rendered to snapshot SVGs.
+A rule nobody checks is a rule that decays. [Task C7](../plan/phase-2.md) is **done**: twelve
+pathological fixtures live in `web/src/canvas/fixtures.ts` and render to snapshot SVGs in
+`web/src/canvas/__fixtures__/`.
 
-Both routing bugs found so far were found by *looking at output*, not by reading code. The
-fixtures make that looking automatic.
+They are real `.svg` files, openable in a browser, carrying an inline stylesheet that stands in
+for the design tokens. That is not a convenience — a snapshot nobody can look at tells you only
+*that* something changed, and these exist to show *what*.
+
+A failing snapshot is not automatically a bug. Routing work is supposed to move these files.
+What the check guarantees is that they cannot move without someone seeing it.
+
+Three assertions sit alongside them, because a snapshot proves the output did not change and
+cannot prove it was ever right: one label per grouped edge, no `NaN` in any path, and distinct
+fixture names.
+
+Every routing bug found so far was found by *looking at output*, not by reading code — the
+first two by screenshot, the third by fixture 05 on its first run. The fixtures make that
+looking automatic.
