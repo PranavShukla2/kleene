@@ -265,6 +265,9 @@ function StartMarker({ at }: { at: Point | undefined }) {
 }
 
 function EdgeLabel({ label }: { label: PlacedLabel }) {
+  // `key` is `from->to`, which is also how an edge is identified everywhere else.
+  const [from, to] = label.key.split('->');
+
   return (
     /*
       The label sits on a plate — a canvas-coloured stroke painted under the fill — that cuts
@@ -281,7 +284,13 @@ function EdgeLabel({ label }: { label: PlacedLabel }) {
       stroke="var(--color-k-canvas)"
       strokeWidth="4"
       paintOrder="stroke"
-      className="fill-k-text font-mono text-[12px] select-none"
+      // Read by the canvas's own pointerdown listener to open the symbol editor. A data
+      // attribute rather than a React handler because the canvas listens natively on an
+      // ancestor, and a native listener on the ancestor runs before React's delegated one —
+      // so stopPropagation from here would arrive too late to prevent a marquee.
+      data-edge-from={from}
+      data-edge-to={to}
+      className="fill-k-text cursor-text font-mono text-[12px] select-none"
     >
       {label.text}
     </text>

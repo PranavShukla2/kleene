@@ -47,7 +47,7 @@
 <line x1="52" y1="140" x2="74" y2="140" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
 </line>
 <g>
-<text x="148" y="152" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
-<text x="244" y="152" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
+<text x="148" y="152" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="0" data-edge-to="1" class="fill-k-text cursor-text font-mono text-[12px] select-none">a</text>
+<text x="244" y="152" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="1" data-edge-to="2" class="fill-k-text cursor-text font-mono text-[12px] select-none">b</text>
 </g>
 </svg>

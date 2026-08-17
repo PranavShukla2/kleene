@@ -72,12 +72,12 @@
 <line x1="42" y1="180" x2="64" y2="180" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
 </line>
 <g>
-<text x="150.7462255681669" y="160.5347468749726" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">ε</text>
-<text x="255" y="132" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">a</text>
-<text x="359.2537744318331" y="160.53474687497263" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">ε</text>
-<text x="138.5574940936821" y="225.12393785278528" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">ε</text>
-<text x="255" y="262" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">b</text>
-<text x="371.44250590631793" y="225.12393785278528" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">ε</text>
-<text x="255" y="168" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" class="fill-k-text font-mono text-[12px] select-none">ε</text>
+<text x="150.7462255681669" y="160.5347468749726" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="0" data-edge-to="1" class="fill-k-text cursor-text font-mono text-[12px] select-none">ε</text>
+<text x="255" y="132" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="1" data-edge-to="2" class="fill-k-text cursor-text font-mono text-[12px] select-none">a</text>
+<text x="359.2537744318331" y="160.53474687497263" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="2" data-edge-to="5" class="fill-k-text cursor-text font-mono text-[12px] select-none">ε</text>
+<text x="138.5574940936821" y="225.12393785278528" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="0" data-edge-to="3" class="fill-k-text cursor-text font-mono text-[12px] select-none">ε</text>
+<text x="255" y="262" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="3" data-edge-to="4" class="fill-k-text cursor-text font-mono text-[12px] select-none">b</text>
+<text x="371.44250590631793" y="225.12393785278528" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="4" data-edge-to="5" class="fill-k-text cursor-text font-mono text-[12px] select-none">ε</text>
+<text x="255" y="168" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="5" data-edge-to="0" class="fill-k-text cursor-text font-mono text-[12px] select-none">ε</text>
 </g>
 </svg>
