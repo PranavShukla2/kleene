@@ -18,20 +18,26 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { AutomatonGraphics } from '@/canvas/AutomatonView';
 import { GEOM, pointOnRim, type Layout, type Point } from '@/canvas/geometry';
+import { ContextMenu, type MenuItem } from '@/canvas/ContextMenu';
 import { InlineEditor } from '@/canvas/InlineEditor';
 import { marqueeRect, type Interaction } from '@/canvas/interaction';
+import { stateAt } from '@/canvas/selection';
+import { formatChord } from '@/canvas/shortcuts';
 import { useCanvasEditing } from '@/canvas/useCanvasEditing';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { useViewport } from '@/canvas/useViewport';
 import { formatSymbols, newSymbols, parseSymbols } from '@/canvas/symbols';
-import { SNAP, toScreen } from '@/canvas/viewport';
+import { SNAP, snapPoint, toScreen } from '@/canvas/viewport';
 import type { Automaton, StateId } from '@/model/automaton';
 import {
+  addState,
+  deleteEdge,
   deleteStates,
   moveStates,
   renameState,
   setEdgeSymbols,
   setStart,
+  toggleAccepting,
 } from '@/store/commands';
 import { labelTaken } from '@/store/document';
 import { useActions } from '@/store/editor';
@@ -42,6 +48,12 @@ const NUDGE_FAR = GEOM.grid * 2;
 
 /** One notch of keyboard zoom. Matches roughly two wheel notches. */
 const ZOOM_STEP = 1.25;
+
+/** An open context menu: what it is about, and where it sits on screen. */
+interface Menu {
+  at: Point;
+  items: MenuItem[];
+}
 
 /** What is being edited inline, and where the input should sit on screen. */
 type Editing =
@@ -75,7 +87,9 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
     () => automaton.states.map((state) => layout[state.id]).filter((p): p is Point => !!p),
     [automaton.states, layout],
   );
+  const ids = useMemo(() => automaton.states.map((state) => state.id), [automaton.states]);
 
+  const [menu, setMenu] = useState<Menu | undefined>(undefined);
   const [editing, setEditing] = useState<Editing | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
   // State, not a ref, because the canvas-scoped shortcuts bind to it and therefore need a
@@ -137,6 +151,10 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
     setEditing(undefined);
   }, []);
 
+  const closeMenu = useCallback(() => {
+    setMenu(undefined);
+  }, []);
+
   const commitEditor = useCallback(
     (text: string) => {
       if (!editing) return;
@@ -178,6 +196,137 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
       select([ids[(next + ids.length) % ids.length]!]);
     },
     [automaton.states, selection, select],
+  );
+
+  /**
+   * Build the menu for whatever was right-clicked.
+   *
+   * Every item that has a keyboard equivalent shows it. A context menu is a discovery surface
+   * as much as a shortcut, and an item with a key printed beside it teaches the key that would
+   * have saved the trip.
+   */
+  const openMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      closeEditor();
+
+      const box = containerRef.current?.getBoundingClientRect();
+      const at = { x: event.clientX - (box?.x ?? 0), y: event.clientY - (box?.y ?? 0) };
+      const world = pointerToWorld(event);
+
+      const edge = edgeUnder(event.target);
+      if (edge) {
+        setMenu({
+          at,
+          items: [
+            {
+              label: 'Edit symbols',
+              onSelect: () => {
+                const label = containerRef.current?.querySelector(
+                  `[data-edge-from="${edge.from}"][data-edge-to="${edge.to}"]`,
+                );
+                if (label) openEdgeEditor(edge, label.getBoundingClientRect());
+              },
+            },
+            undefined,
+            {
+              label: 'Delete transition',
+              destructive: true,
+              onSelect: () => {
+                run(deleteEdge(edge.from, edge.to));
+              },
+            },
+          ],
+        });
+        return;
+      }
+
+      const hit = stateAt(world, ids, layout);
+      if (hit !== undefined) {
+        // Right-clicking outside the selection selects what was clicked, so the menu always
+        // acts on the thing under the pointer rather than on something off-screen.
+        const target = selection.includes(hit) ? selection : [hit];
+        if (!selection.includes(hit)) select([hit]);
+
+        const one = target.length === 1;
+        setMenu({
+          at,
+          items: [
+            {
+              label: 'Rename',
+              keys: formatChord('Enter'),
+              disabled: !one,
+              onSelect: () => {
+                const centre = layout[hit];
+                if (centre)
+                  setEditing({ kind: 'state', id: hit, at: toScreen(viewport, centre) });
+              },
+            },
+            {
+              label: 'Toggle accepting',
+              onSelect: () => {
+                run(toggleAccepting(hit));
+              },
+            },
+            {
+              label: 'Make start state',
+              keys: formatChord('KeyS'),
+              disabled: !one || automaton.start === hit,
+              onSelect: () => {
+                run(setStart(hit));
+              },
+            },
+            undefined,
+            {
+              label: target.length > 1 ? `Delete ${target.length} states` : 'Delete state',
+              keys: formatChord('Backspace'),
+              destructive: true,
+              onSelect: () => {
+                run(deleteStates(target));
+              },
+            },
+          ],
+        });
+        return;
+      }
+
+      setMenu({
+        at,
+        items: [
+          {
+            label: 'Add state here',
+            onSelect: () => {
+              run(addState(snapPoint(world)));
+            },
+          },
+          undefined,
+          { label: 'Select all', keys: formatChord('Mod+KeyA'), onSelect: selectAll },
+          {
+            label: 'Fit to content',
+            keys: formatChord('Shift+Digit1'),
+            disabled: points.length === 0,
+            onSelect: () => {
+              fit(points);
+            },
+          },
+        ],
+      });
+    },
+    [
+      closeEditor,
+      pointerToWorld,
+      openEdgeEditor,
+      run,
+      ids,
+      layout,
+      selection,
+      select,
+      selectAll,
+      viewport,
+      automaton.start,
+      points,
+      fit,
+    ],
   );
 
   const nudge = useCallback(
@@ -282,6 +431,7 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
       aria-label={title}
       className={`relative overflow-hidden bg-k-canvas outline-none focus-visible:ring-2 focus-visible:ring-k-primary/40 focus-visible:ring-inset ${className ?? ''}`}
       style={{ cursor: cursorFor(panning, interaction), touchAction: 'none' }}
+      onContextMenu={openMenu}
     >
       {/*
         The grid is drawn in *screen* space and scrolled by the viewport, rather than being
@@ -311,6 +461,8 @@ export function Canvas({ automaton, layout, selection, title, className, onHelp 
           <Marquee interaction={interaction} />
         </g>
       </svg>
+
+      {menu && <ContextMenu at={menu.at} items={menu.items} onClose={closeMenu} />}
 
       {editing && (
         <InlineEditor
@@ -366,6 +518,14 @@ function editorHint(editing: Editing, automaton: Automaton) {
     const added = newSymbols(parseSymbols(text), automaton.alphabet);
     return added.length === 0 ? undefined : `adds ${added.join(', ')} to \u03a3`;
   };
+}
+
+/** The edge whose label sits under an event target, if any. */
+function edgeUnder(target: EventTarget | null): { from: StateId; to: StateId } | undefined {
+  if (!(target instanceof SVGElement)) return undefined;
+  const { edgeFrom, edgeTo } = target.dataset;
+  if (edgeFrom === undefined || edgeTo === undefined) return undefined;
+  return { from: Number(edgeFrom), to: Number(edgeTo) };
 }
 
 /**
