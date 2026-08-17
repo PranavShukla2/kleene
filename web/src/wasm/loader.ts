@@ -5,9 +5,9 @@
  * not hand-written: an ambient `.d.ts` that describes what we *think* Rust exports
  * drifts from what it actually exports, and the FFI stops being checked at all.
  */
-import init, { determinism, example_automaton, validate, version } from '@wasm';
+import init, { determinism, example_automaton, simulate, validate, version } from '@wasm';
 
-import type { Automaton, Determinism, Report } from '@/model/automaton';
+import type { Automaton, Determinism, Report, Simulation } from '@/model/automaton';
 
 /** What the engine module exposes to the app. */
 export interface Engine {
@@ -26,6 +26,14 @@ export interface Engine {
   validate: (automaton: Automaton) => Report;
   /** Whether a machine is a DFA, an NFA or an ε-NFA. */
   determinism: (automaton: Automaton) => Determinism;
+  /**
+   * Run a string, returning every configuration and the reasoning behind it.
+   *
+   * The input tester steps through this rather than simulating anything itself. Two
+   * simulators could disagree about ε-closures or about what "stuck" means, and they would be
+   * tested separately and believed equally.
+   */
+  simulate: (automaton: Automaton, input: string) => Simulation;
 }
 
 /**
@@ -48,6 +56,8 @@ export function loadEngine(): Promise<Engine> {
       example: (name: string) => example_automaton(name) as Automaton,
       validate: (automaton: Automaton) => validate(automaton) as Report,
       determinism: (automaton: Automaton) => determinism(automaton) as Determinism,
+      simulate: (automaton: Automaton, input: string) =>
+        simulate(automaton, input) as Simulation,
     }))
     .catch((cause: unknown) => {
       // Clear the cache so a later retry can actually retry rather than re-await a
