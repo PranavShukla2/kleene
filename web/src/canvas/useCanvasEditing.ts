@@ -40,6 +40,10 @@ interface Options {
   scale: number;
   /** Whether panning owns the pointer right now. */
   panning: boolean;
+  /** Open the symbol editor for an edge, anchored on the label that was clicked. */
+  onEditEdge: (edge: { from: StateId; to: StateId }, at: DOMRect) => void;
+  /** A transition was just drawn, and wants its symbols typed. */
+  onConnected: (edge: { from: StateId; to: StateId }) => void;
 }
 
 export interface CanvasEditing {
@@ -56,6 +60,8 @@ export function useCanvasEditing({
   toWorld,
   scale,
   panning,
+  onEditEdge,
+  onConnected,
 }: Options): CanvasEditing {
   const [interaction, setInteraction] = useState<Interaction>({ kind: 'idle' });
   const elementRef = useRef<HTMLElement | null>(null);
@@ -99,14 +105,17 @@ export function useCanvasEditing({
             if (intent.moves.length > 0) run(moveStates(intent.moves));
             break;
           case 'connect':
-            // Drawn without a symbol. The label is edited afterwards (D5); demanding one
-            // mid-drag would mean a modal in the middle of a gesture.
+            // Committed without a symbol, then the editor opens on it. Demanding a symbol
+            // *during* the drag would mean a modal in the middle of a gesture; leaving it
+            // blank and saying nothing would let drawing an edge silently turn a DFA into an
+            // ε-NFA, which is a change to what the machine *is*.
             run(addTransition(intent.from, intent.to));
+            onConnected({ from: intent.from, to: intent.to });
             break;
         }
       }
     },
-    [run, select],
+    [run, select, onConnected],
   );
 
   const ref = useCallback((element: HTMLElement | null) => {
@@ -119,6 +128,17 @@ export function useCanvasEditing({
 
     const onPointerDown = ((event: PointerEvent) => {
       if (event.button !== LEFT_BUTTON || panningRef.current) return;
+
+      // A press on an edge label edits its symbols rather than starting a marquee. Checked
+      // here rather than handled on the label itself: this listener sits on an ancestor and
+      // is native, so it runs *before* React's delegated handlers — a stopPropagation from
+      // the label would arrive after the marquee had already begun.
+      const edge = edgeLabelUnder(event.target);
+      if (edge) {
+        event.preventDefault();
+        onEditEdge(edge.ids, edge.rect);
+        return;
+      }
 
       const at = toWorld(event);
       const step = pointerDown(
@@ -147,13 +167,16 @@ export function useCanvasEditing({
       select([nextStateId(automatonRef.current)]);
     }) as EventListener;
 
+    // Right-click on a label edits it too, so the gesture is not the only way in once
+    // context menus arrive (D7).
+
     element.addEventListener('pointerdown', onPointerDown);
     element.addEventListener('dblclick', onDoubleClick);
     return () => {
       element.removeEventListener('pointerdown', onPointerDown);
       element.removeEventListener('dblclick', onDoubleClick);
     };
-  }, [apply, run, select, toWorld]);
+  }, [apply, run, select, toWorld, onEditEdge]);
 
   // Move and release are on the window, so a fast drag that leaves the canvas keeps working
   // rather than stopping dead at the edge — and so releasing outside still ends the drag
@@ -197,4 +220,19 @@ export function useCanvasEditing({
   }, [interaction, apply, toWorld]);
 
   return { ref, interaction };
+}
+
+/** The edge whose label sits under an event target, if any. */
+function edgeLabelUnder(
+  target: EventTarget | null,
+): { ids: { from: StateId; to: StateId }; rect: DOMRect } | undefined {
+  if (!(target instanceof SVGElement)) return undefined;
+
+  const from = target.dataset.edgeFrom;
+  const to = target.dataset.edgeTo;
+  if (from === undefined || to === undefined) return undefined;
+
+  // The rendered box, so the editor opens exactly over the text it replaces rather than at a
+  // position recomputed from the layout and liable to disagree with it by a pixel.
+  return { ids: { from: Number(from), to: Number(to) }, rect: target.getBoundingClientRect() };
 }
