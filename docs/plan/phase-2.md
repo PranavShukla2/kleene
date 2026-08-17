@@ -182,17 +182,41 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 
 ### Track F — Input tester
 
-- [ ] **F1.** Input bar with an accept/reject verdict.
-- [ ] **F2.** Step forward/back through the run, driven by the Phase 1 `simulate` trace —
+- [x] **F1.** Input bar with an accept/reject verdict.
+- [x] **F2.** Step forward/back through the run, driven by the Phase 1 `simulate` trace —
       **not** re-implemented in TypeScript. If a simulation bug can exist in two places,
       the architecture has already failed.
-- [ ] **F3.** Active state(s) highlighted per design-system §2.4, with the consumed input
+- [x] **F3.** Active state(s) highlighted per design-system §2.4, with the consumed input
       prefix and remaining suffix shown as a tape.
-- [ ] **F4.** NFA configuration-set view: all currently-active states highlighted at once.
+- [x] **F4.** NFA configuration-set view: all currently-active states highlighted at once.
       This is the view that actually explains nondeterminism.
 - [ ] **F5.** Play/pause with adjustable speed.
 - [ ] **F6.** A batch tester — paste many strings, get a pass/fail table.
       🔵 **LEFTOVER CANDIDATE**, though v1.1 assignment links reuse it directly.
+
+> **Track F is closed**, and it cost less than the plan budgeted because Phase 1 had already
+> done the hard part. `simulate.rs` returns a configuration per point in the run, a verdict
+> with *three* values, and a sentence of prose per step — all written before there was any UI
+> to consume them. The tester walks that; it computes nothing.
+>
+> Two details that were already right in the core and would have been easy to get wrong here:
+>
+> **`Run::consumed_at` lives in Rust**, with a comment saying the tape's split point is a
+> function of the run rather than of the display. It is: an ε-transition advances a
+> configuration without consuming a symbol, so `input.slice(step)` is wrong on exactly the
+> machines this tool exists to explain.
+>
+> **`Verdict` has three values.** `Stuck` is not `Rejected` — one string was read to the end
+> and landed somewhere non-accepting, the other ran out of moves partway and the rest was never
+> looked at. The tape shows the difference without a word of explanation.
+>
+> F4 needed no work at all. Configurations are sets, so an NFA lights up every state it could
+> be in at once — which is the same picture as the subset construction, as `simulate.rs` says.
+>
+> One thing this track *did* surface: `Traced<T>` is generic and has no TypeScript name, so the
+> boundary now carries a flattened `Simulation`. That is the first of these. Phase 3 exposes
+> several more traced algorithms, and the choice between a wire type per algorithm and teaching
+> ts-rs to emit a generic belongs there, where there is more than one case to look at.
 
 ### Track G — Layout
 
