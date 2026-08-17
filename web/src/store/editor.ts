@@ -45,6 +45,8 @@ interface EditorState {
   load: (document: EditorDocument) => void;
   /** Replace the selection. */
   select: (ids: StateId[]) => void;
+  /** Select every state in the document. */
+  selectAll: () => void;
 }
 
 export const useEditor = create<EditorState>((set) => ({
@@ -60,7 +62,16 @@ export const useEditor = create<EditorState>((set) => ({
   load: (document) => set({ history: historyOf(document), selection: [] }),
 
   select: (ids) => set({ selection: ids }),
+
+  // Reads the document rather than taking a list, so no caller can select an id that is not
+  // there. A selection referring to a deleted state is the bug this whole module avoids by
+  // holding ids, and it would be a shame to reintroduce it through the convenient path.
+  selectAll: () =>
+    set((state) => ({ selection: state.history.present.automaton.states.map((s) => s.id) })),
 }));
+
+/** The selected state ids. */
+export const useSelection = (): StateId[] => useEditor((s) => s.selection);
 
 /** The document as it stands. */
 export const useDocument = (): EditorDocument => useEditor((s) => s.history.present);
@@ -93,6 +104,7 @@ export function useActions() {
       redo: s.redo,
       load: s.load,
       select: s.select,
+      selectAll: s.selectAll,
     })),
   );
 }
