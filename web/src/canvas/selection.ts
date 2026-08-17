@@ -129,20 +129,42 @@ export function selectionAfterMarquee(
   return [...before, ...covered.filter((id) => !before.includes(id))];
 }
 
-/** Move several states by the same delta, snapping each. */
+/**
+ * Move several states by a drag, snapping the one under the cursor.
+ *
+ * **Only the anchor is snapped, and everything else follows its delta.** Snapping each state
+ * independently looks right and is wrong: two states 100px apart, dragged together, land on
+ * grid points 96px apart, so the group *shears*. Nudge it a few more times and a layout
+ * someone arranged deliberately has quietly rearranged itself. Dragging a group must be rigid.
+ *
+ * The anchor is the state the pointer actually grabbed, so the state under the cursor is the
+ * one that lands on the grid — which is the state whose alignment the user can see.
+ *
+ * Snapping the anchor's *destination* rather than the delta is still the right choice for the
+ * anchor itself: snapping the delta preserves whatever off-grid offset it already had, so
+ * "snap to grid" would do nothing for exactly the layouts that need it.
+ */
 export function dragged(
   origin: Layout,
   ids: readonly StateId[],
   dx: number,
   dy: number,
   snap: (point: Point) => Point,
+  anchor?: StateId,
 ): { id: StateId; to: Point }[] {
+  const lead = anchor !== undefined && ids.includes(anchor) ? anchor : ids[0];
+  const leadFrom = lead === undefined ? undefined : origin[lead];
+
+  let deltaX = dx;
+  let deltaY = dy;
+  if (leadFrom) {
+    const snapped = snap({ x: leadFrom.x + dx, y: leadFrom.y + dy });
+    deltaX = snapped.x - leadFrom.x;
+    deltaY = snapped.y - leadFrom.y;
+  }
+
   return ids.flatMap((id) => {
     const from = origin[id];
-    if (!from) return [];
-    // Snapping the *result* rather than the delta keeps every state landing on the grid.
-    // Snapping the delta instead would preserve whatever off-grid offsets the states already
-    // had, which makes "snap to grid" do nothing for exactly the layouts that need it.
-    return [{ id, to: snap({ x: from.x + dx, y: from.y + dy }) }];
+    return from ? [{ id, to: { x: from.x + deltaX, y: from.y + deltaY } }] : [];
   });
 }
