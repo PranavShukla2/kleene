@@ -77,7 +77,10 @@ describe('startArrowRect', () => {
 describe('placeLabels', () => {
   it('takes the preferred candidate when nothing is in the way', () => {
     const at = { x: 500, y: 500 };
-    const [placed] = placeLabels([{ key: 'e', text: 'a', candidates: [at, { x: 0, y: 0 }] }], []);
+    const [placed] = placeLabels(
+      [{ key: 'e', text: 'a', candidates: [at, { x: 0, y: 0 }] }],
+      [],
+    );
 
     expect(placed?.at).toEqual(at);
     expect(placed?.displaced).toBe(false);
