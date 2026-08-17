@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Point } from '@/canvas/geometry';
+import { isTypingTarget } from '@/canvas/shortcuts';
 import {
   IDENTITY,
   boundsOf,
@@ -36,6 +37,8 @@ export interface ViewportControls {
   fit: (points: readonly Point[]) => void;
   /** Back to 1:1, centred on the same place. */
   reset: () => void;
+  /** Zoom about the centre of the view, for keyboard zoom. */
+  zoomBy: (factor: number) => void;
 }
 
 /**
@@ -97,7 +100,7 @@ export function useViewport(): ViewportControls {
   // focus is, and released on blur so tabbing away cannot leave it stuck on.
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && !isTyping(event.target)) {
+      if (event.code === 'Space' && !isTypingTarget(event.target)) {
         spaceHeld.current = true;
         // Stop the page scrolling under the canvas while space is used as a modifier.
         event.preventDefault();
@@ -196,15 +199,12 @@ export function useViewport(): ViewportControls {
     setViewport((current) => zoomTo(current, centre, 1));
   }, []);
 
-  return { viewport, ref, panning, pointerToWorld, fit, reset };
-}
+  const zoomBy = useCallback((factor: number) => {
+    const centre = { x: sizeRef.current.width / 2, y: sizeRef.current.height / 2 };
+    // Anchored on the centre rather than the cursor, because a keyboard zoom has no cursor
+    // to anchor to and the middle of the view is what the user is looking at.
+    setViewport((current) => zoomAt(current, centre, factor));
+  }, []);
 
-/** Whether a key event came from a text field, where space means space. */
-function isTyping(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return (
-    target.isContentEditable ||
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement
-  );
+  return { viewport, ref, panning, pointerToWorld, fit, reset, zoomBy };
 }

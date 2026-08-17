@@ -170,6 +170,23 @@ export function shortcutFor(event: KeyboardEvent, mac = isMac()): Shortcut | und
   );
 }
 
+/**
+ * Whether a key event came from somewhere text is being typed.
+ *
+ * Almost every shortcut must stand down here. Someone renaming a state expects `Backspace` to
+ * delete a character, not the state they are naming — a bug that destroys work and gets
+ * reported as "it randomly deleted things", because from the outside that is what it looks
+ * like.
+ */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement
+  );
+}
+
 /** Whether this platform uses Cmd rather than Ctrl. */
 export function isMac(): boolean {
   if (typeof navigator === 'undefined') return false;
