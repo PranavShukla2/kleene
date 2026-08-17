@@ -25,6 +25,10 @@ export type { Transition } from '@/model/generated/Transition';
 export type { Document } from '@/model/generated/Document';
 export type { Meta } from '@/model/generated/Meta';
 export type { Point } from '@/model/generated/Point';
+export type { Report } from '@/model/generated/Report';
+export type { Problem } from '@/model/generated/Problem';
+export type { ProblemKind } from '@/model/generated/ProblemKind';
+export type { Severity } from '@/model/generated/Severity';
 
 /** Identifies a state within one automaton. */
 export type StateId = number;
@@ -42,25 +46,13 @@ export function isEpsilon(transition: Transition): boolean {
   return transition.on === undefined || transition.on === null;
 }
 
-/** How deterministic a machine is. */
-export type Determinism = 'DFA' | 'NFA' | 'ε-NFA';
-
 /**
- * Classify a machine, mirroring `Automaton::determinism` in the core crate.
+ * How deterministic a machine is — the badge text, exactly as the core spells it.
  *
- * Duplicated in TypeScript only because Phase 0 has no other conversions to call through to.
- * Phase 2 E4 routes this through wasm like everything else — a definition of "is this a DFA"
- * that exists in two languages is exactly the drift the architecture forbids. Until then the
- * test asserting both answers agree is what makes deleting this copy safe.
+ * Phase 0 carried a TypeScript reimplementation of this classification, with a note saying
+ * E4 would route it through wasm. This is E4, and the copy is gone. A definition of "is this
+ * a DFA" living in two languages is precisely the drift the architecture forbids, and it
+ * would have been silent: both sides compile, both return plausible answers, and the badge
+ * would disagree with the preconditions the algorithms actually enforce.
  */
-export function determinism(automaton: Automaton): Determinism {
-  if (automaton.transitions.some(isEpsilon)) return 'ε-NFA';
-
-  const seen = new Set<string>();
-  for (const transition of automaton.transitions) {
-    const key = `${transition.from} ${transition.on}`;
-    if (seen.has(key)) return 'NFA';
-    seen.add(key);
-  }
-  return 'DFA';
-}
+export type Determinism = 'DFA' | 'NFA' | 'ε-NFA';
