@@ -344,6 +344,27 @@ export function setEdgeSymbols(
   };
 }
 
+/**
+ * Remove an edge entirely — every transition between one ordered pair of states.
+ *
+ * The drawn edge is the unit people point at: `q0 → q1` labelled `a, b, c` is one arrow on
+ * screen, so "delete this" means all three. Deleting only one of the three would leave the
+ * arrow looking untouched while the machine had quietly changed.
+ */
+export function deleteEdge(from: StateId, to: StateId): Command {
+  return {
+    kind: 'delete-transition',
+    label: 'delete transition',
+    apply(document) {
+      const transitions = document.automaton.transitions.filter(
+        (transition) => !(transition.from === from && transition.to === to),
+      );
+      if (transitions.length === document.automaton.transitions.length) return document;
+      return withAutomaton(document, { ...document.automaton, transitions });
+    },
+  };
+}
+
 /** Add a symbol to the alphabet. */
 export function addSymbol(symbol: string): Command {
   return {
