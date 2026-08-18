@@ -165,6 +165,30 @@ pub fn formal_definition(automaton: JsValue) -> Result<JsValue, JsError> {
     serde_wasm_bindgen::to_value(&definition).map_err(|e| JsError::new(&e.to_string()))
 }
 
+/// Compile a regular expression into an ε-NFA, or into the reason it is not one.
+///
+/// Returns `undefined` for an empty input rather than an error — that is the state the regex
+/// bar is in before anyone has typed, and greeting a visitor with "unexpected end of input" is
+/// reporting a mistake they have not made.
+///
+/// The pipeline lives in the core (`regex::compile`) rather than being stitched together here.
+/// Three call sites joining `parse` to `thompson` is three chances to join it differently, and
+/// the browser, the CLI and the docs generator have to agree about what an expression means.
+///
+/// # Errors
+///
+/// Returns a JS error only if the result cannot be serialized, which would mean a type in the
+/// core has drifted out of `Serialize`.
+#[wasm_bindgen]
+pub fn compile_regex(source: &str) -> Result<JsValue, JsError> {
+    match kleene_core::regex::compile::compile(source) {
+        None => Ok(JsValue::UNDEFINED),
+        Some(outcome) => {
+            serde_wasm_bindgen::to_value(&outcome).map_err(|e| JsError::new(&e.to_string()))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use kleene_core::{Determinism, examples};
