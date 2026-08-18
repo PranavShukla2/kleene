@@ -220,13 +220,35 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 
 ### Track G — Layout
 
-- [ ] **G1.** elkjs layered left-to-right auto-layout, tuned spacing (roadmap §2.5).
-- [ ] **G2.** **Manual positions are never silently overwritten** (roadmap §7). Auto-layout
+- [x] **G1.** elkjs layered left-to-right auto-layout, tuned spacing (roadmap §2.5).
+- [x] **G2.** **Manual positions are never silently overwritten** (roadmap §7). Auto-layout
       is an explicit button, it animates from old to new positions so the change is legible,
       and it is undoable like any other command.
-- [ ] **G3.** `d3-force` "shake it out" as a secondary button.
-- [ ] **G4.** Layout runs in a Web Worker if it blocks the main thread beyond 100ms.
-      🔵 **LEFTOVER CANDIDATE** — only needed if measured.
+- [x] **G3.** `d3-force` "shake it out" as a secondary button.
+- [x] **G4.** Layout runs in a Web Worker if it blocks the main thread beyond 100ms.
+      ~~🔵 **LEFTOVER CANDIDATE**~~ — **measured, and needed.**
+
+> **Track G is closed.** The conditional task turned out to be required, which is the useful
+> kind of answer to get from a measurement.
+>
+> G4 was written as "only needed if measured", so it was measured — 14ms at 10 states, 42ms at
+> 30, **104ms at 60**, 360ms at 120, 1651ms at 250. It crosses the 100ms line at exactly the
+> size Track B chose for its frame-rate floor, so the two independent measurements agree about
+> what counts as a large teaching automaton. Using elk's worker build also takes the 1.4MB off
+> the main thread's bundle entirely: the app imports a 5KB shim and the worker fetches the
+> algorithm.
+>
+> **The start state has to be pinned to the first layer.** elk lays out by graph structure and
+> has no idea which state is special; an automaton is full of back edges, so which state lands
+> leftmost depends on how the cycles happened to be broken. The first run put the accepting
+> state on the left and the start state in the middle — not merely ugly, since reading left to
+> right is how a student follows a string through the machine.
+>
+> **G3 is repulsion only, hand-written rather than `d3-force`.** A general force simulation
+> solves a harder problem: it would also pull *connected* states together, fighting the
+> arrangement someone deliberately made. What is wanted after a few drags is separation, and
+> separation alone — and a test now asserts that spread-out states are left untouched, so
+> nobody later "improves" it into a simulation.
 
 ### Track H — Tests
 
