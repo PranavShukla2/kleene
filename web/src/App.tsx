@@ -13,18 +13,28 @@ import { rowLayout } from '@/canvas/geometry';
 import { ShortcutSheet } from '@/canvas/ShortcutSheet';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { requestedPerfSize, syntheticMachine } from '@/canvas/synthetic';
-import type { Determinism, Report, Simulation, StateId } from '@/model/automaton';
+import type {
+  Determinism,
+  FormalDefinition,
+  Report,
+  Simulation,
+  StateId,
+  TransitionTable,
+} from '@/model/automaton';
 import { Alphabet } from '@/panels/Alphabet';
 import { DeterminismBadge } from '@/panels/DeterminismBadge';
 import { InputTester } from '@/panels/InputTester';
 import { activeStates, clampStep } from '@/panels/simulation';
+import { FormalDefinitionPanel } from '@/panels/FormalDefinition';
 import { Properties } from '@/panels/Properties';
+import { TransitionTablePanel } from '@/panels/TransitionTable';
 import { Validation } from '@/panels/Validation';
 import { autoLayout, hasOverlap, shake } from '@/layout/auto';
 import { useAnimatedLayout } from '@/layout/useAnimatedLayout';
 import {
   addSymbol,
   deleteSymbol,
+  setEdgeSymbols,
   setLayout,
   setStart,
   toggleAccepting,
@@ -109,6 +119,48 @@ export function App() {
   const kind = useMemo<Determinism | undefined>(
     () => engine?.determinism(document.automaton),
     [engine, document.automaton],
+  );
+  const table = useMemo<TransitionTable | undefined>(
+    () => engine?.transitionTable(document.automaton),
+    [engine, document.automaton],
+  );
+  const definition = useMemo<FormalDefinition | undefined>(
+    () => engine?.formalDefinition(document.automaton),
+    [engine, document.automaton],
+  );
+
+  /**
+   * Commit an edited table cell.
+   *
+   * Expressed as a set of edges rather than as "add this, remove that": a cell *is* the set of
+   * states reachable from one state on one symbol, so replacing it wholesale is what the user
+   * typed. Each affected pair goes through `setEdgeSymbols`, the same command the canvas uses
+   * for a label — so undo does not care which surface the edit came from.
+   */
+  const editCell = useCallback(
+    (from: StateId, symbol: string | undefined, targets: StateId[]) => {
+      const previous = document.automaton.transitions
+        .filter((t) => t.from === from && (t.on ?? undefined) === symbol)
+        .map((t) => t.to);
+
+      const removed = previous.filter((id) => !targets.includes(id));
+      const added = targets.filter((id) => !previous.includes(id));
+      if (removed.length === 0 && added.length === 0) return;
+
+      for (const to of removed) {
+        const rest = document.automaton.transitions
+          .filter((t) => t.from === from && t.to === to && (t.on ?? undefined) !== symbol)
+          .map((t) => t.on);
+        run(setEdgeSymbols(from, to, rest));
+      }
+      for (const to of added) {
+        const existing = document.automaton.transitions
+          .filter((t) => t.from === from && t.to === to)
+          .map((t) => t.on);
+        run(setEdgeSymbols(from, to, [...existing, symbol]));
+      }
+    },
+    [document.automaton, run],
   );
 
   // Only run once the machine is well-formed enough to run. Simulating a document with a
@@ -253,14 +305,20 @@ export function App() {
               cannot be if it lives below the fold.
             */}
             <div className="flex flex-col gap-4 lg:flex-row">
-              <div className="min-w-0 flex-1 overflow-hidden rounded-[10px] border border-k-border">
+              {/*
+                The canvas grows to match the sidebar rather than sitting at a fixed height
+                with dead space beneath it. The panels are a reference read *beside* the
+                diagram, so the two columns ending level is what makes them read as one
+                workspace rather than as a diagram with an appendix.
+              */}
+              <div className="flex min-w-0 flex-1 overflow-hidden rounded-[10px] border border-k-border">
                 <Canvas
                   automaton={document.automaton}
                   layout={layout}
                   selection={selection}
                   active={active}
                   title="The automaton being edited"
-                  className="h-[480px] w-full"
+                  className="min-h-[480px] w-full flex-1"
                   onHelp={openHelp}
                 />
               </div>
@@ -290,6 +348,14 @@ export function App() {
                   step={step}
                   onStep={setStep}
                 />
+                <TransitionTablePanel
+                  table={table}
+                  automaton={document.automaton}
+                  selection={selection}
+                  onSelect={select}
+                  onEdit={editCell}
+                />
+                <FormalDefinitionPanel definition={definition} />
                 <Alphabet
                   automaton={document.automaton}
                   onAdd={(symbol) => {
