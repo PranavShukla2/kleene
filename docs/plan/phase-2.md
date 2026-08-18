@@ -398,18 +398,33 @@ tool exists. Those pages ship *with* their tool, in Phase 3, or not at all. Same
 `/docs` — Astro Starlight is a second build system, and standing it up empty is infrastructure
 cost against zero content.
 
-- [ ] **L1.** Shared navigation. `/editor` is currently a dead end — you can reach it and not
+- [x] **L1.** Shared navigation. `/editor` is currently a dead end — you can reach it and not
       leave it, which is the one navigation bug that makes a site feel broken rather than
       unfinished.
-- [ ] **L2.** `/examples` as its own page: the gallery from Phase 5 C5, at a URL worth sharing.
+- [x] **L2.** `/examples` as its own page: the gallery from Phase 5 C5, at a URL worth sharing.
       Real machines, one click into the editor.
-- [ ] **L3.** Filter examples by what they demonstrate (Phase 5 C7). Someone arrives looking for
+- [x] **L3.** Filter examples by what they demonstrate (Phase 5 C7). Someone arrives looking for
       the thing they are stuck on, not for a difficulty.
-- [ ] **L4.** `/roadmap` — what is built, what is next, and when. **This replaces scattering
+- [x] **L4.** `/roadmap` — what is built, what is next, and when. **This replaces scattering
       "coming soon" across the site**: one page that is honest and stays useful after v1, rather
       than a badge on every surface that becomes debt the day it ships.
-- [ ] **L5.** No dead ends. Every page reaches every other page, and the wordmark always goes
+- [x] **L5.** No dead ends. Every page reaches every other page, and the wordmark always goes
       home — including from the editor's command bar.
+
+> **Track L is closed.** Four routes, shared navigation, and no dead ends — verified by walking
+> editor → home → roadmap → examples → example-in-editor in one pass.
+>
+> **L4 turned out to be the good idea in the batch.** `/roadmap` means nothing else on the site
+> carries a badge: one page owns the question "what is next", stays useful after v1, and has a
+> single place to be wrong. A marker on every surface would have needed removing on every
+> surface.
+>
+> **A portability bug that macOS hid, twice.** `Examples.tsx` beside `examples.ts`, and
+> `Roadmap.tsx` beside `roadmap.ts`, differ only by case — and TypeScript silently dropped the
+> component from the program and reported success. CI runs on a case-sensitive filesystem where
+> they are distinct, so this would have surfaced as a build that passed locally and failed
+> there. The convention is now written into the modules: **data files are plural nouns, page
+> components are a different word.**
 
 ### Track H — Tests
 
