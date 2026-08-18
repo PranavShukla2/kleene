@@ -26,8 +26,19 @@ export function pathOf(route: Route): string {
   return route === 'editor' ? '/editor' : '/';
 }
 
+/**
+ * What the URL asks the editor to open, if anything.
+ *
+ * A query parameter rather than a path segment. `/editor?example=ends_with_ab` says "the
+ * editor, showing this" — the page is the editor either way, and the example is an argument to
+ * it. `/examples/ends_with_ab` would claim a different page exists, which would then need one.
+ */
+export function requestedExample(search: string): string | undefined {
+  return new URLSearchParams(search).get('example') ?? undefined;
+}
+
 /** Read the current route, and navigate without a reload. */
-export function useRoute(): { route: Route; go: (to: Route) => void } {
+export function useRoute(): { route: Route; go: (to: Route, search?: string) => void } {
   const [route, setRoute] = useState<Route>(() => routeOf(window.location.pathname));
 
   // The back button has to work. Without this, navigating away and pressing back changes the
@@ -42,8 +53,8 @@ export function useRoute(): { route: Route; go: (to: Route) => void } {
     };
   }, []);
 
-  const go = useCallback((to: Route) => {
-    window.history.pushState(null, '', pathOf(to));
+  const go = useCallback((to: Route, search?: string) => {
+    window.history.pushState(null, '', pathOf(to) + (search ?? ''));
     setRoute(to);
     // A fresh page starts at the top. Browsers restore scroll on popstate, which is right, but
     // a pushed navigation is a new page and should behave like one.
