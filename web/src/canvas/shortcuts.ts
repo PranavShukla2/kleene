@@ -37,6 +37,7 @@ export type ShortcutId =
   | 'resetZoom'
   | 'zoomIn'
   | 'zoomOut'
+  | 'togglePanel'
   | 'nudgeUp'
   | 'nudgeDown'
   | 'nudgeLeft'
@@ -198,6 +199,12 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { id: 'resetZoom', chord: 'Shift+Digit0', label: 'Zoom to 100%', group: 'View' },
   { id: 'zoomIn', chord: 'Mod+Equal', label: 'Zoom in', group: 'View' },
   { id: 'zoomOut', chord: 'Mod+Minus', label: 'Zoom out', group: 'View' },
+  {
+    id: 'togglePanel',
+    chord: 'Mod+Backslash',
+    label: 'Show or hide the panels',
+    group: 'View',
+  },
 
   { id: 'help', chord: 'Shift+Slash', label: 'Keyboard shortcuts', group: 'Help' },
 ];
@@ -300,6 +307,7 @@ const GLYPHS: Record<string, string> = {
   Equal: '+',
   Minus: '−',
   Slash: '/',
+  Backslash: '\\',
 };
 
 /**
