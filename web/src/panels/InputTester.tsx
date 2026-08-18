@@ -85,7 +85,13 @@ function VerdictChip({ verdict, empty }: { verdict: Verdict | undefined; empty: 
         : 'border-k-error/40 bg-k-error/10 text-k-error';
 
   return (
-    <span className={`flex items-center rounded-md border px-2 font-mono text-xs ${tone}`}>
+    <span
+      // Named for the e2e suite. The verdict is the one thing on screen that a test has to
+      // read *by meaning* rather than by position, and hunting for it through layout selectors
+      // makes the test fail every time the panel is rearranged.
+      data-testid="verdict"
+      className={`flex items-center rounded-md border px-2 font-mono text-xs ${tone}`}
+    >
       {verdict}
     </span>
   );
