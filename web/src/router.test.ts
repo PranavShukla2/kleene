@@ -1,0 +1,30 @@
+import { describe, expect, it } from 'vitest';
+
+import { pathOf, routeOf } from '@/router';
+
+describe('routeOf', () => {
+  it('maps the two real paths', () => {
+    expect(routeOf('/')).toBe('overview');
+    expect(routeOf('/editor')).toBe('editor');
+  });
+
+  it('ignores a trailing slash', () => {
+    // `/editor/` is the same page as `/editor`. A link that gained a slash somewhere between a
+    // lecture slide and a browser must not land on a different page.
+    expect(routeOf('/editor/')).toBe('editor');
+    expect(routeOf('/editor//')).toBe('editor');
+  });
+
+  it('falls back to the overview rather than a not-found', () => {
+    // Shared links are the distribution mechanism. A mistyped or stale URL should land
+    // somewhere that explains what this is, not on an apology.
+    expect(routeOf('/nonsense')).toBe('overview');
+    expect(routeOf('/tools/nfa-to-dfa')).toBe('overview');
+  });
+
+  it('round-trips every route through its path', () => {
+    for (const route of ['overview', 'editor'] as const) {
+      expect(routeOf(pathOf(route))).toBe(route);
+    }
+  });
+});
