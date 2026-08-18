@@ -36,6 +36,7 @@ pub mod notation;
 pub mod ops;
 pub mod regex;
 pub mod simulate;
+pub mod table;
 pub mod trace;
 pub mod validate;
 
@@ -50,6 +51,7 @@ pub use notation::Notation;
 pub use ops::{complement, difference, intersection, symmetric_difference, union};
 pub use regex::{ParseError, Regex, parse, simplify, thompson};
 pub use simulate::{Run, Verdict, simulate};
+pub use table::{FormalDefinition, TableColumn, TableRow, TransitionTable};
 pub use trace::{Step, StepKind, Traced};
 pub use validate::{Problem, ProblemKind, Report, Severity};
 
