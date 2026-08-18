@@ -8,6 +8,8 @@ import {
   moveState,
   moveStates,
   deleteStates,
+  setEdgeSymbols,
+  setLayout,
   renameState,
   setStart,
   toggleAccepting,
@@ -197,6 +199,17 @@ describe('every command is reversible', () => {
     addTransition(0, 2, 'z'),
     addTransition(2, 2, 'a'),
     deleteSymbol('a'),
+    // Added as the editor grew. A pool that stops being extended turns this property into a
+    // guarantee about the oldest code and silence about the newest — which is exactly
+    // backwards, since the newest is where the bugs are.
+    moveStates([
+      { id: 0, to: { x: 16, y: 16 } },
+      { id: 1, to: { x: 32, y: 16 } },
+    ]),
+    deleteStates([0, 1]),
+    setEdgeSymbols(0, 1, ['x', undefined]),
+    setEdgeSymbols(1, 2, []),
+    setLayout({ 0: { x: 8, y: 8 }, 2: { x: 64, y: 8 } }, 'auto-layout'),
   ];
 
   it('restores the exact document after any sequence', () => {
