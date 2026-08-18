@@ -20,7 +20,15 @@ import { InputTester } from '@/panels/InputTester';
 import { activeStates, clampStep } from '@/panels/simulation';
 import { Properties } from '@/panels/Properties';
 import { Validation } from '@/panels/Validation';
-import { addSymbol, deleteSymbol, setStart, toggleAccepting } from '@/store/commands';
+import { autoLayout, hasOverlap, shake } from '@/layout/auto';
+import { useAnimatedLayout } from '@/layout/useAnimatedLayout';
+import {
+  addSymbol,
+  deleteSymbol,
+  setLayout,
+  setStart,
+  toggleAccepting,
+} from '@/store/commands';
 import { normalize } from '@/store/document';
 import { useActions, useDocument, useSelection, useUndoState } from '@/store/editor';
 import { recoverDocument, useAutosave } from '@/store/useAutosave';
@@ -37,6 +45,7 @@ export function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [input, setInput] = useState('');
   const [storedStep, setStep] = useState(0);
+  const [laying, setLaying] = useState(false);
   const { choice, cycle } = useTheme();
   const autosave = useAutosave();
   const document = useDocument();
@@ -117,6 +126,38 @@ export function App() {
   const step = clampStep(storedStep, simulation?.run.configurations.length ?? 0);
   const active = activeStates(simulation, step);
 
+  // Rendered positions, which differ from the stored ones only while a rearrangement plays.
+  const { layout, animateFrom, animating } = useAnimatedLayout(document.layout);
+  const ids = useMemo(
+    () => document.automaton.states.map((state) => state.id),
+    [document.automaton.states],
+  );
+
+  /** Apply a new layout: one command, then animate the rendering from where things were. */
+  const applyLayout = useCallback(
+    (next: Record<number, { x: number; y: number }>, label: string) => {
+      const before = document.layout;
+      run(setLayout(next, label));
+      animateFrom(before);
+    },
+    [document.layout, run, animateFrom],
+  );
+
+  const layOut = useCallback(() => {
+    setLaying(true);
+    void autoLayout(document.automaton)
+      .then((next) => {
+        applyLayout(next, 'auto-layout');
+      })
+      .finally(() => {
+        setLaying(false);
+      });
+  }, [document.automaton, applyLayout]);
+
+  const shakeOut = useCallback(() => {
+    applyLayout(shake(document.layout, ids), 'shake apart');
+  }, [document.layout, ids, applyLayout]);
+
   // Clicking a problem selects the states it names. Selecting rather than merely scrolling to
   // them: the next thing anyone does after finding the broken state is edit it.
   const focusStates = useCallback(
@@ -155,6 +196,20 @@ export function App() {
 
           <div className="flex items-center gap-2">
             <DeterminismBadge value={kind} />
+            <ToolButton
+              onClick={layOut}
+              disabled={laying || animating || document.automaton.states.length === 0}
+              title="Arrange the states left to right"
+            >
+              {laying ? 'Laying out…' : 'Arrange'}
+            </ToolButton>
+            <ToolButton
+              onClick={shakeOut}
+              disabled={animating || !hasOverlap(document.layout, ids)}
+              title="Push overlapping states apart"
+            >
+              Shake
+            </ToolButton>
             <ToolButton onClick={undo} disabled={!undoState.canUndo}>
               {undoState.undoLabel ? `Undo ${undoState.undoLabel}` : 'Undo'}
             </ToolButton>
@@ -201,7 +256,7 @@ export function App() {
               <div className="min-w-0 flex-1 overflow-hidden rounded-[10px] border border-k-border">
                 <Canvas
                   automaton={document.automaton}
-                  layout={document.layout}
+                  layout={layout}
                   selection={selection}
                   active={active}
                   title="The automaton being edited"
@@ -279,16 +334,19 @@ function ToolButton({
   children,
   onClick,
   disabled,
+  title,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className="rounded-md border border-k-border px-3 py-1.5 text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text disabled:opacity-40 disabled:hover:border-k-border"
     >
       {children}
