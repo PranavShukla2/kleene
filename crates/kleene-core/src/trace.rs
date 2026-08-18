@@ -88,8 +88,15 @@ pub struct Step {
     /// One sentence of plain-language reasoning, ready to render.
     pub detail: String,
     /// State ids this step is about, for the UI to highlight. Empty when not applicable.
+    ///
+    /// These name states of the algorithm's **input**. A subset-construction step highlights
+    /// the NFA states in the subset it is talking about; [`frame`](Self::frame) is what names
+    /// states of the machine being built.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub highlight: Vec<u32>,
+    /// How much of the result existed once this step finished, when the algorithm can say.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub frame: Option<Frame>,
 }
 
 impl Step {
@@ -99,6 +106,7 @@ impl Step {
             kind: StepKind::Note,
             detail: detail.into(),
             highlight: Vec::new(),
+            frame: None,
         }
     }
 
@@ -108,6 +116,7 @@ impl Step {
             kind,
             detail: detail.into(),
             highlight: Vec::new(),
+            frame: None,
         }
     }
 
@@ -117,6 +126,61 @@ impl Step {
         self.highlight = ids.into_iter().collect();
         self
     }
+
+    /// Attach the state of the half-built result, so the UI can draw it mid-construction.
+    #[must_use]
+    pub fn framed(mut self, frame: Frame) -> Self {
+        self.frame = Some(frame);
+        self
+    }
+}
+
+/// How much of the result exists, part-way through building it.
+///
+/// This is what lets a diagram *grow* rather than only re-highlight. Without it a scrubber can
+/// show which states a step is talking about but not which states had been discovered yet, so
+/// step 3 of a twelve-step construction draws the finished twelve-state machine — the answer,
+/// while claiming to show the working.
+///
+/// ## Why counts rather than a snapshot
+///
+/// Every algorithm that emits frames appends to its result in discovery order and never
+/// rewrites what it has already appended. So "what existed after step *n*" is exactly a
+/// *prefix* of the result, and a prefix is two integers. Storing a copy of the machine per
+/// step instead would put an O(states) clone on every step: a 250-state construction runs to
+/// hundreds of steps, and half a megabyte would cross the FFI boundary to say what two numbers
+/// say. The prefix property is not incidental — it is asserted in tests, because a future
+/// algorithm that renumbered states mid-run would break this silently.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Frame")
+)]
+pub struct Frame {
+    /// How many of the result's states existed, counting in the result's own order.
+    pub states: u32,
+    /// How many of the result's transitions existed, likewise.
+    pub transitions: u32,
+    /// Result states still waiting to be expanded, in the order they will be taken.
+    ///
+    /// The worklist *is* subset construction; a UI that shows it has explained most of the
+    /// algorithm. Carried per step rather than recomputed because the queue is the one piece
+    /// of algorithm state that leaves no trace in the finished machine.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pending: Vec<u32>,
+    /// The result state being expanded, when the step sits inside a round.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current: Option<u32>,
+    /// The result state this step arrived at, when it arrived anywhere.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<u32>,
+    /// Whether [`target`](Self::target) was created by this step rather than recognised.
+    ///
+    /// New-versus-already-seen is the distinction students most reliably get wrong, so the UI
+    /// draws it differently — and reads it from here rather than by matching on prose.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fresh: bool,
 }
 
 /// The kind of reasoning a [`Step`] represents.
@@ -183,5 +247,47 @@ mod tests {
 
         let json = serde_json::to_string(&Step::note("hi").highlighting([1, 2])).unwrap();
         assert!(json.contains("highlight"));
+    }
+
+    #[test]
+    fn a_step_without_a_frame_does_not_carry_an_empty_one() {
+        // Same budget argument as `highlight`: most steps of most algorithms have nothing to
+        // say about a half-built result, and `"frame":null` on every one of them is waste.
+        let json = serde_json::to_string(&Step::note("hello")).unwrap();
+        assert!(!json.contains("frame"), "{json}");
+    }
+
+    #[test]
+    fn a_frame_omits_the_fields_it_has_nothing_to_say_about() {
+        let step = Step::note("hi").framed(Frame {
+            states: 3,
+            transitions: 2,
+            ..Frame::default()
+        });
+        let json = serde_json::to_string(&step).unwrap();
+
+        assert!(json.contains("\"states\":3"), "{json}");
+        // A round that expanded nothing, arrived nowhere and left an empty queue should say
+        // so by silence rather than by three nulls and an empty array.
+        for absent in ["pending", "current", "target", "fresh"] {
+            assert!(!json.contains(absent), "{absent} should be omitted: {json}");
+        }
+    }
+
+    #[test]
+    fn a_frame_survives_a_round_trip() {
+        let frame = Frame {
+            states: 4,
+            transitions: 6,
+            pending: vec![2, 3],
+            current: Some(1),
+            target: Some(3),
+            fresh: true,
+        };
+        let step = Step::new(StepKind::SubsetRound, "round").framed(frame);
+
+        let json = serde_json::to_string(&step).unwrap();
+        let back: Step = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, step);
     }
 }
