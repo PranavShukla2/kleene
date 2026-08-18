@@ -59,13 +59,25 @@ the wild, every change needs a migration path. Phase 4 is the last week it can c
 
 ### D9 — Which two panes are the default on a small screen?
 
-**Status:** ⏳ Phase 3 B2
+**Status:** ✅ Decided 2026-08-18 — **ε-NFA | DFA**
 
-Four panes do not fit on a 1366×768 laptop. Candidates: **ε-NFA | DFA** (the conversion
+Four panes do not fit on a 1366×768 laptop. Candidates were **ε-NFA | DFA** (the conversion
 everyone comes for) or **regex | DFA** (input and result).
 
-**Recommendation:** ε-NFA | DFA, since the pipeline's selling point is the conversion, not
-the endpoints.
+**Decided: ε-NFA | DFA**, and building it changed the shape of the question.
+
+**There is no regex pane.** Task A1 made the regular expression the page's primary input — a
+prominent bar across the top, always visible. A *pane* showing the same expression would be the
+input rendered twice, one of them not editable. So there are three diagram panes, not four, and
+B1's framing over-counted by one. That alone buys back a third of the width the decision was
+about.
+
+Of the three, the default pair is ε-NFA and DFA because subset construction is what the page is
+named for and what the syllabus examines. The minimal DFA is a *second* question — "and could
+it be smaller?" — which someone asks after they have understood the first, and which the state
+count in its header answers even while the pane is closed.
+
+All three are selectable; the pair is only the default.
 
 ### D11 — Umami or Plausible?
 
