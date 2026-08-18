@@ -51,7 +51,7 @@ type Load =
   | { status: 'ready'; engine: Engine }
   | { status: 'failed'; message: string };
 
-export function App() {
+export function Editor() {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [helpOpen, setHelpOpen] = useState(false);
   const [input, setInput] = useState('');
