@@ -54,47 +54,22 @@ const HERO: Automaton = {
 export function Overview({
   onOpenEditor,
   onOpenExample,
-  themeLabel,
-  onCycleTheme,
+  onBrowseExamples,
 }: {
   onOpenEditor: () => void;
   /** Open the editor with a built-in machine already loaded. */
   onOpenExample: (key: string) => void;
-  themeLabel: string;
-  onCycleTheme: () => void;
+  /** Go to the full gallery. */
+  onBrowseExamples: () => void;
 }) {
   return (
-    <div className="min-h-dvh bg-k-bg text-k-text">
-      <header className="border-b border-k-border">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex items-baseline gap-3">
-            <span className="font-mono text-lg font-medium tracking-tight text-k-primary">
-              kleene
-            </span>
-            <span className="text-sm text-k-text-faint">automata workbench</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <GhostButton onClick={onCycleTheme}>{themeLabel}</GhostButton>
-            <PrimaryButton onClick={onOpenEditor}>Open the editor</PrimaryButton>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-5xl px-6">
-        <Hero onOpenEditor={onOpenEditor} />
-        <Features />
-        <Examples onOpen={onOpenExample} />
-        <Comparison />
-        <Closing onOpenEditor={onOpenEditor} />
-      </main>
-
-      <footer className="border-t border-k-border">
-        <div className="mx-auto w-full max-w-5xl px-6 py-6 text-sm text-k-text-faint">
-          Built in Rust, compiled to WebAssembly. The engine that draws these diagrams is the
-          same one that checks them.
-        </div>
-      </footer>
-    </div>
+    <main className="mx-auto w-full max-w-5xl px-6">
+      <Hero onOpenEditor={onOpenEditor} />
+      <Features />
+      <Examples onOpen={onOpenExample} onBrowseAll={onBrowseExamples} />
+      <Comparison />
+      <Closing onOpenEditor={onOpenEditor} />
+    </main>
   );
 }
 
@@ -216,14 +191,24 @@ function StatusChip({ status }: { status: Status }) {
  * and the section says so rather than padding the row out to look fuller. A gallery that
  * pretends to be bigger than it is gets found out on the second click.
  */
-function Examples({ onOpen }: { onOpen: (key: string) => void }) {
+function Examples({
+  onOpen,
+  onBrowseAll,
+}: {
+  onOpen: (key: string) => void;
+  onBrowseAll: () => void;
+}) {
   return (
     <section className="border-t border-k-border py-16">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-2xl font-semibold tracking-tight">Start from an example</h2>
-        <span className="font-mono text-xs text-k-text-faint">
-          {EXAMPLES.length} today · a full gallery in phase 5
-        </span>
+        <button
+          type="button"
+          onClick={onBrowseAll}
+          className="font-mono text-xs text-k-text-faint underline decoration-dotted underline-offset-4 transition-colors duration-(--duration-k-hover) hover:text-k-text"
+        >
+          browse all {EXAMPLES.length} →
+        </button>
       </div>
       <p className="mt-2 max-w-prose text-k-text-muted">
         Each one opens in the editor, ready to edit. Nothing is saved anywhere until you change
@@ -329,24 +314,6 @@ function PrimaryButton({
       className={`rounded-md bg-k-primary font-medium text-white transition-colors duration-(--duration-k-hover) hover:bg-k-primary-hover ${
         large ? 'px-5 py-2.5' : 'px-3 py-1.5 text-sm'
       }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function GhostButton({
-  children,
-  onClick,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-md border border-k-border px-3 py-1.5 text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text"
     >
       {children}
     </button>
