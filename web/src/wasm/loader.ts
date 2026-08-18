@@ -66,6 +66,10 @@ export interface Engine {
    *
    * `undefined` for an empty input, which is the state the bar is in before anyone has typed
    * — not a mistake to report.
+   *
+   * Returns *every* stage — ε-NFA, DFA, minimal DFA — from one call. Three calls could each be
+   * made against a different expression while the user keeps typing, and the panes would then
+   * disagree with each other.
    */
   compileRegex: (source: string) => Compilation | undefined;
 }

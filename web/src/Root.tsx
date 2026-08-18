@@ -21,6 +21,7 @@ import { Gallery } from '@/overview/Gallery';
 import { Overview } from '@/overview/Overview';
 import { Roadmap } from '@/overview/Roadmap';
 import { SiteFooter, SiteHeader } from '@/overview/SiteHeader';
+import { handOff } from '@/store/handoff';
 import { useRoute, type Route } from '@/router';
 import { useTheme } from '@/theme';
 import { loadEngine, type Engine } from '@/wasm/loader';
@@ -62,7 +63,15 @@ function Page({ route, go }: { route: Route; go: (to: Route, search?: string) =>
 
   switch (route) {
     case 'convert':
-      return <Convert engine={engine} />;
+      return (
+        <Convert
+          engine={engine}
+          onOpenInEditor={(automaton) => {
+            handOff(automaton);
+            go('editor');
+          }}
+        />
+      );
     case 'examples':
       return <Gallery engine={engine} onOpen={openExample} />;
     case 'roadmap':

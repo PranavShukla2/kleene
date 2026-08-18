@@ -40,6 +40,7 @@ export type { TableRow } from '@/model/generated/TableRow';
 export type { TableColumn } from '@/model/generated/TableColumn';
 export type { FormalDefinition } from '@/model/generated/FormalDefinition';
 export type { Compilation } from '@/model/generated/Compilation';
+export type { Stage } from '@/model/generated/Stage';
 export type { ParseError } from '@/model/generated/ParseError';
 export type { Span } from '@/model/generated/Span';
 

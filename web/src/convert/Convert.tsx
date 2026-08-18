@@ -1,45 +1,47 @@
 /**
  * `/convert` — type a regular expression, watch it become a machine.
  *
- * Phase 3's home. Track A is the bar and the ε-NFA it produces; Tracks B through F fill the
- * page out with the DFA, the minimal DFA and the step-through that connects them. The panes
- * that do not exist yet say which phase they land in, exactly as the overview does — this page
- * being unfinished is not a reason to be vague about *how* unfinished.
+ * Phase 3's home. The bar compiles as you type; the panes below show every stage of the
+ * pipeline that produces. All three come from **one** call to the engine, so they cannot
+ * disagree about which expression they are describing.
  */
 
 import { useMemo, useState } from 'react';
 
-import { AutomatonView } from '@/canvas/AutomatonView';
-import { rowLayout } from '@/canvas/geometry';
+import { DiagramView } from '@/canvas/DiagramView';
+import { wrappedRowLayout } from '@/canvas/geometry';
+import { DEFAULT_PANES, PANES, reduction, type PaneId } from '@/convert/panes';
 import { RegexBar } from '@/convert/RegexBar';
 import { useCompiler } from '@/convert/useCompiler';
-import type { Automaton } from '@/model/automaton';
+import type { Automaton, Compilation, Stage, StateId } from '@/model/automaton';
 import type { Engine } from '@/wasm/loader';
 
 /** The empty-string glyph. From the engine once D7 makes notation a setting; ε until then. */
 const EPSILON = 'ε';
 
-export function Convert({ engine }: { engine: Engine | undefined }) {
+export function Convert({
+  engine,
+  onOpenInEditor,
+}: {
+  engine: Engine | undefined;
+  /** Hand a stage to the editor, so a converted machine can be edited by hand. */
+  onOpenInEditor: (automaton: Automaton) => void;
+}) {
   const [source, setSource] = useState('');
+  const [shown, setShown] = useState<readonly PaneId[]>(DEFAULT_PANES);
+  // Which ε-NFA states the hovered DFA state was built from (task B3).
+  const [origin, setOrigin] = useState<readonly StateId[]>([]);
+
   const compilation = useCompiler(engine, source);
-
-  const built: Automaton | undefined =
-    compilation?.kind === 'parsed' ? compilation.automaton : undefined;
-
-  // Thompson's construction emits states in a chain, so a row reads it correctly and costs
-  // nothing. Track G's elkjs layout replaces this once there are four panes competing for
-  // width and a row stops fitting.
-  const layout = useMemo(
-    () => (built ? rowLayout(built.states.map((state) => state.id)) : {}),
-    [built],
-  );
+  const parsed = compilation?.kind === 'parsed' ? compilation : undefined;
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-10">
+    <main className="mx-auto w-full max-w-6xl px-6 py-10">
       <h1 className="text-3xl font-semibold tracking-tight">Convert</h1>
       <p className="mt-3 max-w-prose text-k-text-muted">
-        Type a regular expression and watch it become a machine. The ε-NFA below is built by
-        Thompson&rsquo;s construction, the same one your course draws by hand.
+        Type a regular expression and watch it become a machine — through Thompson&rsquo;s
+        construction, subset construction, and minimization. Every stage below comes from one
+        pass over what you typed, so no two panes can be describing different expressions.
       </p>
 
       <div className="mt-8">
@@ -51,92 +53,187 @@ export function Convert({ engine }: { engine: Engine | undefined }) {
         />
       </div>
 
-      <Pane
-        title="ε-NFA"
-        subtitle="Thompson’s construction"
-        count={built ? `${String(built.states.length)} states` : undefined}
-      >
-        {built ? (
-          <AutomatonView
-            automaton={built}
-            layout={layout}
-            title={`ε-NFA built from ${source}`}
-            className="h-72 w-full"
-          />
-        ) : (
-          <Placeholder>
-            {compilation?.kind === 'failed'
-              ? 'Fix the expression above and this fills in.'
-              : 'The machine appears here as you type.'}
-          </Placeholder>
-        )}
-      </Pane>
+      {parsed && (
+        <>
+          <PaneToggles shown={shown} onChange={setShown} parsed={parsed} />
 
-      {/*
-        The rest of Phase 3, named rather than hidden. A page that simply stopped after one
-        pane would read as finished-and-thin; one that says what is coming reads as in
-        progress, which is the truth.
-      */}
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <ComingPane title="DFA" detail="Subset construction, one round at a time." task="B1" />
-        <ComingPane
-          title="Minimal DFA"
-          detail="Partition refinement, with the string that split each block."
-          task="E1"
-        />
-      </div>
+          <div
+            className={`mt-4 grid gap-4 ${
+              // Two panes side by side is the most a 1366×768 laptop reads comfortably, which
+              // is what decision D9 is about. A third stacks rather than shrinking the others.
+              shown.length > 1 ? 'lg:grid-cols-2' : ''
+            }`}
+          >
+            {PANES.filter((pane) => shown.includes(pane.id)).map((pane) => {
+              const stage = pane.stageOf(parsed);
+              return (
+                <Pane
+                  key={pane.id}
+                  title={pane.title}
+                  subtitle={pane.subtitle}
+                  stage={stage}
+                  source={source}
+                  note={pane.id === 'minimal' ? reduction(parsed) : undefined}
+                  // Only the DFA panes carry provenance worth pointing at; the ε-NFA is what
+                  // they point *to*.
+                  highlight={pane.id === 'nfa' ? origin : []}
+                  onHoverState={pane.id === 'nfa' ? undefined : setOrigin}
+                  onOpenInEditor={() => {
+                    onOpenInEditor(stage.automaton);
+                  }}
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
 
-      <p className="mt-6 text-sm text-k-text-faint">
-        The step-through — every round, with the reasoning attached — is the rest of phase 3.
-        The engine already produces those traces; this page is the view for them.
+      {!parsed && (
+        <p className="mt-10 text-sm text-k-text-faint">The machines appear here as you type.</p>
+      )}
+
+      <p className="mt-8 max-w-prose text-sm text-k-text-faint">
+        The step-through — every round of subset construction, every partition split, with the
+        reasoning attached — is the rest of phase 3. The engine already produces those traces:
+        each pane above is carrying one.
       </p>
     </main>
+  );
+}
+
+/**
+ * Which panes to show.
+ *
+ * Toggles rather than a dropdown, because the answer is usually "these two" and a dropdown
+ * makes a two-item answer into two interactions. The state count sits on the toggle so the
+ * minimal DFA can answer "could it be smaller?" while its pane is still closed — which is
+ * most of what someone wants from it most of the time.
+ */
+function PaneToggles({
+  shown,
+  onChange,
+  parsed,
+}: {
+  shown: readonly PaneId[];
+  onChange: (next: readonly PaneId[]) => void;
+  parsed: Extract<Compilation, { kind: 'parsed' }>;
+}) {
+  return (
+    <div className="mt-6 flex flex-wrap items-center gap-2">
+      {PANES.map((pane) => {
+        const on = shown.includes(pane.id);
+        const count = pane.stageOf(parsed).automaton.states.length;
+
+        return (
+          <button
+            key={pane.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => {
+              // Never allow zero panes. A page that can be emptied by clicking its own
+              // controls looks broken, and there is nothing useful on the other side of it.
+              const next = on ? shown.filter((id) => id !== pane.id) : [...shown, pane.id];
+              if (next.length > 0) onChange(next);
+            }}
+            className={`rounded-full border px-3 py-1 font-mono text-xs transition-colors duration-(--duration-k-hover) ${
+              on
+                ? 'border-k-primary bg-k-primary/10 text-k-primary'
+                : 'border-k-border text-k-text-muted hover:border-k-border-strong hover:text-k-text'
+            }`}
+          >
+            {pane.title} <span className="opacity-60">{count}</span>
+          </button>
+        );
+      })}
+
+      {reduction(parsed) && (
+        // Task B4: "that number is the entire argument for minimization".
+        <span className="ml-auto font-mono text-xs text-k-text-faint">
+          minimization: <span className="text-k-secondary">{reduction(parsed)}</span>
+        </span>
+      )}
+    </div>
   );
 }
 
 function Pane({
   title,
   subtitle,
-  count,
-  children,
+  stage,
+  source,
+  note,
+  highlight,
+  onHoverState,
+  onOpenInEditor,
 }: {
   title: string;
   subtitle: string;
-  count: string | undefined;
-  children: React.ReactNode;
+  stage: Stage;
+  source: string;
+  note: string | undefined;
+  highlight: readonly StateId[];
+  onHoverState: ((origin: readonly StateId[]) => void) | undefined;
+  onOpenInEditor: () => void;
 }) {
+  // Wrapped, because Thompson's construction produces chains: `(a|b)*abb` is fourteen states
+  // and over 1300px on one line, which a pane can only show at a third size. Eight per row
+  // keeps a pane's aspect ratio close to the box it is drawn in.
+  const layout = useMemo(
+    () =>
+      wrappedRowLayout(
+        stage.automaton.states.map((state) => state.id),
+        8,
+      ),
+    [stage.automaton.states],
+  );
+
   return (
-    <section className="mt-6 overflow-hidden rounded-[10px] border border-k-border bg-k-surface">
+    <section className="overflow-hidden rounded-[10px] border border-k-border bg-k-surface">
       <header className="flex items-baseline justify-between gap-3 border-b border-k-border px-4 py-2.5">
         <h2 className="font-medium">
           {title}
           <span className="ml-2 text-sm font-normal text-k-text-faint">{subtitle}</span>
         </h2>
-        {count && <span className="font-mono text-xs text-k-text-faint">{count}</span>}
+        <div className="flex items-baseline gap-3">
+          {note && <span className="font-mono text-xs text-k-secondary">{note}</span>}
+          <span className="font-mono text-xs text-k-text-faint">
+            {stage.automaton.states.length} states
+          </span>
+          {/*
+            The link the editor was missing. Someone who converts an expression and then wants
+            to change the machine by hand had, until now, no route from one to the other.
+          */}
+          <button
+            type="button"
+            onClick={onOpenInEditor}
+            className="font-mono text-xs text-k-text-faint underline decoration-dotted underline-offset-4 transition-colors duration-(--duration-k-hover) hover:text-k-text"
+          >
+            edit →
+          </button>
+        </div>
       </header>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
 
-function Placeholder({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex h-72 items-center justify-center text-sm text-k-text-faint">
-      {children}
-    </div>
-  );
-}
-
-function ComingPane({ title, detail, task }: { title: string; detail: string; task: string }) {
-  return (
-    <section className="rounded-[10px] border border-dashed border-k-border p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-medium text-k-text-muted">{title}</h2>
-        <span className="shrink-0 rounded-full border border-k-border px-2 py-0.5 font-mono text-[10px] text-k-text-faint">
-          phase 3 · {task}
-        </span>
+      <div
+        className="p-4"
+        onPointerLeave={() => {
+          onHoverState?.([]);
+        }}
+      >
+        <DiagramView
+          automaton={stage.automaton}
+          layout={layout}
+          selection={highlight}
+          title={`${title} for ${source}`}
+          className="h-64 w-full rounded-md border border-k-border"
+          onHoverState={
+            onHoverState &&
+            ((id) => {
+              const state = stage.automaton.states.find((candidate) => candidate.id === id);
+              onHoverState(state?.origin ?? []);
+            })
+          }
+        />
       </div>
-      <p className="mt-2 text-sm text-k-text-muted">{detail}</p>
     </section>
   );
 }
