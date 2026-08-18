@@ -12,6 +12,8 @@ import { DiagramView } from '@/canvas/DiagramView';
 import { wrappedRowLayout } from '@/canvas/geometry';
 import { DEFAULT_PANES, PANES, reduction, type PaneId } from '@/convert/panes';
 import { RegexBar } from '@/convert/RegexBar';
+import { Scrubber } from '@/convert/Scrubber';
+import { clampStep, highlighted, readStepFrom, stepFragment } from '@/convert/scrubbing';
 import { useCompiler } from '@/convert/useCompiler';
 import type { Automaton, Compilation, Stage, StateId } from '@/model/automaton';
 import type { Engine } from '@/wasm/loader';
@@ -31,6 +33,16 @@ export function Convert({
   const [shown, setShown] = useState<readonly PaneId[]>(DEFAULT_PANES);
   // Which ε-NFA states the hovered DFA state was built from (task B3).
   const [origin, setOrigin] = useState<readonly StateId[]>([]);
+  // One step position per pane. Seeded from the URL fragment so a link to round four opens
+  // there (task C7); after that the fragment follows the scrubber rather than driving it.
+  const [steps, setSteps] = useState<Partial<Record<PaneId, number>>>(() =>
+    Object.fromEntries(
+      PANES.flatMap((pane) => {
+        const from = readStepFrom(window.location.hash, pane.id);
+        return from === undefined ? [] : [[pane.id, from]];
+      }),
+    ),
+  );
 
   const compilation = useCompiler(engine, source);
   const parsed = compilation?.kind === 'parsed' ? compilation : undefined;
@@ -66,6 +78,8 @@ export function Convert({
           >
             {PANES.filter((pane) => shown.includes(pane.id)).map((pane) => {
               const stage = pane.stageOf(parsed);
+              const step = clampStep(steps[pane.id] ?? 0, stage.steps);
+
               return (
                 <Pane
                   key={pane.id}
@@ -74,9 +88,28 @@ export function Convert({
                   stage={stage}
                   source={source}
                   note={pane.id === 'minimal' ? reduction(parsed) : undefined}
-                  // Only the DFA panes carry provenance worth pointing at; the ε-NFA is what
-                  // they point *to*.
-                  highlight={pane.id === 'nfa' ? origin : []}
+                  step={step}
+                  onStep={(next) => {
+                    setSteps((current) => ({ ...current, [pane.id]: next }));
+                    // Replace rather than push: scrubbing thirty rounds must not put thirty
+                    // entries in the back button, but the address bar still holds a link
+                    // worth copying at every one of them.
+                    window.history.replaceState(
+                      null,
+                      '',
+                      window.location.pathname + stepFragment(pane.id, next),
+                    );
+                  }}
+                  // Two highlights, two sources. Hovering a DFA state points at the ε-NFA
+                  // states it came from; scrubbing points at the states the *step* is about.
+                  // The scrubber wins where they collide, because it is the deliberate act.
+                  highlight={
+                    highlighted(step, stage.steps).length > 0
+                      ? highlighted(step, stage.steps)
+                      : pane.id === 'nfa'
+                        ? origin
+                        : []
+                  }
                   onHoverState={pane.id === 'nfa' ? undefined : setOrigin}
                   onOpenInEditor={() => {
                     onOpenInEditor(stage.automaton);
@@ -92,11 +125,13 @@ export function Convert({
         <p className="mt-10 text-sm text-k-text-faint">The machines appear here as you type.</p>
       )}
 
-      <p className="mt-8 max-w-prose text-sm text-k-text-faint">
-        The step-through — every round of subset construction, every partition split, with the
-        reasoning attached — is the rest of phase 3. The engine already produces those traces:
-        each pane above is carrying one.
-      </p>
+      {parsed && (
+        <p className="mt-8 max-w-prose text-sm text-k-text-faint">
+          Every sentence under a scrubber was written in Rust, beside the line of the algorithm
+          that made that move. Nothing on this page composes an explanation from what it can see
+          in the result.
+        </p>
+      )}
     </main>
   );
 }
@@ -162,6 +197,8 @@ function Pane({
   stage,
   source,
   note,
+  step,
+  onStep,
   highlight,
   onHoverState,
   onOpenInEditor,
@@ -171,6 +208,8 @@ function Pane({
   stage: Stage;
   source: string;
   note: string | undefined;
+  step: number;
+  onStep: (next: number) => void;
   highlight: readonly StateId[];
   onHoverState: ((origin: readonly StateId[]) => void) | undefined;
   onOpenInEditor: () => void;
@@ -234,6 +273,8 @@ function Pane({
           }
         />
       </div>
+
+      <Scrubber steps={stage.steps} step={step} onStep={onStep} label={`${subtitle} steps`} />
     </section>
   );
 }
