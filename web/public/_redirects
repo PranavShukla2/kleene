@@ -1,0 +1,8 @@
+# SPA fallback.
+#
+# The router reads `location.pathname`, so a deep link to /editor has to reach index.html
+# rather than the host's 404 — otherwise the one URL worth sharing is the only one that
+# breaks when shared. Cloudflare Pages reads this file verbatim.
+#
+# 200, not 301: the browser must keep the URL it was given so the router can route on it.
+/*    /index.html   200
