@@ -261,6 +261,39 @@ Handle correctly: self-loops (`loop above/below/left/right` chosen by free space
 
 ---
 
+### 2.8 The shell: how the tool is arranged
+
+Two surfaces, and they are not the same product:
+
+**The workbench is full-bleed.** Not a page with a tool on it — the tool *is* the page. One
+compact command bar across the top, the canvas filling everything below it, side panels that
+collapse, and viewport controls floating over the canvas rather than sitting in a strip that
+costs vertical space. Design-system §1.5 fixes the target as a 1366×768 laptop; a centred
+`max-w-5xl` column throws away a third of that width on margins, and §1.4 ("density over
+decoration") already says a student comparing four panes needs information per pixel.
+
+The rule that keeps it coherent: **the diagram is the only permanent surface.** Every panel is
+collapsible, nothing else is load-bearing, and closing everything leaves a canvas and a
+command bar. That follows from §1.1 — chrome recedes, the automaton does not.
+
+**The front door is a different product.** Someone who has never seen this needs to know what
+it is and be *using* it within one click, without an account:
+
+- A landing page with a **working automaton already on screen** — the thing itself, not a
+  screenshot of it.
+- An **example gallery**: curated machines, each tagged with what it demonstrates and how hard
+  it is, each opening in the editor in one click.
+- A **first-run tour** in the editor, skippable and never shown twice. Kleene's gestures are
+  discoverable but not obvious — dragging from a state's *rim* draws a transition — and a tool
+  that requires reading the shortcut sheet before the first success has already lost most of
+  its audience.
+
+When the teaching layer arrives (§9), the account-free path stays first-class and stays
+**honest about what it lacks**: no saved work across devices, no assignments, no progress. A
+signed-out mode that hides its own limits is worse than one that states them.
+
+---
+
 ## 3. Testing strategy
 
 This section is disproportionately important — it is what makes the repo read as engineering rather than coursework.
@@ -415,9 +448,11 @@ This is the feature nobody else has. It's what the launch post is about.
 
 - [ ] PWA: offline manifest, install prompt, service worker
 - [ ] Tauri desktop builds for three platforms
-- [ ] ~20 curated example automata, loadable in one click
+- [ ] ~20 curated example automata, loadable in one click, presented as a **gallery** — each
+      tagged with what it demonstrates and how hard it is (§2.8)
 - [ ] Docs site: getting started, the algorithms, CLI reference, `.kln` format spec
 - [ ] Landing page — with a working automaton already on screen, no signup, no upload
+- [ ] First-run tour in the editor: skippable, never shown twice (§2.8)
 - [ ] `CONTRIBUTING.md`, issue templates, MIT or Apache-2.0 license
 - [ ] Launch
 
