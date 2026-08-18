@@ -387,28 +387,44 @@ nothing. A visitor should be able to tell, at a glance, what they can use today.
 
 ### Track H — Tests
 
-- [ ] **H1.** Vitest over the command stack: every command's `invert` restores state exactly.
+- [x] **H1.** Vitest over the command stack: every command's `invert` restores state exactly.
       Property-style, over random command sequences.
-- [ ] **H2.** Vitest over geometry helpers — screen↔world round trip, edge clipping.
-- [ ] **H3.** The C7 routing snapshots wired into CI.
-- [ ] **H4.** Playwright, added this phase: build the "even number of a's" DFA entirely
+- [x] **H2.** Vitest over geometry helpers — screen↔world round trip, edge clipping.
+- [x] **H3.** The C7 routing snapshots wired into CI.
+- [x] **H4.** Playwright, added this phase: build the "even number of a's" DFA entirely
       through the UI, run a string, assert the verdict. That is the exit criterion, automated.
+
+> **Track H is closed, and two of its four tasks were already done.**
+>
+> **H3 needed no work at all.** The twelve routing snapshots are vitest tests, and CI has run
+> `vitest run` since the start of the phase — so they have been gating merges the whole time.
+>
+> **H1 needed less than it looked.** The property test was there, running 200 random command
+> sequences under a fixed seed. Its *pool*, though, was written when the pool was the whole
+> command set, and four commands had been added since — three of them batches. A pool that
+> stops being extended turns a property into a guarantee about the oldest code and silence
+> about the newest, which is exactly backwards.
+>
+> **H4 caught a mistake on its first green run, and the mistake was in the test.** `aab` was in
+> the rejected list; it has two a's. Writing the assertions as membership questions about a
+> *language* rather than as expected outputs of a code path is what made that visible — you can
+> be wrong about a language in a way you cannot be wrong about a snapshot.
 
 ---
 
 ## Definition of done
 
-- [ ] The "even number of a's" DFA can be built, edited, and tested end to end in the UI.
-- [ ] The same machine reads correctly as a transition table and as a formal 5-tuple, and the
+- [x] The "even number of a's" DFA can be built, edited, and tested end to end in the UI.
+- [x] The same machine reads correctly as a transition table and as a formal 5-tuple, and the
       table can build it just as well as the canvas can.
-- [ ] The editor fills the window on a 1366×768 laptop, with the canvas as the largest thing
+- [x] The editor fills the window on a 1366×768 laptop, with the canvas as the largest thing
       on screen and every panel closable.
-- [ ] Undo/redo is correct across every command, including drags and deletions.
-- [ ] The 12 pathological routing fixtures all render without overlap or occluded labels.
-- [ ] 60fps while dragging within a 60-state automaton, measured.
-- [ ] The editor is fully keyboard-operable.
-- [ ] Auto-layout never destroys manual positions without an undoable, explicit action.
-- [ ] Playwright e2e green in CI.
+- [x] Undo/redo is correct across every command, including drags and deletions.
+- [x] The 12 pathological routing fixtures all render without overlap or occluded labels.
+- [x] 60fps while dragging within a 60-state automaton, measured.
+- [x] The editor is fully keyboard-operable.
+- [x] Auto-layout never destroys manual positions without an undoable, explicit action.
+- [x] Playwright e2e green in CI.
 - [ ] Deferred items in [LEFTOVERS.md](../../LEFTOVERS.md).
 
 ## Known risks for this phase

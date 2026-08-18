@@ -80,7 +80,28 @@ has been corrected so the mistake is visible rather than quietly absorbed.
 
 ## Phase 2 — The editor
 
-*Not started.*
+**Closed 2026-08-18.** 73 of 77 boxes. Every item in the Definition of Done is ticked, and the
+exit criterion — building the "even number of a's" DFA end to end through the UI — runs in CI
+on every push.
+
+Two tracks were added mid-phase and both are closed: **I** (the transition table and the formal
+5-tuple, from roadmap §2.4a) and **J** (the workbench shell, from §2.8). A third, **K**, pulled
+the front-door shell forward from Phase 5 so that what comes next can be seen and checked
+rather than described.
+
+| What | Why it did not land | Where it went | Cost of leaving it |
+|---|---|---|---|
+| **Deferred** — play/pause with adjustable speed (F5) | The step controls work and stepping by hand is what a student actually does when learning; autoplay is for demonstrating, which is Phase 3's job. Building it now would mean building the speed control twice, since Phase 3's scrubber needs one for conversions too. | Phase 3 Track C, alongside the step scrubber | None. Manual stepping covers every case autoplay would, more slowly and more deliberately. |
+| **Deferred** — batch tester (F6) | Pre-approved as a leftover candidate. One string at a time answers "does this machine do what I think", which is the question in Phase 2. Many strings at once answers "does this machine match a spec", which is a *grading* question and belongs with the teaching layer that asks it. | Phase 3, or v1.1 §9.1 where assignment links reuse it directly | None yet. It becomes load-bearing only when there is an assignment to check against. |
+| **Deferred** — animate the transition being taken (F7) | Added mid-phase after F1–F4 shipped, once it was visible that swapping a highlight between two states shows *where* the machine went and never *how*. Design-system §1.3 already governs it — "motion explains causality, or it doesn't happen" — and 280ms is already specified in §5. | Phase 3, with the step scrubber that shares the timing | Low but real. On an NFA, one symbol fans the configuration out along several edges and the highlight simply appears in three new places, which is the case the animation most needs to explain. |
+| **Deferred** — copy the table as TSV (I6) | Marked a leftover candidate when Track I was written. It is *export*, and Phase 4 owns export properly — including the clipboard handling, the LaTeX `tabular` variant, and the question of what a partial δ looks like in a spreadsheet. | Phase 4, with the other exporters | None. The table is readable and selectable on screen today. |
+
+**Nothing was descoped, and nothing is blocked.**
+
+One item from an earlier phase was paid off here as promised: Phase 0's deferred
+free-space-aware self-loop placement landed as **C4**. Phase 0's deferred ESLint and Prettier
+landed before the editor grew, as that entry asked. Phase 0's deferred Playwright tests landed
+as **H4**, which is where that entry said they belonged.
 
 ## Phase 3 — The conversion pipeline
 
