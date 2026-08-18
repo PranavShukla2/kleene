@@ -39,6 +39,7 @@ import {
   setStart,
   toggleAccepting,
 } from '@/store/commands';
+import { requestedExample } from '@/router';
 import { normalize } from '@/store/document';
 import { usePreferences } from '@/store/preferences';
 import { useActions, useDocument, useSelection, useUndoState } from '@/store/editor';
@@ -83,10 +84,23 @@ export function Editor() {
       .then(([engine, recovered]) => {
         if (!live) return;
 
-        if (recovered && recovered.automaton.states.length > 0) {
+        // An explicit `?example=` wins over recovery. Someone who clicked a specific machine
+        // asked for *that* machine; silently restoring their last session instead would look
+        // like the link was broken. Without one, recovery wins — that is the ordinary return
+        // visit, and it is what autosave exists for.
+        const wanted = requestedExample(window.location.search);
+
+        if (wanted === undefined && recovered && recovered.automaton.states.length > 0) {
           loadDocument(recovered);
         } else {
-          const automaton = engine.example('ends_with_ab');
+          // An unknown key falls back rather than failing. A stale link in a lecture slide
+          // should open *something*, not an error about a machine that has been renamed.
+          let automaton;
+          try {
+            automaton = engine.example(wanted ?? 'ends_with_ab');
+          } catch {
+            automaton = engine.example('ends_with_ab');
+          }
           loadDocument(
             normalize({
               automaton,
