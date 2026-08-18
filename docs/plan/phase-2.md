@@ -265,24 +265,44 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 notations, converting between them is an examined skill, and Phase 2 was shipping one of the
 three. The data is already in the document — this is presentation, and it is cheap.*
 
-- [ ] **I1.** Transition table: rows are states, columns are Σ (plus an ε column when the
+- [x] **I1.** Transition table: rows are states, columns are Σ (plus an ε column when the
       machine has ε-transitions), cells hold the target set. Start and accepting states marked
       in the row header with the same `→` and `*` convention textbooks use, so the table reads
       the way a printed one does.
-- [ ] **I2.** The table is **editable**. Click a cell, type targets, `Enter` commits — the same
+- [x] **I2.** The table is **editable**. Click a cell, type targets, `Enter` commits — the same
       inline-edit contract as edge labels, and the same commands underneath. Read-only would
       make it a report; typing a target is how a large share of people prefer to build a dense
       DFA, and it is faster than drawing one.
-- [ ] **I3.** Selection is shared with the canvas, both ways. Clicking a row selects the state
+- [x] **I3.** Selection is shared with the canvas, both ways. Clicking a row selects the state
       on the diagram; selecting on the diagram highlights the row. Two views of one object that
       disagree about what is selected are two objects.
-- [ ] **I4.** Formal definition panel: `M = (Q, Σ, δ, q₀, F)` with each component expanded, and
+- [x] **I4.** Formal definition panel: `M = (Q, Σ, δ, q₀, F)` with each component expanded, and
       δ presented as the table rather than restated. This is the thing exams ask for verbatim.
-- [ ] **I5.** Both render through `notation.rs` (D7), never through hard-coded glyphs. Courses
+- [x] **I5.** Both render through `notation.rs` (D7), never through hard-coded glyphs. Courses
       disagree about `ε` vs `λ` and `∅` vs `{}`, and a tool that quietly picks the other
       convention is harder to learn from than one that picks none.
 - [ ] **I6.** Copy the table as TSV, so it pastes into a spreadsheet or a LaTeX `tabular`.
       🔵 **LEFTOVER CANDIDATE** — cheap, but Phase 4 owns export properly.
+
+> **Track I is closed except I6**, which is export and belongs to Phase 4.
+>
+> The table went into the *core*, not the frontend. Grouping transitions by `(from, symbol)` is
+> four lines of TypeScript, so difficulty was never the reason — three of the decisions are
+> semantic rather than presentational: whether an ε column exists, what an empty cell means,
+> and which glyph stands for the empty string. Answering those in the view layer would put half
+> the definition of δ in the code that draws it, and the CLI and TikZ exporter would each need
+> their own answer.
+>
+> Two decisions the build forced that the task list did not anticipate:
+>
+> **An empty machine reports δ *incomplete*.** Vacuous truth says a machine with no states has
+> a total transition function. That is technically defensible and useless to someone staring at
+> a blank canvas.
+>
+> **A table edit is the same command as a canvas edit.** Cells commit through `setEdgeSymbols`,
+> so undo does not care which surface the edit came from — and the undo button reads "Undo edit
+> transition" either way. Two editing surfaces that produced different history entries would be
+> two tools sharing a document.
 
 ### Track H — Tests
 
