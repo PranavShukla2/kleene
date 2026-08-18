@@ -310,20 +310,34 @@ three. The data is already in the document — this is presentation, and it is c
 1366×768 laptop design-system §1.5 names as the target, a centred `max-w-5xl` column spends a
 third of the width on margins while the canvas — the product — is squeezed into what is left.*
 
-- [ ] **J1.** Full-bleed layout: one compact command bar, canvas filling everything under it,
+- [x] **J1.** Full-bleed layout: one compact command bar, canvas filling everything under it,
       no page margins and no footer competing with the tool.
-- [ ] **J2.** Collapsible side panel. **The diagram is the only permanent surface** — closing
+- [x] **J2.** Collapsible side panel. **The diagram is the only permanent surface** — closing
       everything leaves a canvas and a command bar, which is design-system §1.1 restated as
       geometry.
-- [ ] **J3.** The panel's open/closed state persists, because a preference that resets every
+- [x] **J3.** The panel's open/closed state persists, because a preference that resets every
       session is not a preference. Same store, same IndexedDB, alongside the theme.
-- [ ] **J4.** Viewport controls float over the canvas rather than occupying a strip. Vertical
+- [x] **J4.** Viewport controls float over the canvas rather than occupying a strip. Vertical
       pixels on a 768px screen are the scarcest thing on it.
-- [ ] **J5.** The validation strip docks to the bottom of the canvas, not below the fold. A
+- [x] **J5.** The validation strip docks to the bottom of the canvas, not below the fold. A
       problem list you have to scroll to find is a problem list nobody reads.
-- [ ] **J6.** Keyboard: a chord to toggle the panel, in the shortcut table like everything else.
-- [ ] **J7.** Responsive fallback under `lg` — the panel becomes a sheet over the canvas rather
+- [x] **J6.** Keyboard: a chord to toggle the panel, in the shortcut table like everything else.
+- [x] **J7.** Responsive fallback under `lg` — the panel becomes a sheet over the canvas rather
       than a column beside it, so the tool is usable on a tablet without a second layout.
+
+> **Track J is closed.** Measured on the machine design-system §1.5 names: the canvas went
+> from roughly 800×480 inside a centred column to **1078×658** full-bleed, on the same
+> 1366×768 laptop. Collapsing the panel takes it to 1366×658.
+>
+> Two things fell out that were not on the list.
+>
+> **The title block and the hint paragraph went away.** Both were explaining gestures that the
+> `?` sheet documents properly and that roadmap §2.8 assigns to a first-run tour. A paragraph
+> nobody reads twice is not worth a permanent row on a 768px screen.
+>
+> **`min-h-0` is load-bearing.** Without it a flex child refuses to shrink below its content
+> height, and the canvas pushes the status bar off the bottom of the window. Worth recording
+> because the symptom — a status bar that is simply not there — looks nothing like its cause.
 
 ### Track H — Tests
 
