@@ -284,7 +284,11 @@ function StateNode({
           r={GEOM.radius + GEOM.selectionGap}
           fill="none"
           strokeWidth={GEOM.selectionStroke}
-          className="stroke-k-primary"
+          // Faded in rather than cut. Scrubbing moves this ring from one set of states to
+          // another, and design-system §1.3 asks motion to explain causality — a ring that
+          // appears instantly says a state is marked; one that fades says *this* step marked
+          // it. 280ms matches §5's step transition, so scrubbing and playback agree.
+          className="stroke-k-primary motion-safe:animate-[fade-in_280ms_ease-out]"
         />
       )}
       <circle

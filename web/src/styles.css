@@ -178,3 +178,19 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * The step highlight's entrance.
+ *
+ * Used by the scrubber's marking ring. Behind `motion-safe:` at the call site, so
+ * `prefers-reduced-motion` gets an instant cut — design-system §5 is explicit that reduced
+ * motion must not mean reduced information, and the ring still appears either way.
+ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
