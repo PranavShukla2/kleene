@@ -82,6 +82,11 @@ here is not shipping something imperfect; it is not shipping.
 
 ### Track E — Landing page
 
+> **The shell was built early**, in Phase 2 Track K, so that everything after it could be seen
+> and checked rather than described. This track no longer creates a page — it finishes one.
+> Every feature named there carries the phase it lands in, so the work here is largely
+> *removing markers as they come true*, and a marker still standing at v1 is a bug.
+
 - [ ] **E1.** A **working automaton already on screen** — no signup, no upload, no video
       (roadmap §5). The demo is the landing page.
 - [ ] **E2.** The step-through as the hero interaction. It is the hook (roadmap §6.3).

@@ -339,6 +339,34 @@ third of the width on margins while the canvas — the product — is squeezed i
 > height, and the canvas pushes the status bar off the bottom of the window. Worth recording
 > because the symptom — a status bar that is simply not there — looks nothing like its cause.
 
+### Track K — The front door, early
+
+*Pulled forward from Phase 5 at the project owner's request: something showable, so that
+everything built after it can be seen and checked rather than described. The **shell** moves;
+the plan does not. Phase 5 Track E still owns the finished landing page, and Track C still owns
+the real example gallery — they now fill in a page that exists instead of creating one.*
+
+**The rule that makes this honest:** every feature named on the page is either working, or
+carries a marker saying *which phase it lands in*. Not "coming soon" — a vague badge scattered
+over a page is a worse lie than an empty page, because it promises everything and dates
+nothing. A visitor should be able to tell, at a glance, what they can use today.
+
+- [ ] **K1.** A route split: `/` is the overview, `/editor` is the workbench. A hand-rolled
+      pathname router, not a routing library — three routes do not justify 20KB, and roadmap
+      §6.1 already wants `/tools/*` pages later, so the seam is worth having early.
+- [ ] **K2.** SPA fallback for the host, so a deep link to `/editor` is not a 404.
+- [ ] **K3.** Hero with a **real automaton already rendered** — the component the editor uses,
+      not a screenshot (roadmap §5, Phase 5 E1).
+- [ ] **K4.** What it does, as a feature grid, each item tagged with its status and phase.
+- [ ] **K5.** The JFLAP comparison table from roadmap §1.3 — the clearest single statement of
+      why this exists.
+- [ ] **K6.** Examples strip: what the gallery will be, populated from the engine's built-in
+      examples so it is real rather than mocked, and marked as growing in Phase 5.
+- [ ] **K7.** The account-free promise stated plainly and once: work stays in this browser
+      (roadmap §2.8, Phase 5 E7).
+- [ ] **K8.** No render-blocking wasm. The overview must paint before the engine arrives — it
+      is the page a first-time visitor sees on a bad connection (Phase 5 E4).
+
 ### Track H — Tests
 
 - [ ] **H1.** Vitest over the command stack: every command's `invert` restores state exactly.
