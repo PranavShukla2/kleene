@@ -17,16 +17,25 @@ use std::fmt;
 
 use crate::regex::Span;
 use crate::regex::ast::Regex;
+use serde::{Deserialize, Serialize};
+
 use crate::regex::lexer::{LexError, Token, TokenKind, lex};
 
 /// A regular expression that could not be parsed.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "ParseError")
+)]
 pub struct ParseError {
     /// Where the problem is.
     pub span: Span,
     /// What is wrong, in a sentence.
     pub message: String,
     /// What to do about it, when there is a specific suggestion.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "ts", ts(optional))]
     pub help: Option<String>,
 }
 

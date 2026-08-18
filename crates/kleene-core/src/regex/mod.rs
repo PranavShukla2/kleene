@@ -25,6 +25,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod ast;
+pub mod compile;
 pub mod lexer;
 pub mod parser;
 pub mod simplify;
@@ -41,6 +42,11 @@ pub use thompson::thompson;
 /// UTF-8 conversion. Regexes are short; the cost of char indexing is irrelevant and the
 /// correctness gain for multi-byte glyphs like `ε` is not.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Span")
+)]
 pub struct Span {
     /// First character, inclusive.
     pub start: usize,
