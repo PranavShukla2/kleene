@@ -54,6 +54,16 @@ here is not shipping something imperfect; it is not shipping.
       transitions worth tracing.
 - [ ] **C4.** Examples double as fixtures — they run in CI, so a broken example is caught by
       a test rather than by a user.
+- [ ] **C5.** A **gallery**, not a dropdown (roadmap §2.8). Each example is a card carrying its
+      title, the language it accepts, what it demonstrates, and a difficulty tier. Browsable
+      without an account, one click into the editor.
+- [ ] **C6.** Tiers are honest and few — *introductory · standard · pathological*. Three levels
+      a student can self-select into. "Advanced" as a label for "we ran out of adjectives"
+      teaches nothing; **pathological** names the actual reason a machine is on the list, which
+      is that it breaks the intuition the earlier ones build.
+- [ ] **C7.** Filter by what an example *demonstrates* — ε-transitions, subset blow-up, a trap
+      state, dramatic minimization — rather than only by tier. Someone arrives at a gallery
+      looking for the thing they are stuck on, not for a difficulty.
 
 ### Track D — Documentation site
 
@@ -80,6 +90,18 @@ here is not shipping something imperfect; it is not shipping.
       must not wait on a 400 KB wasm module to show something.
 - [ ] **E5.** Open Graph and Twitter cards — shared links are the distribution mechanism, so
       the preview image matters more than usual.
+- [ ] **E6.** A **first-run tour** inside the editor: skippable, dismissed permanently, and
+      short (roadmap §2.8). Kleene's gestures are discoverable but not obvious — dragging from
+      a state's *rim* draws a transition, not from its centre — and a tool that needs the
+      shortcut sheet read before the first success has already lost most of its audience.
+
+      Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
+      shorter feedback loop: writing it against gestures that are still moving means rewriting
+      it, and a tour that describes a gesture the editor no longer has is worse than none.
+- [ ] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
+      nag — a line saying work stays in this browser and is not synced. When §9's teaching
+      layer lands this is the sentence that keeps the signed-out mode honest instead of
+      quietly worse.
 
 ### Track F — Release engineering
 
@@ -135,6 +157,8 @@ here is not shipping something imperfect; it is not shipping.
 - [ ] ~20 examples load in one click and are covered by CI.
 - [ ] Docs cover getting started, algorithms, CLI, and the format.
 - [ ] The landing page shows a working automaton with no interaction required.
+- [ ] The example gallery is browsable without an account, and every card opens in one click.
+- [ ] A first-time visitor reaches their first working automaton without opening the docs.
 - [ ] `v1.0.0` tagged; CLI binaries and desktop bundles attached to the release.
 - [ ] `kleene-core` published to crates.io.
 - [ ] At least the first launch email has been sent. A shipped tool nobody was told about
