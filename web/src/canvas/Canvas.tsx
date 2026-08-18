@@ -434,12 +434,15 @@ export function Canvas({
     <div
       ref={ref}
       // Focusable, because it is a widget rather than a picture: Tab reaches it, and Tab
-      // inside it means something else. The focus ring is drawn inset so it does not sit on
-      // the border the surrounding panel already provides.
+      // inside it means something else.
       tabIndex={0}
       role="application"
       aria-label={title}
-      className={`relative overflow-hidden bg-k-canvas outline-none focus-visible:ring-2 focus-visible:ring-k-primary/40 focus-visible:ring-inset ${className ?? ''}`}
+      // A single hairline inset, not a heavy ring. Full-bleed, the canvas border *is* the edge
+      // of the window, so a 2px violet outline around the whole thing reads as an error state
+      // rather than as "this has focus". It still has to be visible — Tab cycling only works
+      // while the canvas holds focus, so the ring is what explains why the key did something.
+      className={`relative overflow-hidden bg-k-canvas outline-none focus-visible:ring-1 focus-visible:ring-k-primary/40 focus-visible:ring-inset ${className ?? ''}`}
       style={{ cursor: cursorFor(panning, interaction), touchAction: 'none' }}
       onContextMenu={openMenu}
     >
