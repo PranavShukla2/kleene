@@ -304,6 +304,27 @@ three. The data is already in the document — this is presentation, and it is c
 > transition" either way. Two editing surfaces that produced different history entries would be
 > two tools sharing a document.
 
+### Track J — The workbench shell
+
+*Added mid-phase, from roadmap §2.8. The editor works; it is arranged like a document. On the
+1366×768 laptop design-system §1.5 names as the target, a centred `max-w-5xl` column spends a
+third of the width on margins while the canvas — the product — is squeezed into what is left.*
+
+- [ ] **J1.** Full-bleed layout: one compact command bar, canvas filling everything under it,
+      no page margins and no footer competing with the tool.
+- [ ] **J2.** Collapsible side panel. **The diagram is the only permanent surface** — closing
+      everything leaves a canvas and a command bar, which is design-system §1.1 restated as
+      geometry.
+- [ ] **J3.** The panel's open/closed state persists, because a preference that resets every
+      session is not a preference. Same store, same IndexedDB, alongside the theme.
+- [ ] **J4.** Viewport controls float over the canvas rather than occupying a strip. Vertical
+      pixels on a 768px screen are the scarcest thing on it.
+- [ ] **J5.** The validation strip docks to the bottom of the canvas, not below the fold. A
+      problem list you have to scroll to find is a problem list nobody reads.
+- [ ] **J6.** Keyboard: a chord to toggle the panel, in the shortcut table like everything else.
+- [ ] **J7.** Responsive fallback under `lg` — the panel becomes a sheet over the canvas rather
+      than a column beside it, so the tool is usable on a tablet without a second layout.
+
 ### Track H — Tests
 
 - [ ] **H1.** Vitest over the command stack: every command's `invert` restores state exactly.
@@ -320,6 +341,8 @@ three. The data is already in the document — this is presentation, and it is c
 - [ ] The "even number of a's" DFA can be built, edited, and tested end to end in the UI.
 - [ ] The same machine reads correctly as a transition table and as a formal 5-tuple, and the
       table can build it just as well as the canvas can.
+- [ ] The editor fills the window on a 1366×768 laptop, with the canvas as the largest thing
+      on screen and every panel closable.
 - [ ] Undo/redo is correct across every command, including drags and deletions.
 - [ ] The 12 pathological routing fixtures all render without overlap or occluded labels.
 - [ ] 60fps while dragging within a 60-state automaton, measured.
