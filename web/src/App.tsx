@@ -40,6 +40,7 @@ import {
   toggleAccepting,
 } from '@/store/commands';
 import { requestedExample } from '@/router';
+import { takeHandOff } from '@/store/handoff';
 import { normalize } from '@/store/document';
 import { usePreferences } from '@/store/preferences';
 import { useActions, useDocument, useSelection, useUndoState } from '@/store/editor';
@@ -84,13 +85,24 @@ export function Editor({ onHome }: { onHome: () => void }) {
       .then(([engine, recovered]) => {
         if (!live) return;
 
-        // An explicit `?example=` wins over recovery. Someone who clicked a specific machine
-        // asked for *that* machine; silently restoring their last session instead would look
-        // like the link was broken. Without one, recovery wins — that is the ordinary return
-        // visit, and it is what autosave exists for.
+        // Three sources, ranked by how explicit the request is.
+        //
+        // 1. A machine handed over from another page — the most explicit thing there is: the
+        //    user pressed a button that says "edit this", one click ago.
+        // 2. An `?example=` in the URL. They asked for that machine; restoring their last
+        //    session instead would look like the link was broken.
+        // 3. Whatever autosave recovered. The ordinary return visit, and what autosave is for.
+        const handed = takeHandOff();
         const wanted = requestedExample(window.location.search);
 
-        if (wanted === undefined && recovered && recovered.automaton.states.length > 0) {
+        if (handed) {
+          loadDocument(
+            normalize({
+              automaton: handed,
+              layout: rowLayout(handed.states.map((state) => state.id)),
+            }),
+          );
+        } else if (wanted === undefined && recovered && recovered.automaton.states.length > 0) {
           loadDocument(recovered);
         } else {
           // An unknown key falls back rather than failing. A stale link in a lecture slide
