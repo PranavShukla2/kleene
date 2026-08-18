@@ -41,6 +41,16 @@ interface Props {
   /** Accessible description of what this diagram shows. */
   title: string;
   className?: string;
+  /** Which states to mark, for a view that highlights without an editor's selection. */
+  selection?: readonly StateId[];
+  /**
+   * The pointer entered or left a state.
+   *
+   * `undefined` id means it left. Used by the conversion page to light up the ε-NFA states a
+   * DFA state was built from — a *read-only* highlight, which is why it lives on the view
+   * rather than on the editing canvas.
+   */
+  onHoverState?: (id: StateId | undefined) => void;
 }
 
 /**
@@ -50,7 +60,14 @@ interface Props {
  * because it supplies its own transform and cannot have a nested viewBox refitting itself
  * underneath.
  */
-export function AutomatonView({ automaton, layout, title, className }: Props) {
+export function AutomatonView({
+  automaton,
+  layout,
+  title,
+  className,
+  selection,
+  onHoverState,
+}: Props) {
   // Memoised so the fallback layout keeps its identity between renders. It feeds
   // `AutomatonGraphics`'s own memo, and a fresh object every render would defeat it.
   const positions = useMemo(
@@ -69,7 +86,13 @@ export function AutomatonView({ automaton, layout, title, className }: Props) {
       preserveAspectRatio="xMidYMid meet"
     >
       <title>{title}</title>
-      <AutomatonGraphics automaton={automaton} layout={positions} grid />
+      <AutomatonGraphics
+        automaton={automaton}
+        layout={positions}
+        grid
+        selection={selection}
+        onHoverState={onHoverState}
+      />
     </svg>
   );
 }
@@ -87,6 +110,7 @@ export function AutomatonGraphics({
   grid = false,
   selection,
   active,
+  onHoverState,
 }: {
   automaton: Automaton;
   layout: Layout;
@@ -96,6 +120,8 @@ export function AutomatonGraphics({
   selection?: readonly StateId[];
   /** Which states the simulator is currently in. */
   active?: readonly StateId[];
+  /** The pointer entered or left a state. `undefined` means it left. */
+  onHoverState?: (id: StateId | undefined) => void;
 }) {
   const box = viewBoxFor(Object.values(positions));
 
@@ -173,6 +199,12 @@ export function AutomatonGraphics({
             accepting={state.accepting ?? false}
             selected={selection?.includes(state.id) ?? false}
             active={active?.includes(state.id) ?? false}
+            onHover={
+              onHoverState &&
+              ((entered) => {
+                onHoverState(entered ? state.id : undefined);
+              })
+            }
           />
         );
       })}
@@ -194,15 +226,33 @@ function StateNode({
   accepting,
   selected,
   active,
+  onHover,
 }: {
   at: Point;
   label: string;
   accepting: boolean;
   selected: boolean;
   active: boolean;
+  onHover?: (entered: boolean) => void;
 }) {
   return (
-    <g>
+    <g
+      onPointerEnter={
+        onHover &&
+        (() => {
+          onHover(true);
+        })
+      }
+      onPointerLeave={
+        onHover &&
+        (() => {
+          onHover(false);
+        })
+      }
+      // Only interactive when something is listening, so a static diagram keeps its pointer
+      // events out of the way of whatever is behind it.
+      className={onHover ? 'cursor-help' : undefined}
+    >
       {/*
         The active glow. A soft disc behind the state rather than a filter, because an SVG
         blur filter is the one thing here that would cost real time per frame — and the
