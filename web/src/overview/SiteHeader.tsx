@@ -14,6 +14,7 @@ import type { Route } from '@/router';
 
 const NAV: readonly { route: Route; label: string }[] = [
   { route: 'overview', label: 'Overview' },
+  { route: 'convert', label: 'Convert' },
   { route: 'examples', label: 'Examples' },
   { route: 'roadmap', label: 'Roadmap' },
 ];

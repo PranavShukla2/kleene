@@ -16,6 +16,7 @@
 import { useEffect, useState } from 'react';
 
 import { Editor } from '@/App';
+import { Convert } from '@/convert/Convert';
 import { Gallery } from '@/overview/Gallery';
 import { Overview } from '@/overview/Overview';
 import { Roadmap } from '@/overview/Roadmap';
@@ -52,12 +53,16 @@ export function Root() {
 }
 
 function Page({ route, go }: { route: Route; go: (to: Route, search?: string) => void }) {
-  const engine = useEngine(route === 'examples');
+  // Both of these draw real machines, so both need the engine. The overview and the roadmap
+  // still do not ask for it, which is what keeps their first paint free of a 400KB wait.
+  const engine = useEngine(route === 'examples' || route === 'convert');
   const openExample = (key: string) => {
     go('editor', `?example=${encodeURIComponent(key)}`);
   };
 
   switch (route) {
+    case 'convert':
+      return <Convert engine={engine} />;
     case 'examples':
       return <Gallery engine={engine} onOpen={openExample} />;
     case 'roadmap':

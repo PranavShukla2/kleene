@@ -14,12 +14,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /** Every page the app can show. */
-export type Route = 'overview' | 'editor' | 'examples' | 'roadmap';
+export type Route = 'overview' | 'editor' | 'convert' | 'examples' | 'roadmap';
 
 /** Where each route lives. One table, so the two directions cannot disagree. */
 const PATHS: Record<Route, string> = {
   overview: '/',
   editor: '/editor',
+  convert: '/convert',
   examples: '/examples',
   roadmap: '/roadmap',
 };
