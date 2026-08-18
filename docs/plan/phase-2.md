@@ -351,21 +351,39 @@ carries a marker saying *which phase it lands in*. Not "coming soon" — a vague
 over a page is a worse lie than an empty page, because it promises everything and dates
 nothing. A visitor should be able to tell, at a glance, what they can use today.
 
-- [ ] **K1.** A route split: `/` is the overview, `/editor` is the workbench. A hand-rolled
+- [x] **K1.** A route split: `/` is the overview, `/editor` is the workbench. A hand-rolled
       pathname router, not a routing library — three routes do not justify 20KB, and roadmap
       §6.1 already wants `/tools/*` pages later, so the seam is worth having early.
-- [ ] **K2.** SPA fallback for the host, so a deep link to `/editor` is not a 404.
-- [ ] **K3.** Hero with a **real automaton already rendered** — the component the editor uses,
+- [x] **K2.** SPA fallback for the host, so a deep link to `/editor` is not a 404.
+- [x] **K3.** Hero with a **real automaton already rendered** — the component the editor uses,
       not a screenshot (roadmap §5, Phase 5 E1).
-- [ ] **K4.** What it does, as a feature grid, each item tagged with its status and phase.
-- [ ] **K5.** The JFLAP comparison table from roadmap §1.3 — the clearest single statement of
+- [x] **K4.** What it does, as a feature grid, each item tagged with its status and phase.
+- [x] **K5.** The JFLAP comparison table from roadmap §1.3 — the clearest single statement of
       why this exists.
-- [ ] **K6.** Examples strip: what the gallery will be, populated from the engine's built-in
+- [x] **K6.** Examples strip: what the gallery will be, populated from the engine's built-in
       examples so it is real rather than mocked, and marked as growing in Phase 5.
-- [ ] **K7.** The account-free promise stated plainly and once: work stays in this browser
+- [x] **K7.** The account-free promise stated plainly and once: work stays in this browser
       (roadmap §2.8, Phase 5 E7).
-- [ ] **K8.** No render-blocking wasm. The overview must paint before the engine arrives — it
+- [x] **K8.** No render-blocking wasm. The overview must paint before the engine arrives — it
       is the page a first-time visitor sees on a bad connection (Phase 5 E4).
+
+> **Track K is closed.** `/` is the overview, `/editor` is the workbench, and an example opens
+> in one click from either a card or a URL.
+>
+> **K8 verified rather than assumed:** the overview page requests no `.wasm` at all. The hero
+> automaton is a six-line literal instead of an engine call, precisely so the one thing a
+> first-time visitor is guaranteed to see cannot wait on a 400KB module.
+>
+> Two things fell out that were not on the list.
+>
+> **`?example=` beats autosave recovery.** Someone who clicked a specific machine asked for
+> *that* machine; silently restoring their last session would look like the link was broken.
+> With no example in the URL, recovery wins — that is the ordinary return visit. Neither
+> ordering is obviously right until the other one is tried.
+>
+> **This is also what makes the tool checkable.** Every feature built after this can be aimed
+> at a real machine in one click rather than one that has to be hand-drawn first, which was the
+> actual complaint behind "build the UI first".
 
 ### Track H — Tests
 
