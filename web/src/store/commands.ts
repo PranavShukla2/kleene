@@ -188,6 +188,39 @@ export function deleteStates(ids: readonly StateId[]): Command {
   );
 }
 
+/**
+ * Replace the whole layout at once — auto-layout, or shaking states apart.
+ *
+ * One command, so an entire rearrangement is one undo press. Roadmap §7 is explicit that
+ * automatic layout must never destroy manual positions without an undoable action, and this is
+ * the undoable action: the previous layout is the snapshot the history already keeps, so
+ * getting the old arrangement back costs exactly one keystroke.
+ *
+ * Deliberately not coalescing. Two presses of "auto-layout" a second apart are two decisions,
+ * and merging them would leave the first arrangement unreachable.
+ */
+export function setLayout(layout: Record<StateId, Point>, label: string): Command {
+  return {
+    kind: 'move-state',
+    label,
+    apply(document) {
+      const ids = Object.keys(layout);
+      const unchanged =
+        ids.length === Object.keys(document.layout).length &&
+        ids.every((id) => {
+          const from = document.layout[Number(id)];
+          const to = layout[Number(id)];
+          return from?.x === to?.x && from?.y === to?.y;
+        });
+      if (unchanged) return document;
+
+      // States absent from the new layout keep their old position rather than vanishing from
+      // it. A layout that dropped a state would leave it unpositioned and therefore undrawn.
+      return { ...document, layout: { ...document.layout, ...layout } };
+    },
+  };
+}
+
 /** Rename a state. Coalesces per state, so typing a label is one undo entry. */
 export function renameState(id: StateId, label: string): Command {
   return {
