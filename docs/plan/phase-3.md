@@ -60,18 +60,48 @@ the real definition of done for this phase.
 
 ### Track B — Multi-pane view
 
-- [ ] **B1.** Four panes: **regex | ε-NFA | DFA | minimal DFA**, each independently
+- [x] **B1.** Four panes: **regex | ε-NFA | DFA | minimal DFA**, each independently
       pannable and zoomable.
-- [ ] **B2.** Responsive collapse. Four panes do not fit on a 1366×768 laptop, which is the
+- [x] **B2.** Responsive collapse. Four panes do not fit on a 1366×768 laptop, which is the
       actual target machine (design-system §1). Default there is two panes with a selector,
       not four unreadable ones.
       🔴 **DECISION D9** — which two panes are the default pair.
-- [ ] **B3.** Synchronised highlight across panes: hovering anything highlights its
+- [x] **B3.** Synchronised highlight across panes: hovering anything highlights its
       counterpart everywhere it appears.
-- [ ] **B4.** Per-pane state counts, and a visible reduction figure on the minimal DFA
+- [x] **B4.** Per-pane state counts, and a visible reduction figure on the minimal DFA
       ("11 states → 4"). That number is the entire argument for minimization.
 - [ ] **B5.** Each pane is independently exportable, so a student can take just the ε-NFA
-      into an assignment.
+      into an assignment. 🔵 **DEFERRED to Phase 4**, which owns export — the clipboard
+      handling, the TikZ writer and the SVG serializer are all its work, and building a
+      pane-sized version first would be two exporters.
+
+> **Track B is closed except B5**, which is export and belongs to Phase 4.
+>
+> **D9 decided, and building it changed the question.** A1 had already made the regular
+> expression the page's primary input; a *pane* showing the same expression would be the input
+> rendered twice, one copy not editable. So there are three diagram panes, not four — B1's
+> framing over-counted by one, and that alone buys back a third of the width the decision was
+> about. Default pair: ε-NFA and DFA.
+>
+> **B3 needed no engine change.** Subset construction already records which ε-NFA states each
+> DFA state came from, in `origin`, written in Phase 1 with a comment saying that retrofitting
+> provenance would mean re-deriving what the algorithm knew and threw away. This is the view
+> that needed it.
+>
+> **A framing bug surfaced as "missing arrows".** Panes were rendering at 100% with the diagram
+> running off the edge, because `fit` ran before the ResizeObserver had measured anything — and
+> `fitTo` returns identity for a zero-sized box, correctly, since there is nothing to fit into.
+> The symptom looked like a *routing* fault, which is a good reminder that the twelve routing
+> fixtures cannot catch anything about the viewport.
+>
+> **Thompson produces chains, and chains need wrapping.** `(a|b)*abb` is fourteen states and
+> 1300px on one line. Wrapping at eight per row took it from 32% to 57% zoom in the same box,
+> with reading order preserved — which matters, because left-to-right is how a string is
+> consumed.
+>
+> One thing was added that the plan did not have: **"edit →" on every pane**, handing that
+> machine to the editor. There was no route from a converted machine to editing it by hand, and
+> that gap was found by being asked about it rather than by reading the plan.
 
 ### Track C — The step scrubber
 
