@@ -15,9 +15,42 @@
 use serde::{Deserialize, Serialize};
 
 use crate::automaton::Automaton;
+use crate::convert::{determinize, minimize};
 use crate::regex::parser::{ParseError, parse};
 use crate::regex::thompson::thompson;
-use crate::trace::Step;
+use crate::trace::{Step, Traced};
+
+/// One machine, and the reasoning that produced it.
+///
+/// Every pane on the conversion page is one of these, which is why they are the same shape:
+/// a diagram to draw and a list of steps to scrub through. A pane that carried a machine
+/// without its trace would be a pane the step scrubber could not drive.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Stage")
+)]
+pub struct Stage {
+    /// The machine at this point in the pipeline.
+    ///
+    /// `Automaton` serializes *through* `WireAutomaton` (see `io::wire`), so ts-rs is told to
+    /// describe the wire shape — otherwise the generated type would name an in-memory
+    /// structure the frontend never receives.
+    #[cfg_attr(feature = "ts", ts(as = "crate::io::wire::WireAutomaton"))]
+    pub automaton: Automaton,
+    /// How it was reached, one sentence per step.
+    pub steps: Vec<Step>,
+}
+
+impl From<Traced<Automaton>> for Stage {
+    fn from(traced: Traced<Automaton>) -> Self {
+        Self {
+            automaton: traced.result,
+            steps: traced.steps,
+        }
+    }
+}
 
 /// What a regular expression compiled to.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,23 +61,25 @@ use crate::trace::Step;
 )]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum Compilation {
-    /// It parsed, and Thompson's construction built this.
+    /// It parsed, and here is every machine it becomes.
+    ///
+    /// All three stages in one result rather than three calls, because the panes have to agree.
+    /// Three round trips could each be made against a different expression — the user types
+    /// while the first is in flight — and the page would then show a DFA that is not the
+    /// determinization of the ε-NFA beside it. One call cannot disagree with itself.
     Parsed {
-        /// The ε-NFA.
-        ///
-        /// `Automaton` serializes *through* `WireAutomaton` (see `io::wire`), so ts-rs is told
-        /// to describe the wire shape — otherwise the generated type would name an in-memory
-        /// structure the frontend never receives.
-        #[cfg_attr(feature = "ts", ts(as = "crate::io::wire::WireAutomaton"))]
-        automaton: Automaton,
-        /// How it was built, one sentence per step.
-        steps: Vec<Step>,
         /// The expression as the parser understood it, re-printed.
         ///
         /// Not the input echoed back. Seeing `a(b+c)*` come back as `a·(b|c)*` is how someone
         /// discovers that their precedence assumption was wrong, which is the single most
         /// common misunderstanding a regex bar can clear up.
         canonical: String,
+        /// Thompson's construction.
+        nfa: Stage,
+        /// Subset construction over the ε-NFA.
+        dfa: Stage,
+        /// Partition refinement over the DFA.
+        minimal: Stage,
     },
     /// It did not parse, and here is exactly where and why.
     Failed {
@@ -74,11 +109,15 @@ pub fn compile(source: &str) -> Option<Compilation> {
     match parse(source) {
         Ok(regex) => {
             let canonical = regex.to_string();
-            let traced = thompson(&regex);
+            let nfa = thompson(&regex);
+            let dfa = determinize(&nfa.result);
+            let minimal = minimize(&dfa.result);
+
             Some(Compilation::Parsed {
-                automaton: traced.result,
-                steps: traced.steps,
                 canonical,
+                nfa: nfa.into(),
+                dfa: dfa.into(),
+                minimal: minimal.into(),
             })
         }
         Err(error) => Some(Compilation::Failed { error }),
@@ -92,7 +131,17 @@ mod tests {
     /// The automaton from a successful compile, or a panic naming the failure.
     fn built(source: &str) -> Automaton {
         match compile(source) {
-            Some(Compilation::Parsed { automaton, .. }) => automaton,
+            Some(Compilation::Parsed { nfa, .. }) => nfa.automaton,
+            other => panic!("expected {source:?} to parse, got {other:?}"),
+        }
+    }
+
+    /// Every stage of a successful compile.
+    fn stages(source: &str) -> (Stage, Stage, Stage) {
+        match compile(source) {
+            Some(Compilation::Parsed {
+                nfa, dfa, minimal, ..
+            }) => (nfa, dfa, minimal),
             other => panic!("expected {source:?} to parse, got {other:?}"),
         }
     }
@@ -180,10 +229,50 @@ mod tests {
     }
 
     #[test]
-    fn steps_are_recorded_for_the_view_that_will_show_them() {
-        match compile("ab") {
-            Some(Compilation::Parsed { steps, .. }) => assert!(!steps.is_empty()),
-            other => panic!("expected a parse, got {other:?}"),
+    fn every_stage_records_its_reasoning() {
+        // A stage without steps is a pane the scrubber cannot drive.
+        let (nfa, dfa, minimal) = stages("(a|b)*abb");
+        assert!(!nfa.steps.is_empty());
+        assert!(!dfa.steps.is_empty());
+        assert!(!minimal.steps.is_empty());
+    }
+
+    #[test]
+    fn every_stage_accepts_the_same_language() {
+        // The property that makes the panes worth putting side by side. Three different
+        // machines, three different state counts, one language — and if that ever stopped
+        // being true the page would be teaching something false.
+        let (nfa, dfa, minimal) = stages("(a|b)*abb");
+        for word in ["abb", "aabb", "babb", "ababb", "", "a", "ab", "abba"] {
+            let n = crate::simulate::accepts(&nfa.automaton, word);
+            assert_eq!(n, crate::simulate::accepts(&dfa.automaton, word), "{word}");
+            assert_eq!(
+                n,
+                crate::simulate::accepts(&minimal.automaton, word),
+                "{word}"
+            );
         }
+    }
+
+    #[test]
+    fn the_dfa_is_deterministic_and_the_minimal_one_is_no_larger() {
+        use crate::automaton::Determinism;
+
+        let (_, dfa, minimal) = stages("(a|b)*abb");
+        assert_eq!(dfa.automaton.determinism(), Determinism::Dfa);
+        assert_eq!(minimal.automaton.determinism(), Determinism::Dfa);
+        assert!(minimal.automaton.state_count() <= dfa.automaton.state_count());
+    }
+
+    #[test]
+    fn dfa_states_remember_where_they_came_from() {
+        // What the cross-pane highlight is built on (task B3): hovering a DFA state lights up
+        // the ε-NFA states it was made from. Subset construction knows that set while it works,
+        // and `origin` is where it records it rather than throwing it away.
+        let (_, dfa, _) = stages("a|b");
+        assert!(
+            dfa.automaton.states.values().any(|s| s.origin.is_some()),
+            "subset construction should record provenance"
+        );
     }
 }
