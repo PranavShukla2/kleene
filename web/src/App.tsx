@@ -52,7 +52,7 @@ type Load =
   | { status: 'ready'; engine: Engine }
   | { status: 'failed'; message: string };
 
-export function Editor() {
+export function Editor({ onHome }: { onHome: () => void }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [helpOpen, setHelpOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -270,6 +270,7 @@ export function Editor() {
         panelOpen={preferences.panelOpen}
         onTogglePanel={togglePanel}
         onHelp={openHelp}
+        onHome={onHome}
         themeLabel={themeLabel(choice)}
         onCycleTheme={cycle}
       />
@@ -390,6 +391,7 @@ function CommandBar({
   panelOpen,
   onTogglePanel,
   onHelp,
+  onHome,
   themeLabel: theme,
   onCycleTheme,
 }: {
@@ -405,14 +407,33 @@ function CommandBar({
   panelOpen: boolean;
   onTogglePanel: () => void;
   onHelp: () => void;
+  onHome: () => void;
   themeLabel: string;
   onCycleTheme: () => void;
 }) {
   return (
     <header className="flex h-11 shrink-0 items-center gap-2 border-b border-k-border bg-k-surface px-3">
-      <span className="font-mono text-sm font-medium tracking-tight text-k-primary">
+      {/*
+        L5: the wordmark goes home from here too. The editor is the one page someone can arrive
+        at directly — a shared link, a bookmark — and a page you can reach but not leave is the
+        specific failure that makes a site feel broken rather than unfinished.
+
+        A real anchor with a real `href`, so middle-click and "open in new tab" behave, and an
+        `onClick` that routes instead of reloading. Either half alone is worse: a button cannot
+        be opened in a tab, and a bare link throws away the running app to render the page it
+        could have shown in a frame.
+      */}
+      <a
+        href="/"
+        onClick={(event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+          event.preventDefault();
+          onHome();
+        }}
+        className="font-mono text-sm font-medium tracking-tight text-k-primary transition-opacity duration-(--duration-k-hover) hover:opacity-80"
+      >
         kleene
-      </span>
+      </a>
       <DeterminismBadge value={kind} />
 
       <Divider />
