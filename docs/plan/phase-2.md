@@ -193,6 +193,15 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 - [ ] **F5.** Play/pause with adjustable speed.
 - [ ] **F6.** A batch tester — paste many strings, get a pass/fail table.
       🔵 **LEFTOVER CANDIDATE**, though v1.1 assignment links reuse it directly.
+- [ ] **F7.** Animate the *transition being taken*, not just the highlight moving.
+      *(Added after F1–F4 shipped.)* Design-system §1.3 is the test — **"motion explains
+      causality, or it doesn't happen."** The strongest causal claim the simulator makes is
+      **which edge was read**, and swapping a highlight between two states does not make it:
+      the student sees where the machine ended up, never how it got there. On an NFA, where
+      one symbol fans a configuration out along several edges at once, the highlight simply
+      appears in three new places and the reason is invisible.
+      280ms, per §5's step-transition row. This is also the *only* animation that survives
+      principle §1.3 — animating ordinary edits would fail it.
 
 > **Track F is closed**, and it cost less than the plan budgeted because Phase 1 had already
 > done the hard part. `simulate.rs` returns a configuration per point in the run, a verdict
@@ -250,6 +259,31 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 > separation alone — and a test now asserts that spread-out states are left untouched, so
 > nobody later "improves" it into a simulation.
 
+### Track I — The other two representations
+
+*Added mid-phase, after roadmap §2.4a. Not scope creep: a finite automaton is taught in three
+notations, converting between them is an examined skill, and Phase 2 was shipping one of the
+three. The data is already in the document — this is presentation, and it is cheap.*
+
+- [ ] **I1.** Transition table: rows are states, columns are Σ (plus an ε column when the
+      machine has ε-transitions), cells hold the target set. Start and accepting states marked
+      in the row header with the same `→` and `*` convention textbooks use, so the table reads
+      the way a printed one does.
+- [ ] **I2.** The table is **editable**. Click a cell, type targets, `Enter` commits — the same
+      inline-edit contract as edge labels, and the same commands underneath. Read-only would
+      make it a report; typing a target is how a large share of people prefer to build a dense
+      DFA, and it is faster than drawing one.
+- [ ] **I3.** Selection is shared with the canvas, both ways. Clicking a row selects the state
+      on the diagram; selecting on the diagram highlights the row. Two views of one object that
+      disagree about what is selected are two objects.
+- [ ] **I4.** Formal definition panel: `M = (Q, Σ, δ, q₀, F)` with each component expanded, and
+      δ presented as the table rather than restated. This is the thing exams ask for verbatim.
+- [ ] **I5.** Both render through `notation.rs` (D7), never through hard-coded glyphs. Courses
+      disagree about `ε` vs `λ` and `∅` vs `{}`, and a tool that quietly picks the other
+      convention is harder to learn from than one that picks none.
+- [ ] **I6.** Copy the table as TSV, so it pastes into a spreadsheet or a LaTeX `tabular`.
+      🔵 **LEFTOVER CANDIDATE** — cheap, but Phase 4 owns export properly.
+
 ### Track H — Tests
 
 - [ ] **H1.** Vitest over the command stack: every command's `invert` restores state exactly.
@@ -264,6 +298,8 @@ features, and starts by reading how Graphviz solves it rather than by writing co
 ## Definition of done
 
 - [ ] The "even number of a's" DFA can be built, edited, and tested end to end in the UI.
+- [ ] The same machine reads correctly as a transition table and as a formal 5-tuple, and the
+      table can build it just as well as the canvas can.
 - [ ] Undo/redo is correct across every command, including drags and deletions.
 - [ ] The 12 pathological routing fixtures all render without overlap or occluded labels.
 - [ ] 60fps while dragging within a 60-state automaton, measured.
