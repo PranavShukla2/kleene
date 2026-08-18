@@ -385,6 +385,32 @@ nothing. A visitor should be able to tell, at a glance, what they can use today.
 > at a real machine in one click rather than one that has to be hand-drawn first, which was the
 > actual complaint behind "build the UI first".
 
+### Track L — The rest of the site
+
+*Also pulled forward, for the same reason as Track K: a site you can walk around is a site you
+can check. The **surfaces** move; the tools inside them do not.*
+
+**What is deliberately not built here.** Roadmap §6.1's `/tools/nfa-to-dfa` family are
+*"landing pages and real tools simultaneously — that's the whole SEO strategy."* A version that
+cannot convert is worse than no page at all: it gets indexed, someone searching for a converter
+lands on something that does not convert, bounces, and the ranking is spent before the real
+tool exists. Those pages ship *with* their tool, in Phase 3, or not at all. Same reasoning for
+`/docs` — Astro Starlight is a second build system, and standing it up empty is infrastructure
+cost against zero content.
+
+- [ ] **L1.** Shared navigation. `/editor` is currently a dead end — you can reach it and not
+      leave it, which is the one navigation bug that makes a site feel broken rather than
+      unfinished.
+- [ ] **L2.** `/examples` as its own page: the gallery from Phase 5 C5, at a URL worth sharing.
+      Real machines, one click into the editor.
+- [ ] **L3.** Filter examples by what they demonstrate (Phase 5 C7). Someone arrives looking for
+      the thing they are stuck on, not for a difficulty.
+- [ ] **L4.** `/roadmap` — what is built, what is next, and when. **This replaces scattering
+      "coming soon" across the site**: one page that is honest and stays useful after v1, rather
+      than a badge on every surface that becomes debt the day it ships.
+- [ ] **L5.** No dead ends. Every page reaches every other page, and the wordmark always goes
+      home — including from the editor's command bar.
+
 ### Track H — Tests
 
 - [x] **H1.** Vitest over the command stack: every command's `invert` restores state exactly.
