@@ -60,6 +60,15 @@ impl From<Traced<Automaton>> for Stage {
     ts(export, export_to = "generated/", rename = "Compilation")
 )]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+// `Parsed` carries three automata and `Failed` carries a span and a sentence, so the variants
+// differ in size by a lot. Clippy is right that this wastes memory *when such a value is kept
+// around* — in a `Vec`, every element would be the size of the largest variant.
+//
+// This one is never kept. It is built once per keystroke, serialized across the wasm boundary,
+// and dropped. Boxing the large variant to satisfy the lint would add three allocations to the
+// path taken on every successful compile, in order to save memory on a value that does not
+// outlive the function that made it.
+#[allow(clippy::large_enum_variant)]
 pub enum Compilation {
     /// It parsed, and here is every machine it becomes.
     ///
