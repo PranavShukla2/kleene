@@ -107,19 +107,45 @@ the real definition of done for this phase.
 
 The centrepiece control of the product.
 
-- [ ] **C1.** A scrubber bound to `Traced.steps` — drag, click, or arrow-key to any step.
-- [ ] **C2.** Play/pause with adjustable speed; step transitions at 280ms
+- [x] **C1.** A scrubber bound to `Traced.steps` — drag, click, or arrow-key to any step.
+- [x] **C2.** Play/pause with adjustable speed; step transitions at 280ms
       (design-system §5), the number tuned so the eye can follow which subset became which state.
-- [ ] **C3.** Keyboard: `←`/`→` step, `Space` play/pause, `Home`/`End` jump. Scrubbing is
+- [x] **C3.** Keyboard: `←`/`→` step, `Space` play/pause, `Home`/`End` jump. Scrubbing is
       the interaction people will do most; it must be keyboard-first.
-- [ ] **C4.** Step counter and a progress indicator: "Round 3 of 7".
-- [ ] **C5.** **The reasoning panel** — plain-language text for the current step, read from
+- [x] **C4.** Step counter and a progress indicator: "Round 3 of 7".
+- [x] **C5.** **The reasoning panel** — plain-language text for the current step, read from
       core (Phase 1 task D4), never composed in TypeScript:
       *"Reading `a` from {q1, q3} reaches {q2, q4} — new state, added to the worklist."*
 - [ ] **C6.** The diagram animates *between* steps rather than cutting. Watching a new state
       appear and connect is the thing that teaches; a cut is just a slideshow.
-- [ ] **C7.** Deep-link a specific step in the URL fragment, so a TA can send a link to
+      🟡 **Half done, and the other half needs the core.** The step *highlight* fades in at
+      280ms, so a scrub says "this step marked these states" rather than "these states are
+      marked". Animating the machine's **structure** — a state appearing and connecting — is
+      not possible from what a trace carries: `Traced<T>` holds one final automaton plus a list
+      of steps, so there is no automaton *at step 4* to animate toward. Doing it properly means
+      the core emitting an intermediate machine per step, which is a change to `Traced<T>`
+      itself and belongs in Track D beside the subset-construction view that would use it.
+- [x] **C7.** Deep-link a specific step in the URL fragment, so a TA can send a link to
       round 4 rather than saying "scrub to round 4".
+
+> **Track C is closed except the structural half of C6.**
+>
+> **The reasoning panel is the architecture's claim, made visible.** It renders `step.detail`
+> and nothing else. At step 7 of subset construction on `(a|b)*abb` it reads: *"Reading `b` from
+> C = {q0, q2, q3, q4, q5, q7, q8} reaches {q0, q2, q3, q4, q5, q7, q8} — already seen as C, so
+> no new state is created."* That sentence was written in Rust in Phase 1, beside the line that
+> made the move; the frontend composes none of it, and the same string reaches the CLI and the
+> docs site.
+>
+> **One scrubber per pane, not one for the page.** Each is a separate derivation with its own
+> length — a shared position would claim round 7 of subset construction and round 7 of
+> partition refinement are the same moment, which they are not.
+>
+> **C6 turned out to be two tasks wearing one number.** Fading the highlight is presentation
+> and is done. Animating *structure* is not possible from a trace: `Traced<T>` carries one final
+> automaton and a list of steps, so there is no machine at step 4 to animate toward. That needs
+> the core to emit an intermediate automaton per step — a change to `Traced<T>`, not to a
+> component — and it belongs with the subset-construction view in Track D that would consume it.
 
 ### Track D — Subset construction view
 
