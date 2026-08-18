@@ -6,6 +6,7 @@
  * drifts from what it actually exports, and the FFI stops being checked at all.
  */
 import init, {
+  compile_regex,
   determinism,
   example_automaton,
   formal_definition,
@@ -17,6 +18,7 @@ import init, {
 
 import type {
   Automaton,
+  Compilation,
   Determinism,
   FormalDefinition,
   Report,
@@ -59,6 +61,13 @@ export interface Engine {
   transitionTable: (automaton: Automaton) => TransitionTable;
   /** `M = (Q, Σ, δ, q₀, F)`, with δ left to the table. */
   formalDefinition: (automaton: Automaton) => FormalDefinition;
+  /**
+   * Compile a regular expression into an ε-NFA, or into the reason it is not one.
+   *
+   * `undefined` for an empty input, which is the state the bar is in before anyone has typed
+   * — not a mistake to report.
+   */
+  compileRegex: (source: string) => Compilation | undefined;
 }
 
 /**
@@ -86,6 +95,7 @@ export function loadEngine(): Promise<Engine> {
       transitionTable: (automaton: Automaton) => transition_table(automaton) as TransitionTable,
       formalDefinition: (automaton: Automaton) =>
         formal_definition(automaton) as FormalDefinition,
+      compileRegex: (source: string) => compile_regex(source) as Compilation | undefined,
     }))
     .catch((cause: unknown) => {
       // Clear the cache so a later retry can actually retry rather than re-await a
