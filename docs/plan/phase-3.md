@@ -28,16 +28,35 @@ the real definition of done for this phase.
 
 ### Track A — Regex bar
 
-- [ ] **A1.** A prominent regex input, JetBrains Mono 16px, the visual focal point of the
+- [x] **A1.** A prominent regex input, JetBrains Mono 16px, the visual focal point of the
       page. This is the app's primary input.
-- [ ] **A2.** Live parse on every keystroke, debounced ~150ms.
-- [ ] **A3.** Parse errors underline the exact offending span, using the byte spans from
+- [x] **A2.** Live parse on every keystroke, debounced ~150ms.
+- [x] **A3.** Parse errors underline the exact offending span, using the byte spans from
       Phase 1 B3, with the human sentence shown inline. Never a red border and "invalid".
-- [ ] **A4.** Symbol palette for `∅`, `ε`, `|`, `*` — students on laptop keyboards should not
+- [x] **A4.** Symbol palette for `∅`, `ε`, `|`, `*` — students on laptop keyboards should not
       have to hunt for these. Per D1, `+` and `|` both mean union; per D7 the ε/λ glyph
       follows the display setting rather than being fixed in the palette markup.
-- [ ] **A5.** Example regexes on the empty state, one click to load. The empty state is the
+- [x] **A5.** Example regexes on the empty state, one click to load. The empty state is the
       most-viewed screen in the app; it should teach rather than sit blank.
+
+> **Track A is closed.** `/convert` compiles as you type and draws the ε-NFA Thompson's
+> construction builds.
+>
+> **A3 needed a mirror.** An `<input>` cannot style a range of its own text, so the real field
+> sits transparent over a copy that carries the underline — same font, size and padding, written
+> once, because any drift shows immediately as a misaligned mark. A zero-width span gets a
+> caret-width block: "expected a symbol after `(`" legitimately points past the last character,
+> and a mark of zero width is no mark at all.
+>
+> **The canonical form earns its place.** The core returns the expression as the *parser*
+> understood it, and the bar shows it as "read as". Typing `ab+c` and seeing it come back with
+> precedence made explicit is how someone discovers their assumption was wrong — which is the
+> most common misunderstanding a regex bar can clear up, and it costs one line.
+>
+> **D1's justification surfaced verbatim.** Typing `a+` produces: *"`+` means union here, so it
+> needs something on both sides. — If you meant 'one or more', write `aa*` instead of `a+`."*
+> That sentence was written in `parser.rs` in Phase 1 as the argument for choosing union over
+> one-or-more; it is now what a student actually reads.
 
 ### Track B — Multi-pane view
 
