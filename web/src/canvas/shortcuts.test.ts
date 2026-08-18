@@ -180,7 +180,11 @@ describe('sheetRowsIn', () => {
   });
 
   it('leaves ungrouped shortcuts alone', () => {
-    expect(sheetRowsIn('View', true)).toHaveLength(4);
+    // Asserted as a property rather than a count. A hardcoded number here fails every time a
+    // shortcut is added, which trains whoever is adding one to update the number without
+    // reading what it was checking.
+    const ungrouped = shortcutsIn('View').filter((shortcut) => shortcut.family === undefined);
+    expect(sheetRowsIn('View', true)).toHaveLength(ungrouped.length);
   });
 });
 
