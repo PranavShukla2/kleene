@@ -28,6 +28,8 @@ Three concrete pains, all of which you have personally felt this semester:
 A single-page web app where you can:
 
 - Draw an automaton directly on a canvas, or type a regular expression and have one built for you
+- Read and edit the same machine as a **transition table**, and see its **formal 5-tuple**
+  definition, both kept in step with the diagram
 - Watch a conversion happen **step by step** — every round of subset construction, every partition split — with the reasoning attached to each step
 - Run an input string and watch the configuration set move through the machine
 - Export the diagram as **TikZ**, SVG, or PNG
@@ -196,6 +198,30 @@ The document format layers presentation on top:
 | Simulation | NFA config-set stepping, DFA single-state stepping, with full trace. |
 | Reachable / co-reachable pruning | Dead state removal. |
 
+### 2.4a The three representations
+
+A finite automaton is taught three ways, and a tool that shows only one teaches only one:
+
+| Representation | What it is | Where students meet it |
+|---|---|---|
+| **Diagram** | A drawing of δ | Lectures, textbooks, the thing everyone pictures |
+| **Transition table** | δ written out as a function | Exams, homework, every proof that manipulates δ directly |
+| **5-tuple** | `M = (Q, Σ, δ, q₀, F)` | The formal definition; "give the formal definition of the machine below" |
+
+These are not three views of the product. They are **the same object in the three notations
+the subject actually uses**, and converting between them by hand is itself an examined skill.
+The table is not a convenience pane bolted onto the diagram — it is the definition of δ, and
+the diagram is a picture of it.
+
+Two consequences for the build:
+
+- **The table is editable.** Read-only would make it a report. Typing a target into a cell is
+  how half the population prefers to build a machine, and for a dense DFA it is genuinely
+  faster than drawing.
+- **Notation is a setting, not a constant.** Courses disagree about `ε` vs `λ`, about `∅` vs
+  `{}`, about whether δ is total. `notation.rs` already exists for exactly this (D7); the table
+  and the tuple render through it rather than hard-coding glyphs.
+
 ### 2.5 Frontend stack, with reasons
 
 | Choice | Why not the obvious alternative |
@@ -355,8 +381,10 @@ The longest and least glamorous phase. Budget honestly.
 - [ ] Undo/redo via command stack
 - [ ] Input tester: type a string, step forward/back, watch the active state set
 - [ ] elkjs auto-layout button
+- [ ] **Transition table**, editable, kept in step with the diagram (§2.4a)
+- [ ] **Formal 5-tuple** panel, rendered through the notation setting
 
-**Exit criterion:** you can build and test the "even number of a's" DFA end to end without touching a config file.
+**Exit criterion:** you can build and test the "even number of a's" DFA end to end without touching a config file — **and read it back as a table and as a 5-tuple**.
 
 ### Phase 3 — The conversion pipeline (Weeks 8–9)
 
