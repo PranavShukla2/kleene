@@ -30,7 +30,7 @@ use indexmap::IndexMap;
 
 use crate::automaton::{Automaton, State, StateId};
 use crate::convert::epsilon::Closures;
-use crate::trace::{Step, StepKind, Traced};
+use crate::trace::{Frame, Step, StepKind, Traced};
 
 /// Sequential DFA state labels: `A`…`Z`, then `AA`, `AB`, and so on.
 ///
@@ -63,6 +63,18 @@ fn render(ids: &BTreeSet<StateId>, nfa: &Automaton) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!("{{{inner}}}")
+}
+
+/// The worklist as DFA state ids, in the order the queue will take them.
+///
+/// Derived from the queue each time it is needed rather than maintained beside it: a second
+/// structure holding the same order is a second thing to get out of step, and the worklist is
+/// never longer than the DFA it is building.
+fn pending(
+    queue: &VecDeque<BTreeSet<StateId>>,
+    subsets: &IndexMap<BTreeSet<StateId>, StateId>,
+) -> Vec<StateId> {
+    queue.iter().map(|subset| subsets[subset]).collect()
 }
 
 /// Convert an NFA (with or without ε-transitions) into an equivalent DFA.
@@ -100,7 +112,15 @@ pub fn determinize(nfa: &Automaton) -> Traced<Automaton> {
                 render(&start_subset, nfa),
             ),
         )
-        .highlighting(start_subset.iter().copied()),
+        .highlighting(start_subset.iter().copied())
+        .framed(Frame {
+            states: 1,
+            transitions: 0,
+            pending: vec![0],
+            target: Some(0),
+            fresh: true,
+            ..Frame::default()
+        }),
     );
 
     // Breadth-first, so the trace explores in the order a person filling in the transition
@@ -129,7 +149,14 @@ pub fn determinize(nfa: &Automaton) -> Traced<Automaton> {
                             render(&current, nfa)
                         ),
                     )
-                    .highlighting(current.iter().copied()),
+                    .highlighting(current.iter().copied())
+                    .framed(Frame {
+                        states: subsets.len() as u32,
+                        transitions: transitions.len() as u32,
+                        pending: pending(&queue, &subsets),
+                        current: Some(from_id),
+                        ..Frame::default()
+                    }),
                 );
                 continue;
             }
@@ -168,7 +195,15 @@ pub fn determinize(nfa: &Automaton) -> Traced<Automaton> {
                         )
                     },
                 )
-                .highlighting(target.iter().copied()),
+                .highlighting(target.iter().copied())
+                .framed(Frame {
+                    states: subsets.len() as u32,
+                    transitions: transitions.len() as u32,
+                    pending: pending(&queue, &subsets),
+                    current: Some(from_id),
+                    target: Some(to_id),
+                    fresh: is_new,
+                }),
             );
         }
     }
@@ -190,14 +225,23 @@ pub fn determinize(nfa: &Automaton) -> Traced<Automaton> {
     }
 
     let accepting_count = states.values().filter(|s| s.accepting).count();
-    steps.push(Step::new(
-        StepKind::SubsetRound,
-        format!(
-            "No subsets left to expand. The DFA has {} states, {accepting_count} of them \
-             accepting.",
-            states.len()
-        ),
-    ));
+    steps.push(
+        Step::new(
+            StepKind::SubsetRound,
+            format!(
+                "No subsets left to expand. The DFA has {} states, {accepting_count} of them \
+                 accepting.",
+                states.len()
+            ),
+        )
+        // The last frame is the whole machine with an empty worklist, so scrubbing to the end
+        // and letting the animation finish land on the same picture.
+        .framed(Frame {
+            states: states.len() as u32,
+            transitions: transitions.len() as u32,
+            ..Frame::default()
+        }),
+    );
 
     let dfa = Automaton {
         alphabet: nfa.alphabet.clone(),
@@ -356,6 +400,120 @@ mod tests {
             .position(|s| s.detail.contains("B ="))
             .expect("then B");
         assert!(first_round < second);
+    }
+
+    /// Every frame a run emitted, in order.
+    fn frames(t: &Traced<Automaton>) -> Vec<&crate::trace::Frame> {
+        t.steps.iter().filter_map(|s| s.frame.as_ref()).collect()
+    }
+
+    #[test]
+    fn every_step_of_a_construction_carries_a_frame() {
+        // A step without one is a step the animation has to freeze on.
+        let t = dfa_of("(a+b)*abb");
+        assert_eq!(frames(&t).len(), t.steps.len());
+    }
+
+    #[test]
+    fn a_frame_is_always_a_prefix_of_the_finished_machine() {
+        // The invariant `Frame`'s two counts stand on: the machine is only ever appended to,
+        // so the first `states` states and first `transitions` transitions are a machine in
+        // their own right. If some later change renumbered states mid-run, the UI would draw
+        // edges into nothing and this is what would catch it.
+        for input in ["(a+b)*abb", "a*b*", "(ab)*+b", "a"] {
+            let t = dfa_of(input);
+            for frame in frames(&t) {
+                for edge in t.result.transitions.iter().take(frame.transitions as usize) {
+                    assert!(
+                        edge.from < frame.states && edge.to < frame.states,
+                        "{input}: an edge exists before its endpoints do"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn frames_only_ever_grow() {
+        let t = dfa_of("(a+b)*abb");
+        let mut previous = (0, 0);
+        for frame in frames(&t) {
+            assert!(
+                frame.states >= previous.0 && frame.transitions >= previous.1,
+                "a frame went backwards: {previous:?} then {frame:?}"
+            );
+            previous = (frame.states, frame.transitions);
+        }
+    }
+
+    #[test]
+    fn the_last_frame_is_the_whole_machine_with_an_empty_worklist() {
+        // Scrubbing to the end and letting the animation run out must land on one picture.
+        let t = dfa_of("(a+b)*abb");
+        let last = *frames(&t).last().expect("frames");
+
+        assert_eq!(last.states as usize, t.result.state_count());
+        assert_eq!(last.transitions as usize, t.result.transitions.len());
+        assert!(last.pending.is_empty(), "the worklist must have drained");
+    }
+
+    #[test]
+    fn fresh_is_set_exactly_when_the_prose_says_the_subset_is_new() {
+        // The UI reads `fresh` and never the sentence; this is what keeps the two honest.
+        let t = dfa_of("(a+b)*abb");
+        for step in t.steps.iter().filter(|s| s.detail.starts_with("Reading")) {
+            let frame = step.frame.as_ref().expect("framed");
+            assert_eq!(
+                frame.fresh,
+                step.detail.contains("is new"),
+                "{}",
+                step.detail
+            );
+        }
+
+        // The start state is discovered rather than read into, so it is framed as fresh
+        // without the word appearing — otherwise the animation would never draw it.
+        let first = t.steps.first().expect("a first step");
+        assert!(first.frame.as_ref().is_some_and(|f| f.fresh));
+    }
+
+    #[test]
+    fn a_new_subset_joins_the_worklist_and_is_later_expanded() {
+        // D1 renders `pending` as a queue. It is only a queue if things leave it.
+        let t = dfa_of("(a+b)*abb");
+        let expanded: Vec<_> = frames(&t).iter().filter_map(|f| f.current).collect();
+
+        for frame in frames(&t) {
+            if frame.fresh {
+                let id = frame.target.expect("a fresh frame arrived somewhere");
+                assert!(
+                    frame.pending.contains(&id) || expanded.contains(&id),
+                    "state {id} was created and never queued"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_dead_end_arrives_nowhere() {
+        let nfa = AutomatonBuilder::new(["a", "b"])
+            .edge("q0", "q1", "a")
+            .accepting("q1")
+            .build();
+
+        let t = determinize(&nfa);
+        let dead = t
+            .steps
+            .iter()
+            .find(|s| s.detail.contains("reaches no state at all"))
+            .expect("narrated");
+        let frame = dead.frame.as_ref().expect("framed");
+
+        assert_eq!(
+            frame.target, None,
+            "nothing was reached, so nothing lights up"
+        );
+        assert!(!frame.fresh);
     }
 
     #[test]
