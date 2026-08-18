@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { pathOf, routeOf } from '@/router';
 
 describe('routeOf', () => {
-  it('maps the two real paths', () => {
+  it('maps every real path', () => {
     expect(routeOf('/')).toBe('overview');
     expect(routeOf('/editor')).toBe('editor');
+    expect(routeOf('/examples')).toBe('examples');
+    expect(routeOf('/roadmap')).toBe('roadmap');
   });
 
   it('ignores a trailing slash', () => {
@@ -23,7 +25,9 @@ describe('routeOf', () => {
   });
 
   it('round-trips every route through its path', () => {
-    for (const route of ['overview', 'editor'] as const) {
+    // The two directions come from one table, and this is what keeps that true as routes are
+    // added — a route whose path does not parse back to it is unreachable by link.
+    for (const route of ['overview', 'editor', 'examples', 'roadmap'] as const) {
       expect(routeOf(pathOf(route))).toBe(route);
     }
   });

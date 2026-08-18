@@ -14,16 +14,26 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /** Every page the app can show. */
-export type Route = 'overview' | 'editor';
+export type Route = 'overview' | 'editor' | 'examples' | 'roadmap';
+
+/** Where each route lives. One table, so the two directions cannot disagree. */
+const PATHS: Record<Route, string> = {
+  overview: '/',
+  editor: '/editor',
+  examples: '/examples',
+  roadmap: '/roadmap',
+};
 
 /** Where a path leads. Anything unrecognised falls to the overview rather than a 404. */
 export function routeOf(pathname: string): Route {
-  return pathname.replace(/\/+$/, '') === '/editor' ? 'editor' : 'overview';
+  const normalised = pathname.replace(/\/+$/, '') || '/';
+  const found = (Object.keys(PATHS) as Route[]).find((route) => PATHS[route] === normalised);
+  return found ?? 'overview';
 }
 
 /** The path a route lives at. */
 export function pathOf(route: Route): string {
-  return route === 'editor' ? '/editor' : '/';
+  return PATHS[route];
 }
 
 /**
