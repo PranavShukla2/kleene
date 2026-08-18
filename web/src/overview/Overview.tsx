@@ -19,6 +19,7 @@ import { AutomatonView } from '@/canvas/AutomatonView';
 import { rowLayout } from '@/canvas/geometry';
 import type { Automaton } from '@/model/automaton';
 import { COMPARISON, FEATURES, type Feature } from '@/overview/content';
+import { EXAMPLES, type Example } from '@/overview/examples';
 import { statusLabel, type Status } from '@/overview/status';
 
 /**
@@ -52,10 +53,13 @@ const HERO: Automaton = {
 
 export function Overview({
   onOpenEditor,
+  onOpenExample,
   themeLabel,
   onCycleTheme,
 }: {
   onOpenEditor: () => void;
+  /** Open the editor with a built-in machine already loaded. */
+  onOpenExample: (key: string) => void;
   themeLabel: string;
   onCycleTheme: () => void;
 }) {
@@ -79,6 +83,7 @@ export function Overview({
       <main className="mx-auto w-full max-w-5xl px-6">
         <Hero onOpenEditor={onOpenEditor} />
         <Features />
+        <Examples onOpen={onOpenExample} />
         <Comparison />
         <Closing onOpenEditor={onOpenEditor} />
       </main>
@@ -201,6 +206,59 @@ function StatusChip({ status }: { status: Status }) {
     >
       {statusLabel(status)}
     </span>
+  );
+}
+
+/**
+ * The examples strip.
+ *
+ * Real machines from the engine, opened in one click — not mocked cards. Two of them today,
+ * and the section says so rather than padding the row out to look fuller. A gallery that
+ * pretends to be bigger than it is gets found out on the second click.
+ */
+function Examples({ onOpen }: { onOpen: (key: string) => void }) {
+  return (
+    <section className="border-t border-k-border py-16">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="text-2xl font-semibold tracking-tight">Start from an example</h2>
+        <span className="font-mono text-xs text-k-text-faint">
+          {EXAMPLES.length} today · a full gallery in phase 5
+        </span>
+      </div>
+      <p className="mt-2 max-w-prose text-k-text-muted">
+        Each one opens in the editor, ready to edit. Nothing is saved anywhere until you change
+        it, and then only here.
+      </p>
+
+      <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+        {EXAMPLES.map((example) => (
+          <ExampleCard key={example.key} example={example} onOpen={onOpen} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ExampleCard({ example, onOpen }: { example: Example; onOpen: (key: string) => void }) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => {
+          onOpen(example.key);
+        }}
+        className="h-full w-full rounded-[10px] border border-k-border bg-k-surface p-4 text-left transition-colors duration-(--duration-k-hover) hover:border-k-primary/50"
+      >
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-medium text-k-text">{example.title}</h3>
+          <span className="shrink-0 rounded-full border border-k-border px-2 py-0.5 font-mono text-[10px] text-k-text-faint">
+            {example.tier}
+          </span>
+        </div>
+        <p className="mt-2 font-mono text-xs text-k-text-muted">{example.language}</p>
+        <p className="mt-2 text-sm text-k-text-muted">{example.teaches}</p>
+      </button>
+    </li>
   );
 }
 

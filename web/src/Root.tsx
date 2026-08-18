@@ -26,6 +26,9 @@ export function Root() {
       onOpenEditor={() => {
         go('editor');
       }}
+      onOpenExample={(key) => {
+        go('editor', `?example=${encodeURIComponent(key)}`);
+      }}
       themeLabel={choice}
       onCycleTheme={cycle}
     />
