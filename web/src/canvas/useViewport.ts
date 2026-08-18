@@ -39,6 +39,15 @@ export interface ViewportControls {
   reset: () => void;
   /** Zoom about the centre of the view, for keyboard zoom. */
   zoomBy: (factor: number) => void;
+  /**
+   * The element's measured size, or zeroes before it has been measured.
+   *
+   * Exposed because `fit` is silently a no-op until this is known — `fitTo` returns the
+   * identity viewport for a zero-sized box, since there is nothing to fit *into*. A caller
+   * that wants to frame content on mount has to wait for a real measurement, and cannot know
+   * when that happened without being told.
+   */
+  size: { width: number; height: number };
 }
 
 /**
@@ -54,6 +63,9 @@ export function useViewport(): ViewportControls {
 
   const elementRef = useRef<HTMLElement | SVGElement | null>(null);
   const sizeRef = useRef({ width: 0, height: 0 });
+  // Mirrored into state so a change can be *observed*. The ref is what the callbacks read on
+  // demand; this is what tells a caller the measurement has arrived.
+  const [size, setSize] = useState({ width: 0, height: 0 });
   const spaceHeld = useRef(false);
   const panFrom = useRef<{ x: number; y: number } | undefined>(undefined);
 
@@ -83,12 +95,12 @@ export function useViewport(): ViewportControls {
     if (!element) return;
 
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) {
-        sizeRef.current = {
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        };
-      }
+      if (!entry) return;
+      const next = { width: entry.contentRect.width, height: entry.contentRect.height };
+      sizeRef.current = next;
+      setSize((current) =>
+        current.width === next.width && current.height === next.height ? current : next,
+      );
     });
     observer.observe(element);
     return () => {
@@ -206,5 +218,5 @@ export function useViewport(): ViewportControls {
     setViewport((current) => zoomAt(current, centre, factor));
   }, []);
 
-  return { viewport, ref, panning, pointerToWorld, fit, reset, zoomBy };
+  return { viewport, ref, panning, pointerToWorld, fit, reset, zoomBy, size };
 }
