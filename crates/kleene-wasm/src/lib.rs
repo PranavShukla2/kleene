@@ -122,6 +122,49 @@ pub fn simulate(automaton: JsValue, input: &str) -> Result<JsValue, JsError> {
     serde_wasm_bindgen::to_value(&simulation).map_err(|e| JsError::new(&e.to_string()))
 }
 
+/// δ written out as a table, and the 5-tuple it belongs to.
+///
+/// Roadmap §2.4a: the diagram, the table and the tuple are the same object in the three
+/// notations the subject teaches, and converting between them by hand is an examined skill.
+/// Derived in Rust rather than in the frontend because three of the decisions are semantic —
+/// whether an ε column exists, what an empty cell means, and which glyph stands for the empty
+/// string — and answering those in the view layer would put half the definition of δ in the
+/// code that is meant to be drawing it.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton, or if the result cannot be
+/// serialized.
+#[wasm_bindgen]
+pub fn transition_table(automaton: JsValue) -> Result<JsValue, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    // Notation is not yet a user setting; D7 makes it one, and this is the call site that will
+    // read it when it is.
+    let table = automaton.transition_table(kleene_core::Notation::default());
+
+    serde_wasm_bindgen::to_value(&table).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// The formal definition, `M = (Q, Σ, δ, q₀, F)`.
+///
+/// δ is absent by design: it is the transition table, and restating it here would be a second
+/// copy that could disagree with the first.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton.
+#[wasm_bindgen]
+pub fn formal_definition(automaton: JsValue) -> Result<JsValue, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let definition = automaton.formal_definition(kleene_core::Notation::default());
+
+    serde_wasm_bindgen::to_value(&definition).map_err(|e| JsError::new(&e.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use kleene_core::{Determinism, examples};
