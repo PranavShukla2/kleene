@@ -456,6 +456,41 @@ export function hasReverse(
   return from !== to && edges.some((e) => e.from === to && e.to === from);
 }
 
+/**
+ * A left-to-right layout that wraps, for machines too long to fit on one line.
+ *
+ * Thompson's construction on a modest expression produces a *chain* — `(a|b)*abb` is fourteen
+ * states in a row, over 1300px wide, which a pane can only show by zooming out to a third size.
+ * Wrapping trades the purity of one line for a diagram someone can actually read.
+ *
+ * Reading order is preserved: left to right, then down, like text. That matters more than it
+ * sounds — the whole reason automata are drawn left to right is that it matches the order a
+ * string is consumed, and a layout that broke that would be harder to follow than a small one.
+ *
+ * Not elkjs. Track G's layered layout is better for a machine with real branching, but it is
+ * async, costs 1.4MB, and would re-run on every keystroke here. For a chain it would also
+ * produce very nearly this.
+ */
+export function wrappedRowLayout(
+  ids: readonly StateId[],
+  perRow: number,
+  origin: Point = { x: 90, y: 90 },
+): Layout {
+  const layout: Layout = {};
+  const columns = Math.max(1, perRow);
+
+  ids.forEach((id, i) => {
+    layout[id] = {
+      x: origin.x + (i % columns) * GEOM.nodeDistance,
+      // Rows are spaced further apart than columns, because self-loops sit *above* a state and
+      // would otherwise collide with the row above them.
+      y: origin.y + Math.floor(i / columns) * GEOM.nodeDistance * 1.6,
+    };
+  });
+
+  return layout;
+}
+
 /** A tidy left-to-right layout, used until elkjs arrives in Phase 2. */
 export function rowLayout(ids: readonly StateId[], origin: Point = { x: 90, y: 130 }): Layout {
   const layout: Layout = {};
