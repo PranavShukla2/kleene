@@ -35,6 +35,10 @@ export type { Configuration } from '@/model/generated/Configuration';
 export type { Verdict } from '@/model/generated/Verdict';
 export type { Step } from '@/model/generated/Step';
 export type { StepKind } from '@/model/generated/StepKind';
+export type { TransitionTable } from '@/model/generated/TransitionTable';
+export type { TableRow } from '@/model/generated/TableRow';
+export type { TableColumn } from '@/model/generated/TableColumn';
+export type { FormalDefinition } from '@/model/generated/FormalDefinition';
 
 /** Identifies a state within one automaton. */
 export type StateId = number;

@@ -5,9 +5,24 @@
  * not hand-written: an ambient `.d.ts` that describes what we *think* Rust exports
  * drifts from what it actually exports, and the FFI stops being checked at all.
  */
-import init, { determinism, example_automaton, simulate, validate, version } from '@wasm';
+import init, {
+  determinism,
+  example_automaton,
+  formal_definition,
+  simulate,
+  transition_table,
+  validate,
+  version,
+} from '@wasm';
 
-import type { Automaton, Determinism, Report, Simulation } from '@/model/automaton';
+import type {
+  Automaton,
+  Determinism,
+  FormalDefinition,
+  Report,
+  Simulation,
+  TransitionTable,
+} from '@/model/automaton';
 
 /** What the engine module exposes to the app. */
 export interface Engine {
@@ -34,6 +49,16 @@ export interface Engine {
    * tested separately and believed equally.
    */
   simulate: (automaton: Automaton, input: string) => Simulation;
+  /**
+   * δ written out as a table.
+   *
+   * From Rust, because three of the decisions are semantic rather than presentational:
+   * whether an ε column exists, what an empty cell means, and which glyph stands for the
+   * empty string. Answering those here would put half the definition of δ in the view layer.
+   */
+  transitionTable: (automaton: Automaton) => TransitionTable;
+  /** `M = (Q, Σ, δ, q₀, F)`, with δ left to the table. */
+  formalDefinition: (automaton: Automaton) => FormalDefinition;
 }
 
 /**
@@ -58,6 +83,9 @@ export function loadEngine(): Promise<Engine> {
       determinism: (automaton: Automaton) => determinism(automaton) as Determinism,
       simulate: (automaton: Automaton, input: string) =>
         simulate(automaton, input) as Simulation,
+      transitionTable: (automaton: Automaton) => transition_table(automaton) as TransitionTable,
+      formalDefinition: (automaton: Automaton) =>
+        formal_definition(automaton) as FormalDefinition,
     }))
     .catch((cause: unknown) => {
       // Clear the cache so a later retry can actually retry rather than re-await a
