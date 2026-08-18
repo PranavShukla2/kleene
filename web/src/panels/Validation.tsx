@@ -11,6 +11,10 @@
  *
  * The report itself comes from Rust. See `Engine.validate` — a second definition of
  * well-formedness in TypeScript would drift silently.
+ *
+ * Styled as a **dock**, not a card: flush to the canvas above it, with a top border and no
+ * radius. A card floating below the canvas reads as a separate thing that happens to be about
+ * the diagram; a dock reads as part of it, which is what it is.
  */
 
 import type { Problem, Report, StateId } from '@/model/automaton';
@@ -31,7 +35,7 @@ export function Validation({ report, onFocus }: Props) {
 
   if (problems.length === 0) {
     return (
-      <p className="flex items-center gap-2 rounded-[10px] border border-k-border bg-k-surface px-3 py-2 text-sm text-k-text-faint">
+      <p className="flex h-8 shrink-0 items-center gap-2 border-t border-k-border bg-k-surface px-3 text-xs text-k-text-faint">
         <Dot className="bg-k-success" />
         No problems.
       </p>
@@ -41,14 +45,16 @@ export function Validation({ report, onFocus }: Props) {
   return (
     <section
       aria-label="Problems"
-      className="overflow-hidden rounded-[10px] border border-k-border bg-k-surface"
+      // Capped so a machine with twenty problems cannot eat the canvas. The list scrolls;
+      // the canvas does not shrink to fit a report about it.
+      className="flex max-h-44 shrink-0 flex-col border-t border-k-border bg-k-surface"
     >
-      <h2 className="flex items-center gap-2 border-b border-k-border px-3 py-2 text-[11px] font-semibold tracking-[0.06em] text-k-text-faint uppercase">
+      <h2 className="flex h-8 shrink-0 items-center gap-2 px-3 text-[11px] font-semibold tracking-[0.06em] text-k-text-faint uppercase">
         <Dot className={errors.length > 0 ? 'bg-k-error' : 'bg-k-warning'} />
         {summarise(errors.length, problems.length - errors.length)}
       </h2>
 
-      <ul className="max-h-40 divide-y divide-k-border overflow-y-auto">
+      <ul className="divide-y divide-k-border overflow-y-auto border-t border-k-border">
         {problems.map((problem, index) => (
           <ProblemRow
             // Kind plus the states it names is unique in practice, but two "missing
