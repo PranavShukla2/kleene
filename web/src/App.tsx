@@ -40,6 +40,7 @@ import {
   toggleAccepting,
 } from '@/store/commands';
 import { normalize } from '@/store/document';
+import { usePreferences } from '@/store/preferences';
 import { useActions, useDocument, useSelection, useUndoState } from '@/store/editor';
 import { recoverDocument, useAutosave } from '@/store/useAutosave';
 import { resolvedTheme, useTheme } from '@/theme';
@@ -57,6 +58,7 @@ export function App() {
   const [storedStep, setStep] = useState(0);
   const [laying, setLaying] = useState(false);
   const { choice, cycle } = useTheme();
+  const { preferences, togglePanel } = usePreferences();
   const autosave = useAutosave();
   const document = useDocument();
   const selection = useSelection();
@@ -229,170 +231,295 @@ export function App() {
   // Undo and redo live here rather than on the canvas, because they are document-level and
   // must keep working when the pointer is nowhere near the diagram. Two `useShortcuts` calls
   // compose without conflict: each claims only the ids it has a handler for.
-  useShortcuts({ undo, redo });
+  // `togglePanel` joins the table like every other binding, so it appears in the `?` sheet
+  // without anyone remembering to add it there (J6).
+  useShortcuts({ undo, redo, togglePanel });
 
   return (
-    <div className="flex min-h-dvh flex-col bg-k-bg text-k-text">
-      <Header themeLabel={themeLabel(choice)} onCycleTheme={cycle} />
+    /*
+      A workbench, not a page with a tool on it (roadmap §2.8). `h-dvh` and `overflow-hidden`
+      rather than a growing document: the window is the frame, the canvas fills it, and
+      nothing scrolls the tool off screen. On the 1366×768 laptop design-system §1.5 names as
+      the target machine, the previous centred column spent a third of the width on margins.
+    */
+    <div className="flex h-dvh flex-col overflow-hidden bg-k-bg text-k-text">
+      <CommandBar
+        kind={kind}
+        undoState={undoState}
+        onUndo={undo}
+        onRedo={redo}
+        onArrange={layOut}
+        onShake={shakeOut}
+        arranging={laying || animating}
+        canArrange={document.automaton.states.length > 0}
+        canShake={!animating && hasOverlap(document.layout, ids)}
+        panelOpen={preferences.panelOpen}
+        onTogglePanel={togglePanel}
+        onHelp={openHelp}
+        themeLabel={themeLabel(choice)}
+        onCycleTheme={cycle}
+      />
 
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
-        <section className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Editor</h1>
-            <p className="mt-2 max-w-prose text-k-text-muted">
-              Double-click to add a state, or a state to toggle whether it accepts. Drag from a
-              state&rsquo;s edge to draw a transition. Everything is undoable and saved as you
-              work — there is no server, so it never leaves this browser.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <DeterminismBadge value={kind} />
-            <ToolButton
-              onClick={layOut}
-              disabled={laying || animating || document.automaton.states.length === 0}
-              title="Arrange the states left to right"
-            >
-              {laying ? 'Laying out…' : 'Arrange'}
-            </ToolButton>
-            <ToolButton
-              onClick={shakeOut}
-              disabled={animating || !hasOverlap(document.layout, ids)}
-              title="Push overlapping states apart"
-            >
-              Shake
-            </ToolButton>
-            <ToolButton onClick={undo} disabled={!undoState.canUndo}>
-              {undoState.undoLabel ? `Undo ${undoState.undoLabel}` : 'Undo'}
-            </ToolButton>
-            <ToolButton onClick={redo} disabled={!undoState.canRedo}>
-              Redo
-            </ToolButton>
-            <ToolButton onClick={openHelp}>?</ToolButton>
-          </div>
-        </section>
-
-        {load.status === 'loading' && <Panel>Loading the engine…</Panel>}
-
-        {load.status === 'failed' && (
-          <Panel tone="error">
-            <p className="font-medium">{load.message}</p>
-            <p className="mt-1 text-sm text-k-text-muted">
-              This usually means the WebAssembly build is missing. Run{' '}
-              <code className="font-mono">npm run wasm</code> and reload.
-            </p>
-          </Panel>
-        )}
-
-        {perf && (
-          <div className="overflow-hidden rounded-[10px] border border-k-border">
+      {load.status !== 'ready' ? (
+        <div className="flex flex-1 items-center justify-center p-6">
+          {load.status === 'loading' ? (
+            <Panel>Loading the engine…</Panel>
+          ) : (
+            <Panel tone="error">
+              <p className="font-medium">{load.message}</p>
+              <p className="mt-1 text-sm text-k-text-muted">
+                This usually means the WebAssembly build is missing. Run{' '}
+                <code className="font-mono">npm run wasm</code> and reload.
+              </p>
+            </Panel>
+          )}
+        </div>
+      ) : (
+        /* `min-h-0` is what lets the canvas column actually shrink inside a flex parent —
+           without it a flex child refuses to go below its content height and the canvas
+           pushes the status bar off the bottom of the window. */
+        <div className="flex min-h-0 flex-1">
+          <div className="relative flex min-w-0 flex-1 flex-col">
             <Canvas
-              automaton={perf.automaton}
-              layout={perf.layout}
-              selection={[]}
-              title={`Synthetic ${perf.automaton.states.length}-state machine`}
-              className="h-[520px] w-full"
+              automaton={perf ? perf.automaton : document.automaton}
+              layout={perf ? perf.layout : layout}
+              selection={perf ? [] : selection}
+              active={perf ? [] : active}
+              title="The automaton being edited"
+              className="min-h-0 flex-1"
+              onHelp={openHelp}
             />
-          </div>
-        )}
 
-        {!perf && load.status === 'ready' && (
-          <>
-            {/*
-              Canvas and sidebar, not canvas and a stack of panels underneath. The panels are
-              a reference the user glances at *while* editing — the determinism badge only
-              teaches anything if it is visible at the moment an edit changes it, which it
-              cannot be if it lives below the fold.
-            */}
-            <div className="flex flex-col gap-4 lg:flex-row">
-              {/*
-                The canvas grows to match the sidebar rather than sitting at a fixed height
-                with dead space beneath it. The panels are a reference read *beside* the
-                diagram, so the two columns ending level is what makes them read as one
-                workspace rather than as a diagram with an appendix.
-              */}
-              <div className="flex min-w-0 flex-1 overflow-hidden rounded-[10px] border border-k-border">
-                <Canvas
-                  automaton={document.automaton}
-                  layout={layout}
-                  selection={selection}
-                  active={active}
-                  title="The automaton being edited"
-                  className="min-h-[480px] w-full flex-1"
-                  onHelp={openHelp}
-                />
-              </div>
-
-              <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-72">
-                <Properties
-                  automaton={document.automaton}
-                  selection={selection}
-                  onToggleAccepting={(id) => {
-                    run(toggleAccepting(id));
-                  }}
-                  onSetStart={(id) => {
-                    run(setStart(id));
-                  }}
-                  // Renaming is an inline edit on the canvas, so the panel asks for it by
-                  // selecting the state and letting the canvas's own Enter binding do the
-                  // work. A second rename field here would be a second place for the
-                  // uniqueness rule to be enforced, or forgotten.
-                  onRename={(id) => {
-                    select([id]);
-                  }}
-                />
-                <InputTester
-                  simulation={simulation}
-                  input={input}
-                  onInput={setInput}
-                  step={step}
-                  onStep={setStep}
-                />
-                <TransitionTablePanel
-                  table={table}
-                  automaton={document.automaton}
-                  selection={selection}
-                  onSelect={select}
-                  onEdit={editCell}
-                />
-                <FormalDefinitionPanel definition={definition} />
-                <Alphabet
-                  automaton={document.automaton}
-                  onAdd={(symbol) => {
-                    run(addSymbol(symbol));
-                  }}
-                  onRemove={(symbol) => {
-                    run(deleteSymbol(symbol));
-                  }}
-                />
-              </aside>
-            </div>
-
+            {/* Docked against the canvas, not below the fold (J5). A problem list you have
+                to scroll to find is a problem list nobody reads. */}
             <Validation report={report} onFocus={focusStates} />
+          </div>
 
-            <p className="text-sm text-k-text-faint">
-              Scroll to zoom about the cursor. Hold space, or drag with the middle button, to
-              pan. Press <kbd className="font-mono">?</kbd> for every shortcut.
-            </p>
+          <SidePanel open={preferences.panelOpen} onClose={togglePanel}>
+            <Properties
+              automaton={document.automaton}
+              selection={selection}
+              onToggleAccepting={(id) => {
+                run(toggleAccepting(id));
+              }}
+              onSetStart={(id) => {
+                run(setStart(id));
+              }}
+              onRename={(id) => {
+                select([id]);
+              }}
+            />
+            <InputTester
+              simulation={simulation}
+              input={input}
+              onInput={setInput}
+              step={step}
+              onStep={setStep}
+            />
+            <TransitionTablePanel
+              table={table}
+              automaton={document.automaton}
+              selection={selection}
+              onSelect={select}
+              onEdit={editCell}
+            />
+            <FormalDefinitionPanel definition={definition} />
+            <Alphabet
+              automaton={document.automaton}
+              onAdd={(symbol) => {
+                run(addSymbol(symbol));
+              }}
+              onRemove={(symbol) => {
+                run(deleteSymbol(symbol));
+              }}
+            />
+          </SidePanel>
+        </div>
+      )}
 
-            <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
-              <Fact label="States" value={String(document.automaton.states.length)} />
-              <Fact label="Selected" value={String(selection.length)} />
-              <Fact label="Transitions" value={String(document.automaton.transitions.length)} />
-              <Fact label="Engine" value={`kleene-core ${load.engine.version()}`} />
-              <Fact label="Theme" value={resolvedTheme(choice)} />
-              <Fact
-                label="Autosave"
-                value={autosave.failed ? 'failed' : autosave.pending ? 'saving…' : 'saved'}
-              />
-            </dl>
-          </>
-        )}
-      </main>
+      <StatusBar
+        states={document.automaton.states.length}
+        transitions={document.automaton.transitions.length}
+        selected={selection.length}
+        engine={load.status === 'ready' ? load.engine.version() : undefined}
+        theme={resolvedTheme(choice)}
+        autosave={autosave.failed ? 'failed' : autosave.pending ? 'saving…' : 'saved'}
+      />
 
-      <Footer />
       <ShortcutSheet open={helpOpen} onClose={closeHelp} />
     </div>
+  );
+}
+
+/**
+ * The one bar across the top.
+ *
+ * Everything that acts on the whole document, in a single 44px row. The alternative — a title
+ * block, a toolbar, and a hint paragraph — is three rows of chrome above a canvas that then has
+ * nowhere to go, on a screen whose vertical pixels are the scarcest thing about it.
+ *
+ * Grouped left to right by what the buttons touch: identity, then what the machine *is*, then
+ * what changes it, then the view, then help. Undo sits with the layout buttons rather than at
+ * the far end, because roadmap §7 asks auto-layout to be visibly undoable and the most direct
+ * way to promise that is to put the undo beside the thing that needs it.
+ */
+function CommandBar({
+  kind,
+  undoState,
+  onUndo,
+  onRedo,
+  onArrange,
+  onShake,
+  arranging,
+  canArrange,
+  canShake,
+  panelOpen,
+  onTogglePanel,
+  onHelp,
+  themeLabel: theme,
+  onCycleTheme,
+}: {
+  kind: Determinism | undefined;
+  undoState: ReturnType<typeof useUndoState>;
+  onUndo: () => void;
+  onRedo: () => void;
+  onArrange: () => void;
+  onShake: () => void;
+  arranging: boolean;
+  canArrange: boolean;
+  canShake: boolean;
+  panelOpen: boolean;
+  onTogglePanel: () => void;
+  onHelp: () => void;
+  themeLabel: string;
+  onCycleTheme: () => void;
+}) {
+  return (
+    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-k-border bg-k-surface px-3">
+      <span className="font-mono text-sm font-medium tracking-tight text-k-primary">
+        kleene
+      </span>
+      <DeterminismBadge value={kind} />
+
+      <Divider />
+
+      <ToolButton
+        onClick={onArrange}
+        disabled={arranging || !canArrange}
+        title="Arrange the states left to right"
+      >
+        {arranging ? 'Arranging…' : 'Arrange'}
+      </ToolButton>
+      <ToolButton onClick={onShake} disabled={!canShake} title="Push overlapping states apart">
+        Shake
+      </ToolButton>
+
+      <Divider />
+
+      <ToolButton onClick={onUndo} disabled={!undoState.canUndo}>
+        {undoState.undoLabel ? `Undo ${undoState.undoLabel}` : 'Undo'}
+      </ToolButton>
+      <ToolButton onClick={onRedo} disabled={!undoState.canRedo}>
+        Redo
+      </ToolButton>
+
+      {/* Everything after this pushes to the right: view and help, not editing. */}
+      <div className="ml-auto flex items-center gap-2">
+        <ToolButton onClick={onCycleTheme} title="Cycle theme">
+          {theme}
+        </ToolButton>
+        <ToolButton onClick={onHelp} title="Keyboard shortcuts">
+          ?
+        </ToolButton>
+        <ToolButton
+          onClick={onTogglePanel}
+          title={panelOpen ? 'Hide the panels' : 'Show the panels'}
+          aria-expanded={panelOpen}
+        >
+          {/* The glyph shows the panel, not an abstract arrow, so it reads the same whichever
+              side of the toggle you are on. */}
+          {panelOpen ? '▨' : '▤'}
+        </ToolButton>
+      </div>
+    </header>
+  );
+}
+
+function Divider() {
+  return <span aria-hidden className="h-4 w-px shrink-0 bg-k-border" />;
+}
+
+/**
+ * The collapsible panel column.
+ *
+ * J2 and J7. **The diagram is the only permanent surface** — closing this leaves a canvas and
+ * a command bar, which is design-system §1.1 stated as geometry rather than as an aspiration.
+ *
+ * Below `lg` it becomes a sheet over the canvas instead of a column beside it. A 288px column
+ * next to a canvas on a tablet leaves neither usable, and building a second layout for small
+ * screens is how two layouts drift apart.
+ */
+function SidePanel({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+
+  return (
+    <aside
+      aria-label="Panels"
+      className="absolute inset-y-0 right-0 z-30 flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-l border-k-border bg-k-surface p-3 shadow-lg lg:static lg:z-auto lg:w-72 lg:shadow-none"
+    >
+      {/* Only reachable below `lg`, where the panel covers the canvas and the command bar's
+          toggle may be behind it. */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="self-end rounded-md px-2 py-0.5 font-mono text-xs text-k-text-faint hover:text-k-text lg:hidden"
+      >
+        close
+      </button>
+      {children}
+    </aside>
+  );
+}
+
+/**
+ * The thin readout along the bottom.
+ *
+ * Facts about the document that are worth glancing at and never worth reading: counts, the
+ * engine version, whether the work is saved. One row, monospace, and deliberately the least
+ * prominent thing on screen — design-system §1.1 again.
+ */
+function StatusBar({
+  states,
+  transitions,
+  selected,
+  engine,
+  theme,
+  autosave,
+}: {
+  states: number;
+  transitions: number;
+  selected: number;
+  engine: string | undefined;
+  theme: string;
+  autosave: string;
+}) {
+  return (
+    <footer className="flex h-7 shrink-0 items-center gap-4 border-t border-k-border bg-k-surface px-3 font-mono text-[11px] text-k-text-faint">
+      <span>{states} states</span>
+      <span>{transitions} transitions</span>
+      {selected > 0 && <span className="text-k-primary">{selected} selected</span>}
+      <span className="ml-auto">{autosave}</span>
+      <span>{theme}</span>
+      {engine && <span>kleene-core {engine}</span>}
+    </footer>
   );
 }
 
@@ -420,35 +547,6 @@ function ToolButton({
   );
 }
 
-function Header({
-  themeLabel,
-  onCycleTheme,
-}: {
-  themeLabel: string;
-  onCycleTheme: () => void;
-}) {
-  return (
-    <header className="border-b border-k-border">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
-        <div className="flex items-baseline gap-3">
-          <span className="font-mono text-lg font-medium tracking-tight text-k-primary">
-            kleene
-          </span>
-          <span className="text-sm text-k-text-faint">automata workbench</span>
-        </div>
-
-        <button
-          type="button"
-          onClick={onCycleTheme}
-          className="rounded-md border border-k-border px-3 py-1.5 text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text"
-        >
-          Theme: {themeLabel}
-        </button>
-      </div>
-    </header>
-  );
-}
-
 function Panel({ children, tone }: { children: React.ReactNode; tone?: 'error' }) {
   return (
     <div
@@ -460,29 +558,6 @@ function Panel({ children, tone }: { children: React.ReactNode; tone?: 'error' }
     >
       {children}
     </div>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[11px] font-semibold tracking-[0.06em] text-k-text-faint uppercase">
-        {label}
-      </dt>
-      <dd className="mt-1 font-mono text-k-text">{value}</dd>
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="border-t border-k-border">
-      <div className="mx-auto w-full max-w-5xl px-6 py-4 text-sm text-k-text-faint">
-        Phase 2 — building the editor. The engine is complete: regular expressions convert to
-        NFAs, DFAs and minimal DFAs, and back to regular expressions, with every step explained.
-        Panels, the input tester and automatic layout come next.
-      </div>
-    </footer>
   );
 }
 
