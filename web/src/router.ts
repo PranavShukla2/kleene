@@ -28,6 +28,8 @@ export type Route =
   | 'docs'
   | 'changelog'
   | 'about'
+  /** A `/tools/<slug>` landing page. The slug is read separately, from the path. */
+  | 'tool'
   /** No such page. Not a path anyone navigates *to* — only where an unknown one lands. */
   | 'missing';
 
@@ -43,6 +45,9 @@ const PATHS: Record<Route, string> = {
   docs: '/docs',
   changelog: '/changelog',
   about: '/about',
+  // The prefix only. `pathOf` never builds a real tool URL — `toolPath` does, because a route
+  // with a parameter cannot round-trip through a table of constants.
+  tool: '/tools',
   // Never matched by `routeOf`, and deliberately not `/404`: the address bar must keep the
   // URL that failed, so someone can see their own typo and fix it.
   missing: '/',
@@ -56,11 +61,32 @@ const PATHS: Record<Route, string> = {
  * the site changed rather than like the link is old, and they have no way to tell.
  */
 export function routeOf(pathname: string): Route {
-  const normalised = pathname.replace(/\/+$/, '') || '/';
+  // A query string or a fragment is not part of the path, and this takes whatever a caller
+  // has. `goPath('/learn#epsilon-closure')` used to resolve to `missing`, which turned a
+  // deep link from the command palette into a 404 for a page that was right there.
+  const withoutSuffix = pathname.split(/[?#]/)[0] ?? pathname;
+  const normalised = withoutSuffix.replace(/\/+$/, '') || '/';
+
+  // The one route with a parameter, and the reason this file has a note about when to stop
+  // extending it. A second one would be the point to reach for a real matcher.
+  if (normalised.startsWith('/tools/')) return 'tool';
+
   const found = (Object.keys(PATHS) as Route[])
-    .filter((route) => route !== 'missing')
+    .filter((route) => route !== 'missing' && route !== 'tool')
     .find((route) => PATHS[route] === normalised);
   return found ?? 'missing';
+}
+
+/** The slug in a `/tools/<slug>` path, if the path is one. */
+export function toolSlug(pathname: string): string | undefined {
+  const withoutSuffix = pathname.split(/[?#]/)[0] ?? pathname;
+  const match = /^\/tools\/([^/]+)\/?$/.exec(withoutSuffix);
+  return match?.[1];
+}
+
+/** Where a tool page lives. Not in `PATHS`, because the path depends on the slug. */
+export function toolPath(slug: string): string {
+  return `/tools/${slug}`;
 }
 
 /** The path a route lives at. */
@@ -93,7 +119,18 @@ export function requestedExpression(search: string): string | undefined {
 }
 
 /** Read the current route, and navigate without a reload. */
-export function useRoute(): { route: Route; go: (to: Route, search?: string) => void } {
+export function useRoute(): {
+  route: Route;
+  go: (to: Route, search?: string) => void;
+  /**
+   * Navigate to a literal path, deriving the route from it.
+   *
+   * `go` builds a URL from a route, which cannot express `/tools/<slug>` — the route is the
+   * same for every slug. Rather than smuggle the segment through the `search` argument and
+   * hope nobody passes a real query string, a parameterised route gets its own door.
+   */
+  goPath: (path: string) => void;
+} {
   const [route, setRoute] = useState<Route>(() => routeOf(window.location.pathname));
 
   // The back button has to work. Without this, navigating away and pressing back changes the
@@ -116,5 +153,48 @@ export function useRoute(): { route: Route; go: (to: Route, search?: string) => 
     window.scrollTo(0, 0);
   }, []);
 
-  return { route, go };
+  const goPath = useCallback((path: string) => {
+    window.history.pushState(null, '', path);
+    setRoute(routeOf(path));
+
+    const [, hash] = path.split('#');
+    if (hash === undefined) {
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    window.scrollTo(0, 0);
+    scrollToWhenItExists(hash);
+  }, []);
+
+  return { route, go, goPath };
+}
+
+/** How long to keep looking for an anchor before giving up. */
+const ANCHOR_DEADLINE_MS = 1200;
+
+/**
+ * Scroll to an element that does not exist yet.
+ *
+ * Waiting a frame is not enough here. The shell crossfades between pages, so the incoming
+ * page mounts a transition later — and a fixed delay tuned to that transition would be a
+ * second copy of its duration, wrong the moment either changes.
+ *
+ * So it looks every frame until the element turns up, with a deadline. Giving up silently is
+ * correct: the visitor is on the right page either way, and scrolling somewhere arbitrary
+ * because an anchor was mistyped is worse than not scrolling at all.
+ */
+function scrollToWhenItExists(id: string, deadline = ANCHOR_DEADLINE_MS): void {
+  const until = performance.now() + deadline;
+
+  const look = () => {
+    const target = document.getElementById(id);
+    if (target) {
+      target.scrollIntoView({ block: 'start' });
+      return;
+    }
+    if (performance.now() < until) requestAnimationFrame(look);
+  };
+
+  requestAnimationFrame(look);
 }

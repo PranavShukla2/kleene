@@ -43,6 +43,47 @@ export interface Chapter {
   concepts: readonly Concept[];
 }
 
+/**
+ * The Greek letters this subject uses, spelled out.
+ *
+ * Stripping them instead is what broke this function the first time: `ε-NFA` and `NFA` both
+ * became `nfa`, which is a colliding anchor *and* a duplicate React key — and the duplicate
+ * key is the worse half, because it leaves rows from a previous query stranded in the DOM,
+ * where they are visible and unreachable.
+ */
+const SPELLED: Record<string, string> = {
+  ε: 'epsilon',
+  Σ: 'sigma',
+  δ: 'delta',
+  λ: 'lambda',
+  μ: 'mu',
+  '∅': 'empty-set',
+};
+
+/**
+ * A concept's anchor.
+ *
+ * Derived from the term rather than stored, because a hand-written id is a second name for
+ * the same thing and the two drift the moment a term is reworded. `conceptIdsAreUnique` in the
+ * tests is what keeps deriving them safe.
+ */
+export function conceptId(term: string): string {
+  return [...term.toLowerCase()]
+    .map((character) => SPELLED[character] ?? character)
+    .join('')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+/** Every concept, flattened, with the chapter it belongs to. */
+export function allConcepts(): { concept: Concept; chapter: Chapter }[] {
+  return CHAPTERS.flatMap((chapter) =>
+    chapter.concepts.map((concept) => ({ concept, chapter })),
+  );
+}
+
 export const CHAPTERS: readonly Chapter[] = [
   {
     number: '01',

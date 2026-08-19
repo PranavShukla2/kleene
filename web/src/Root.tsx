@@ -25,6 +25,8 @@ import { Docs } from '@/site/Docs';
 import { Landing } from '@/site/Landing';
 import { Learn } from '@/site/Learn';
 import { Loading } from '@/site/Loading';
+import { Tool } from '@/site/Tool';
+import { toolAt } from '@/site/tools';
 import { Missing } from '@/site/Missing';
 import { Pricing } from '@/site/Pricing';
 import { Roadmap } from '@/overview/Roadmap';
@@ -33,12 +35,12 @@ import { Footer } from '@/site/Footer';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
 import { handOff } from '@/store/handoff';
-import { useRoute, type Route } from '@/router';
+import { toolSlug, useRoute, type Route } from '@/router';
 import { useTheme } from '@/theme';
 import { loadEngine, type Engine } from '@/wasm/loader';
 
 export function Root() {
-  const { route, go } = useRoute();
+  const { route, go, goPath } = useRoute();
   const { choice, cycle } = useTheme();
   const still = useReducedMotion();
   const [palette, setPalette] = useState(false);
@@ -89,7 +91,7 @@ export function Root() {
             exit={still ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: still ? 0 : 0.14, ease: [0.2, 0.8, 0.2, 1] }}
           >
-            <Page route={route} go={go} />
+            <Page route={route} go={go} goPath={goPath} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -108,6 +110,10 @@ export function Root() {
         onConvert={(source) => {
           go('convert', `?q=${encodeURIComponent(source)}`);
         }}
+        onOpenTool={goPath}
+        onOpenConcept={(id) => {
+          goPath(`/learn#${id}`);
+        }}
         onCycleTheme={cycle}
         themeLabel={choice}
       />
@@ -115,24 +121,64 @@ export function Root() {
   );
 }
 
-function Page({ route, go }: { route: Route; go: (to: Route, search?: string) => void }) {
-  // Both of these draw real machines, so both need the engine. The overview and the roadmap
-  // still do not ask for it, which is what keeps their first paint free of a 400KB wait.
-  const engine = useEngine(route === 'examples' || route === 'convert');
+/** The routes that cannot render anything real until WebAssembly has arrived. */
+const NEEDS_ENGINE = new Set<Route>(['convert', 'examples', 'tool']);
+
+/** What each of them is waiting for, in words the visitor can do something with. */
+const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
+  convert:
+    'Thompson’s construction, subset construction and minimization all run here, in your browser. Nothing you type is sent anywhere.',
+  examples:
+    'Every example is drawn by the same engine that checks it, so the cards show the real machines rather than pictures of them.',
+  tool: 'The conversion runs in your browser, on the same engine the rest of the site uses. Nothing you type is sent anywhere.',
+};
+
+function Page({
+  route,
+  go,
+  goPath,
+}: {
+  route: Route;
+  go: (to: Route, search?: string) => void;
+  goPath: (path: string) => void;
+}) {
+  /**
+   * Which pages need the engine.
+   *
+   * A list rather than a condition per call site, because the two places that consume it —
+   * the loading state and the page itself — have to agree, and they did not: a tool page
+   * rendered the loading state forever because this condition had not been told about the
+   * route while the guard below had.
+   *
+   * The landing page and the roadmap are still absent, which is what keeps their first paint
+   * free of a wasm wait. The landing page's hero loads it *itself*, after painting.
+   */
+  const engine = useEngine(NEEDS_ENGINE.has(route));
   const openExample = (key: string) => {
     go('editor', `?example=${encodeURIComponent(key)}`);
   };
 
   // The two pages that cannot render anything real without the engine say so, rather than
   // flashing an empty frame and then filling it.
-  if ((route === 'convert' || route === 'examples') && !engine) {
+  if (NEEDS_ENGINE.has(route) && !engine) {
+    return <Loading what={WAITING_FOR[route] ?? WAITING_FOR.convert} />;
+  }
+
+  if (route === 'tool') {
+    const tool = toolAt(toolSlug(window.location.pathname));
+    // An unknown slug is a wrong URL, not a reason to show a different tool. `Missing` says so
+    // and offers everything else, which is what someone who mistyped one actually needs.
+    if (!tool) return <Missing onNavigate={go} />;
     return (
-      <Loading
-        what={
-          route === 'convert'
-            ? 'Thompson’s construction, subset construction and minimization all run here, in your browser. Nothing you type is sent anywhere.'
-            : 'Every example is drawn by the same engine that checks it, so the cards show the real machines rather than pictures of them.'
-        }
+      <Tool
+        tool={tool}
+        engine={engine}
+        onNavigate={go}
+        onOpenTool={goPath}
+        onOpenInEditor={(automaton) => {
+          handOff(automaton);
+          go('editor');
+        }}
       />
     );
   }

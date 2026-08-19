@@ -29,16 +29,31 @@ const EPSILON = 'ε';
 export function Convert({
   engine,
   onOpenInEditor,
+  embedded,
 }: {
   engine: Engine | undefined;
   /** Hand a stage to the editor, so a converted machine can be edited by hand. */
   onOpenInEditor: (automaton: Automaton) => void;
+  /**
+   * Rendered inside a `/tools/*` page rather than as `/convert` itself.
+   *
+   * Two differences, both about what the surrounding page already said: the heading is gone
+   * (the tool page has its own, and two `h1`s is a worse document than one) and the starting
+   * expression and panes come from the task rather than from the URL.
+   *
+   * Everything else is identical, deliberately. A cut-down converter for the landing pages
+   * would be a second implementation of the one thing this project exists to have exactly one
+   * of.
+   */
+  embedded?: { source: string; panes: readonly PaneId[] };
 }) {
   // Seeded from the URL, so a link — or the command palette — can open the page with an
   // expression already compiling. Read once: after that the bar owns the value, and a URL
   // that kept overriding it would fight the person typing.
-  const [source, setSource] = useState(() => requestedExpression(window.location.search) ?? '');
-  const [shown, setShown] = useState<readonly PaneId[]>(DEFAULT_PANES);
+  const [source, setSource] = useState(
+    () => embedded?.source ?? requestedExpression(window.location.search) ?? '',
+  );
+  const [shown, setShown] = useState<readonly PaneId[]>(embedded?.panes ?? DEFAULT_PANES);
   // Which ε-NFA states the hovered DFA state was built from (task B3).
   const [origin, setOrigin] = useState<readonly StateId[]>([]);
   // Which ε-NFA states the open ε-closure drill-down is on (task D4).
@@ -81,32 +96,43 @@ export function Convert({
   }, [parsed, shown, steps.dfa]);
 
   return (
-    <main className="relative mx-auto w-full max-w-6xl px-6 pt-10 pb-4">
+    <div
+      className={`relative mx-auto w-full max-w-6xl px-6 pb-4 ${embedded ? 'pt-2' : 'pt-10'}`}
+    >
       {/*
         A wash behind the bar and nothing else. The panes below are diagrams, and design-system
         §1.1 keeps decoration away from those — but the top of a page a stranger may land on
-        directly should still look like the rest of the site.
+        directly should still look like the rest of the site. Not when embedded: the tool page
+        has its own, and two of them stack into a bruise.
       */}
-      <div
-        aria-hidden
-        className="k-aurora pointer-events-none absolute inset-x-0 -top-24 h-80 opacity-60"
-      />
+      {!embedded && (
+        <div
+          aria-hidden
+          className="k-aurora pointer-events-none absolute inset-x-0 -top-24 h-80 opacity-60"
+        />
+      )}
 
-      <div className="relative">
-        <span className="font-mono text-xs tracking-wider text-k-primary uppercase">
-          Convert
-        </span>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Type an expression. Watch it become a machine.
-        </h1>
-        <p className="mt-3 max-w-prose text-k-text-muted">
-          Thompson&rsquo;s construction, then subset construction, then minimization. Every
-          stage below comes from one pass over what you typed, so no two panes can be describing
-          different expressions.
-        </p>
-      </div>
+      {/*
+        Suppressed inside a tool page, which has its own heading. Two `h1`s is a worse document
+        than one, and the second would be restating what the first already said.
+      */}
+      {!embedded && (
+        <div className="relative">
+          <span className="font-mono text-xs tracking-wider text-k-primary uppercase">
+            Convert
+          </span>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+            Type an expression. Watch it become a machine.
+          </h1>
+          <p className="mt-3 max-w-prose text-k-text-muted">
+            Thompson&rsquo;s construction, then subset construction, then minimization. Every
+            stage below comes from one pass over what you typed, so no two panes can be
+            describing different expressions.
+          </p>
+        </div>
+      )}
 
-      <div className="relative mt-8">
+      <div className={`relative ${embedded ? '' : 'mt-8'}`}>
         <RegexBar
           source={source}
           onChange={setSource}
@@ -208,7 +234,7 @@ export function Convert({
           in the result.
         </p>
       )}
-    </main>
+    </div>
   );
 }
 

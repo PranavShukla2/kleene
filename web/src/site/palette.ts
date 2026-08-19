@@ -30,9 +30,16 @@ const SCORE = {
 } as const;
 
 /** How much a group is worth before any query is typed, so an empty palette is still ordered. */
-export type Group = 'Go to' | 'Open an example' | 'Convert' | 'Actions';
+export type Group = 'Go to' | 'Convert' | 'Concepts' | 'Docs' | 'Open an example' | 'Actions';
 
-const GROUP_ORDER: readonly Group[] = ['Go to', 'Convert', 'Open an example', 'Actions'];
+const GROUP_ORDER: readonly Group[] = [
+  'Go to',
+  'Convert',
+  'Concepts',
+  'Docs',
+  'Open an example',
+  'Actions',
+];
 
 export interface Action {
   /** Stable identity, for React keys and for tests that should not depend on wording. */

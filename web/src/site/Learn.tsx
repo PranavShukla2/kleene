@@ -15,7 +15,7 @@
  * of this page that could not be got from a textbook index.
  */
 
-import { CHAPTERS, type Chapter, type Concept, type Demo } from '@/site/concepts';
+import { CHAPTERS, conceptId, type Chapter, type Concept, type Demo } from '@/site/concepts';
 import { Lift, Reveal, RevealGroup, RevealItem } from '@/site/motion';
 import { Band, Masthead } from '@/site/page';
 import type { Route } from '@/router';
@@ -172,7 +172,11 @@ function ConceptCard({
   onConvert: (expression: string) => void;
 }) {
   return (
-    <article className="k-spotlight flex h-full flex-col rounded-2xl border border-k-border bg-k-surface p-6">
+    <article
+      id={conceptId(concept.term)}
+      // Below the floating nav when linked to directly, which the palette does.
+      className="k-spotlight flex h-full scroll-mt-28 flex-col rounded-2xl border border-k-border bg-k-surface p-6"
+    >
       <header className="flex items-baseline gap-3">
         <h3 className="text-lg font-medium tracking-tight">{concept.term}</h3>
         {concept.notation && (

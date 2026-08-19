@@ -17,6 +17,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { EXAMPLES } from '@/overview/examples';
+import { SECTIONS } from '@/site/articles';
+import { allConcepts, conceptId } from '@/site/concepts';
+import { TOOLS } from '@/site/tools';
 import { Pill } from '@/site/Badge';
 import { grouped, moveBy, search, type Action } from '@/site/palette';
 import { SPRING } from '@/site/spring';
@@ -31,6 +34,8 @@ export function CommandPalette({
   onNavigate,
   onOpenExample,
   onConvert,
+  onOpenTool,
+  onOpenConcept,
   onCycleTheme,
   themeLabel,
 }: {
@@ -40,6 +45,10 @@ export function CommandPalette({
   onOpenExample: (key: string) => void;
   /** Go to the converter with an expression already in the bar. */
   onConvert: (source: string) => void;
+  /** Go to a `/tools/*` page. Parameterised routes cannot go through `onNavigate`. */
+  onOpenTool: (path: string) => void;
+  /** Go to `/learn` and scroll to a concept. */
+  onOpenConcept: (id: string) => void;
   onCycleTheme: () => void;
   themeLabel: string;
 }) {
@@ -66,6 +75,14 @@ export function CommandPalette({
       { id: 'go:changelog', label: 'Changelog', group: 'Go to', keywords: ['releases', 'new'] },
       { id: 'go:about', label: 'About', group: 'Go to', keywords: ['who', 'why', 'author'] },
 
+      ...TOOLS.map((tool): Action => ({
+        id: `tool:${tool.slug}`,
+        label: tool.title,
+        group: 'Convert',
+        keywords: [tool.slug.replace(/-/g, ' '), tool.example],
+        hint: 'tool page',
+      })),
+
       ...PRESETS.map((preset): Action => ({
         id: `regex:${preset}`,
         label: `Convert ${preset}`,
@@ -73,6 +90,27 @@ export function CommandPalette({
         keywords: [preset],
         hint: 'regex → DFA',
       })),
+
+      // The whole of `/learn`, searchable by term. This is what turns the palette from a
+      // navigator into something you can ask a question of: "what is an ε-closure" is a query
+      // people have, and the nav bar's answer to it is "Learn", which is not one.
+      ...allConcepts().map(({ concept, chapter }): Action => ({
+        id: `concept:${conceptId(concept.term)}`,
+        label: concept.term,
+        group: 'Concepts',
+        keywords: [concept.notation ?? '', chapter.title].filter((word) => word !== ''),
+        hint: chapter.title.toLowerCase(),
+      })),
+
+      ...SECTIONS.flatMap((section) =>
+        section.articles.map((article): Action => ({
+          id: `doc:${article.route ?? ''}`,
+          label: article.title,
+          group: 'Docs',
+          keywords: [section.heading],
+          hint: article.status.kind === 'ready' ? undefined : 'coming soon',
+        })),
+      ),
 
       ...EXAMPLES.map((example): Action => ({
         id: `example:${example.key}`,
@@ -93,8 +131,18 @@ export function CommandPalette({
     [themeLabel],
   );
 
-  const matches = useMemo(() => search(actions, query), [actions, query]);
-  const flat = useMemo(() => grouped(matches).flatMap((section) => section.matches), [matches]);
+  /**
+   * The results, grouped once.
+   *
+   * `grouped` used to be called twice — once to build the flat list the keyboard walks, once
+   * in the render to draw the sections — and the two disagreed: the footer reported two
+   * results while three rows were on screen, and the third row could not be highlighted
+   * because it was not in the list the arrow keys knew about.
+   *
+   * One memo, two derivations from it. A value computed twice is a value that can differ.
+   */
+  const sections = useMemo(() => grouped(search(actions, query)), [actions, query]);
+  const flat = useMemo(() => sections.flatMap((section) => section.matches), [sections]);
 
   // Clamped rather than reset by an effect: the query changes on every keystroke, and zeroing
   // a highlight from an effect is a cascading render for something already known from the
@@ -121,6 +169,15 @@ export function CommandPalette({
       onNavigate(action.id.slice(3) as Route);
     } else if (action.id.startsWith('example:')) {
       onOpenExample(action.id.slice('example:'.length));
+    } else if (action.id.startsWith('concept:')) {
+      onOpenConcept(action.id.slice('concept:'.length));
+    } else if (action.id.startsWith('doc:')) {
+      const route = action.id.split(':').at(-1) ?? 'unwritten';
+      // An article with no route of its own is not written yet; the map on `/docs` is where it
+      // says so, and sending someone there beats a dead entry that does nothing when pressed.
+      onNavigate(route === 'unwritten' ? 'docs' : (route as Route));
+    } else if (action.id.startsWith('tool:')) {
+      onOpenTool(`/tools/${action.id.slice('tool:'.length)}`);
     } else if (action.id.startsWith('regex:')) {
       onConvert(action.id.slice('regex:'.length));
     } else if (action.id === 'theme') {
@@ -216,7 +273,7 @@ export function CommandPalette({
                 </p>
               )}
 
-              {grouped(matches).map((section) => (
+              {sections.map((section) => (
                 <div key={section.group} className="mb-1">
                   <p className="px-3 py-1.5 font-mono text-[10px] tracking-wider text-k-text-faint uppercase">
                     {section.group}

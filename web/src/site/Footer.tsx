@@ -43,6 +43,15 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
     ],
   },
   {
+    heading: 'Free tools',
+    items: [
+      { label: 'Regex to DFA', href: '/tools/regex-to-dfa' },
+      { label: 'NFA to DFA', href: '/tools/nfa-to-dfa' },
+      { label: 'DFA minimizer', href: '/tools/minimize-dfa' },
+      { label: 'Regex to NFA', href: '/tools/regex-to-nfa' },
+    ],
+  },
+  {
     heading: 'Build on it',
     items: [
       { label: 'CLI', soon: 'phase 4' },
@@ -66,7 +75,7 @@ export function Footer({ onNavigate }: { onNavigate: (to: Route) => void }) {
   return (
     <footer className="mt-8 border-t border-k-border">
       <div className="mx-auto w-full max-w-6xl px-6 py-14">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1.3fr_repeat(5,1fr)]">
           <div>
             <button
               type="button"
@@ -119,9 +128,18 @@ function Link({ item, onNavigate }: { item: Item; onNavigate: (to: Route) => voi
     'text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:text-k-text';
 
   if (item.href) {
+    // Internal links keep the running app; external ones get a new tab and a marker. The
+    // leading slash is the whole test, and it is enough for every link this footer holds.
+    const external = !item.href.startsWith('/');
     return (
-      <a href={item.href} target="_blank" rel="noreferrer noopener" className={style}>
-        {item.label} ↗
+      <a
+        href={item.href}
+        target={external ? '_blank' : undefined}
+        rel={external ? 'noreferrer noopener' : undefined}
+        className={style}
+      >
+        {item.label}
+        {external ? ' ↗' : ''}
       </a>
     );
   }
