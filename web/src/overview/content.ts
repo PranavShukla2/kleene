@@ -51,7 +51,7 @@ export const FEATURES: readonly Feature[] = [
     title: 'Watch a conversion happen',
     detail:
       'Regex to ε-NFA to DFA to minimal DFA, every round of subset construction and every partition split, with the reasoning attached to each step.',
-    status: planned(3, 'the engine already produces these traces; this is the view for them'),
+    status: READY,
   },
   {
     title: 'Export to TikZ',

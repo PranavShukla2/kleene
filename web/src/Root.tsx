@@ -18,9 +18,14 @@ import { useEffect, useState } from 'react';
 import { Editor } from '@/App';
 import { Convert } from '@/convert/Convert';
 import { Gallery } from '@/overview/Gallery';
-import { Overview } from '@/overview/Overview';
+import { About } from '@/site/About';
+import { Changelog } from '@/site/Changelog';
+import { Docs } from '@/site/Docs';
+import { Landing } from '@/site/Landing';
+import { Pricing } from '@/site/Pricing';
 import { Roadmap } from '@/overview/Roadmap';
-import { SiteFooter, SiteHeader } from '@/overview/SiteHeader';
+import { Footer } from '@/site/Footer';
+import { Nav } from '@/site/Nav';
 import { handOff } from '@/store/handoff';
 import { useRoute, type Route } from '@/router';
 import { useTheme } from '@/theme';
@@ -42,13 +47,13 @@ export function Root() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-k-bg text-k-text">
-      <SiteHeader current={route} onNavigate={go} themeLabel={choice} onCycleTheme={cycle} />
+      <Nav current={route} onNavigate={go} themeLabel={choice} onCycleTheme={cycle} />
 
       <div className="flex-1">
         <Page route={route} go={go} />
       </div>
 
-      <SiteFooter />
+      <Footer onNavigate={go} />
     </div>
   );
 }
@@ -76,18 +81,16 @@ function Page({ route, go }: { route: Route; go: (to: Route, search?: string) =>
       return <Gallery engine={engine} onOpen={openExample} />;
     case 'roadmap':
       return <Roadmap />;
+    case 'pricing':
+      return <Pricing onNavigate={go} />;
+    case 'docs':
+      return <Docs onNavigate={go} />;
+    case 'changelog':
+      return <Changelog onNavigate={go} />;
+    case 'about':
+      return <About onNavigate={go} />;
     default:
-      return (
-        <Overview
-          onOpenEditor={() => {
-            go('editor');
-          }}
-          onOpenExample={openExample}
-          onBrowseExamples={() => {
-            go('examples');
-          }}
-        />
-      );
+      return <Landing onNavigate={go} onOpenExample={openExample} />;
   }
 }
 
