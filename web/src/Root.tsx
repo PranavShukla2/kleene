@@ -23,6 +23,7 @@ import { About } from '@/site/About';
 import { Changelog } from '@/site/Changelog';
 import { Docs } from '@/site/Docs';
 import { Landing } from '@/site/Landing';
+import { Loading } from '@/site/Loading';
 import { Missing } from '@/site/Missing';
 import { Pricing } from '@/site/Pricing';
 import { Roadmap } from '@/overview/Roadmap';
@@ -88,6 +89,20 @@ function Page({ route, go }: { route: Route; go: (to: Route, search?: string) =>
   const openExample = (key: string) => {
     go('editor', `?example=${encodeURIComponent(key)}`);
   };
+
+  // The two pages that cannot render anything real without the engine say so, rather than
+  // flashing an empty frame and then filling it.
+  if ((route === 'convert' || route === 'examples') && !engine) {
+    return (
+      <Loading
+        what={
+          route === 'convert'
+            ? 'Thompson’s construction, subset construction and minimization all run here, in your browser. Nothing you type is sent anywhere.'
+            : 'Every example is drawn by the same engine that checks it, so the cards show the real machines rather than pictures of them.'
+        }
+      />
+    );
+  }
 
   switch (route) {
     case 'convert':

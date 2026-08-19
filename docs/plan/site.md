@@ -84,17 +84,27 @@ notices at the exact moment they click the primary call to action.
 - [ ] **O1.** ⚑ Decide how far the editor moves. A workbench genuinely needs different
       furniture from a marketing page — the risk here is making the tool worse to look
       prettier.
-- [ ] **O2.** At minimum: the command bar takes the site's glass, radii and type, and the
+- [x] **O2.** At minimum: the command bar takes the site's glass, radii and type, and the
       wordmark matches.
-- [ ] **O3.** A first-run state. An empty canvas with no instruction is the worst moment in
+- [x] **O3.** A first-run state. An empty canvas with no instruction is the worst moment in
       the product, and it is the first one after the biggest button on the site.
+
+**O2 and O3 done; O1 still needs a decision.** The command bar took the site's type, radii
+and wordmark and kept its own density — a workbench earns its screen by fitting more on it, so
+the bar stays 44px and its controls stay tight. How much further the editor should move is
+still open, and the risk in that direction is making the tool worse in order to look better.
+
+Building O3 surfaced a real bug: the selection survived deleting the states it referred to.
+`editor.ts` already carried a comment calling that its one real hazard, and only guarded the
+convenient path. Now pruned after every history transition, because undoing an *add* removes a
+state and the command alone cannot say so.
 
 ## Track P — the details nobody lists
 
-- [ ] **P1.** Loading states for the pages that wait on wasm. They pop in today.
+- [x] **P1.** Loading states for the pages that wait on wasm. They pop in today.
 - [ ] **P2.** Empty states with something to do in them, not just a sentence.
-- [ ] **P3.** A rim light on glass panels — one inset gradient, more depth than a shadow.
-- [ ] **P4.** Keyboard hints as pills (`⌘K`-style) wherever a shortcut exists. The editor has
+- [x] **P3.** A rim light on glass panels — one inset gradient, more depth than a shadow.
+- [x] **P4.** Keyboard hints as pills (`⌘K`-style) wherever a shortcut exists. The editor has
       a full shortcut table and the site never mentions it.
 - [ ] **P5.** Section rules and monospace section numbers, for the engineering register the
       content is already writing in.
