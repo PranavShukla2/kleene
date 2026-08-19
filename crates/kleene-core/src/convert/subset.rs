@@ -113,6 +113,7 @@ pub fn determinize(nfa: &Automaton) -> Traced<Automaton> {
             ),
         )
         .highlighting(start_subset.iter().copied())
+        .seeded([nfa.start])
         .framed(Frame {
             states: 1,
             transitions: 0,
@@ -137,7 +138,7 @@ pub fn determinize(nfa: &Automaton) -> Traced<Automaton> {
                 .flat_map(|&id| nfa.transitions_from(id, Some(symbol)))
                 .map(|t| t.to)
                 .collect();
-            let target = closures.of_set(moved);
+            let target = closures.of_set(moved.iter().copied());
 
             if target.is_empty() {
                 steps.push(
@@ -196,6 +197,9 @@ pub fn determinize(nfa: &Automaton) -> Traced<Automaton> {
                     },
                 )
                 .highlighting(target.iter().copied())
+                // The set *before* closing over ε. A closure cannot be recovered from its own
+                // answer, and "expand it one state at a time" is a question about the seeds.
+                .seeded(moved.iter().copied())
                 .framed(Frame {
                     states: subsets.len() as u32,
                     transitions: transitions.len() as u32,
@@ -492,6 +496,39 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn a_round_records_the_set_it_closed_over() {
+        // The seeds are `move(subset, symbol)` — where you are *before* closing over ε. They
+        // cannot be recovered from the answer, which is why they are carried.
+        let nfa = thompson(&parse("a*b").expect("parses")).result;
+        let closures = Closures::compute(&nfa);
+        let t = determinize(&nfa);
+
+        for step in t.steps.iter().filter(|s| s.detail.starts_with("Reading")) {
+            if step.detail.contains("no state at all") {
+                continue;
+            }
+            let seeds: BTreeSet<StateId> = step.seeds.iter().copied().collect();
+            assert!(
+                !seeds.is_empty(),
+                "a round that arrived somewhere had seeds"
+            );
+            assert_eq!(
+                closures.of_set(seeds),
+                step.highlight.iter().copied().collect::<BTreeSet<_>>(),
+                "closing the seeds must give exactly the subset the step arrived at: {}",
+                step.detail
+            );
+        }
+    }
+
+    #[test]
+    fn the_start_step_is_seeded_by_the_nfa_start_state() {
+        let nfa = thompson(&parse("a*").expect("parses")).result;
+        let t = determinize(&nfa);
+        assert_eq!(t.steps[0].seeds, vec![nfa.start]);
     }
 
     #[test]

@@ -97,6 +97,15 @@ pub struct Step {
     /// How much of the result existed once this step finished, when the algorithm can say.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frame: Option<Frame>,
+    /// The input states this step *began* from, when it began from a set.
+    ///
+    /// Almost always this is the seed set of an ε-closure — the states you are in before
+    /// closing over ε, as opposed to [`highlight`](Self::highlight), which is where you ended
+    /// up. Recorded because a closure cannot be recomputed from its own answer: `{q0, q2, q4}`
+    /// says nothing about whether it grew from `q0` or from `q4`, and "expand it one state at
+    /// a time" is a question about the seeds.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub seeds: Vec<u32>,
 }
 
 impl Step {
@@ -107,6 +116,7 @@ impl Step {
             detail: detail.into(),
             highlight: Vec::new(),
             frame: None,
+            seeds: Vec::new(),
         }
     }
 
@@ -117,6 +127,7 @@ impl Step {
             detail: detail.into(),
             highlight: Vec::new(),
             frame: None,
+            seeds: Vec::new(),
         }
     }
 
@@ -131,6 +142,13 @@ impl Step {
     #[must_use]
     pub fn framed(mut self, frame: Frame) -> Self {
         self.frame = Some(frame);
+        self
+    }
+
+    /// Attach the set this step started from, so a UI can offer to expand it in slow motion.
+    #[must_use]
+    pub fn seeded(mut self, ids: impl IntoIterator<Item = u32>) -> Self {
+        self.seeds = ids.into_iter().collect();
         self
     }
 }
@@ -272,6 +290,15 @@ mod tests {
         for absent in ["pending", "current", "target", "fresh"] {
             assert!(!json.contains(absent), "{absent} should be omitted: {json}");
         }
+    }
+
+    #[test]
+    fn seeds_are_omitted_when_a_step_started_from_nothing_in_particular() {
+        let json = serde_json::to_string(&Step::note("hello")).unwrap();
+        assert!(!json.contains("seeds"), "{json}");
+
+        let json = serde_json::to_string(&Step::note("hi").seeded([4, 5])).unwrap();
+        assert!(json.contains("seeds"));
     }
 
     #[test]

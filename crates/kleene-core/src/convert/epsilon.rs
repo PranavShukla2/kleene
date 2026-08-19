@@ -120,7 +120,8 @@ pub fn epsilon_closure(
                 render(&seeds, automaton)
             ),
         )
-        .highlighting(seeds.iter().copied()),
+        .highlighting(seeds.iter().copied())
+        .seeded(seeds.iter().copied()),
     );
 
     // Popping from the end makes this depth-first, which is not a correctness matter — the

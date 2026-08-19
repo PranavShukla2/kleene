@@ -29,4 +29,14 @@ highlight?: Array<number>,
 /**
  * How much of the result existed once this step finished, when the algorithm can say.
  */
-frame?: Frame | null, };
+frame?: Frame | null, 
+/**
+ * The input states this step *began* from, when it began from a set.
+ *
+ * Almost always this is the seed set of an ε-closure — the states you are in before
+ * closing over ε, as opposed to [`highlight`](Self::highlight), which is where you ended
+ * up. Recorded because a closure cannot be recomputed from its own answer: `{q0, q2, q4}`
+ * says nothing about whether it grew from `q0` or from `q4`, and "expand it one state at
+ * a time" is a question about the seeds.
+ */
+seeds?: Array<number>, };
