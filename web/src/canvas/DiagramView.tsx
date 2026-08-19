@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { AutomatonGraphics } from '@/canvas/AutomatonView';
-import { GEOM, type Layout, type Point } from '@/canvas/geometry';
+import { GEOM, type Layout } from '@/canvas/geometry';
 import { useViewport } from '@/canvas/useViewport';
 import type { Automaton, StateId } from '@/model/automaton';
 
@@ -24,6 +24,7 @@ export function DiagramView({
   title,
   className,
   selection,
+  entering,
   onHoverState,
 }: {
   automaton: Automaton;
@@ -31,14 +32,22 @@ export function DiagramView({
   title: string;
   className?: string;
   selection?: readonly StateId[];
+  /** What one construction step did, for the diagram to act out. See `AutomatonGraphics`. */
+  entering?: { state?: StateId; edge?: string; recognised?: StateId };
   onHoverState?: (id: StateId | undefined) => void;
 }) {
   const { viewport, ref: viewportRef, panning, fit, reset, size } = useViewport();
 
-  const points = useMemo(
-    () => automaton.states.map((state) => layout[state.id]).filter((p): p is Point => !!p),
-    [automaton.states, layout],
-  );
+  /**
+   * What to frame — every position the layout holds, not only the states drawn right now.
+   *
+   * The difference matters once a machine is shown mid-construction. Framing what is *drawn*
+   * would zoom hard into the single start state at step one and then pull back on every
+   * discovery, so the whole animation would be about the camera. Framing the layout means the
+   * viewport is settled before the first state appears, and the machine grows into a space
+   * that was already the right size.
+   */
+  const points = useMemo(() => Object.values(layout), [layout]);
 
   const ref = useCallback(
     (element: HTMLDivElement | null) => {
@@ -96,6 +105,7 @@ export function DiagramView({
             automaton={automaton}
             layout={layout}
             selection={selection}
+            entering={entering}
             onHoverState={onHoverState}
           />
         </g>
