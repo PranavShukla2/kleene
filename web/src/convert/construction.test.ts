@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { cellKey, construction, filledCells } from '@/convert/construction';
+import { cellKey, construction, filledCells, partial } from '@/convert/construction';
 import type { Automaton, Frame, State, Step } from '@/model/automaton';
 
 function state(id: number, label: string): State {
-  return { id, label, accepting: false, position: null, origin: null };
+  return { id, label, accepting: false };
 }
 
 /**
@@ -114,6 +114,41 @@ describe('construction', () => {
   });
 });
 
+describe('the edge a step drew', () => {
+  it('names the pair of endpoints, not a row of the transition list', () => {
+    // Parallel transitions are drawn as one arrow reading `a, b`, so "the edge that just
+    // appeared" has to be a pair rather than an index into δ.
+    expect(construction(dfa, steps, 1).drew).toBe('0->1');
+    expect(construction(dfa, steps, 2).drew).toBe('0->0');
+  });
+
+  it('is nothing when the step drew nothing', () => {
+    expect(construction(dfa, steps, 0).drew).toBeUndefined();
+    expect(construction(dfa, steps, 6).drew).toBeUndefined();
+    expect(construction(dfa, steps, 8).drew).toBeUndefined();
+  });
+});
+
+describe('partial', () => {
+  it('cuts the machine down to what exists', () => {
+    const at = construction(dfa, steps, 4);
+    const shown = partial(dfa, at);
+
+    expect(shown.states.map((s) => s.label)).toEqual(['A', 'B', 'C']);
+    expect(shown.transitions).toHaveLength(4);
+  });
+
+  it('keeps the alphabet and the start state, which do not grow', () => {
+    const shown = partial(dfa, construction(dfa, steps, 0));
+    expect(shown.alphabet).toEqual(['a', 'b']);
+    expect(shown.start).toBe(0);
+  });
+
+  it('hands back the whole machine when nothing was framed', () => {
+    expect(partial(dfa, construction(dfa, [], 0))).toBe(dfa);
+  });
+});
+
 describe('filledCells', () => {
   it('fills a cell only once its transition has been emitted', () => {
     expect(filledCells(dfa, construction(dfa, steps, 0))).toEqual(new Set());
@@ -133,7 +168,7 @@ describe('filledCells', () => {
   it('ignores an ε-transition, which a DFA under construction never has', () => {
     const withEpsilon: Automaton = {
       ...dfa,
-      transitions: [{ from: 0, to: 1, on: null }],
+      transitions: [{ from: 0, to: 1 }],
     };
     const at = construction(withEpsilon, [], 0);
     expect(filledCells(withEpsilon, at)).toEqual(new Set());

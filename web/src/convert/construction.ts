@@ -35,6 +35,14 @@ export interface Construction {
   pending: readonly StateId[];
   /** States already expanded, in the order they were taken. */
   done: readonly StateId[];
+  /**
+   * The edge this step drew, as the `from->to` key the renderer groups by.
+   *
+   * A key rather than an index because parallel transitions between the same two states are
+   * drawn as one arrow carrying `a, b` — so "the edge that just appeared" is a pair of
+   * endpoints, not a row of the transition list.
+   */
+  drew: string | undefined;
   /** Whether the algorithm framed this run at all. */
   framed: boolean;
 }
@@ -56,9 +64,16 @@ export function construction(
       current: undefined,
       pending: [],
       done: [],
+      drew: undefined,
       framed: false,
     };
   }
+
+  // Compared against the step before rather than tracked in the frame: the engine already
+  // says how many edges exist at each point, and a second field saying which one is new
+  // would be the same fact stored twice.
+  const before = step > 0 ? (steps[step - 1]?.frame?.transitions ?? 0) : 0;
+  const drawn = frame.transitions > before ? automaton.transitions[frame.transitions - 1] : undefined;
 
   const current = frame.current ?? undefined;
 
@@ -72,6 +87,7 @@ export function construction(
     current,
     pending: frame.pending ?? [],
     done: expanded(steps, step).filter((id) => id !== current),
+    drew: drawn && `${String(drawn.from)}->${String(drawn.to)}`,
     framed: true,
   };
 }
@@ -84,6 +100,23 @@ function expanded(steps: readonly Step[], step: number): StateId[] {
     if (id !== undefined && id !== null) seen.add(id);
   }
   return [...seen];
+}
+
+/**
+ * The machine as it stood, ready to hand to a renderer.
+ *
+ * The *layout* is deliberately not filtered alongside it. Positions come from the finished
+ * machine and stay put, so a state appears where it will end up rather than shuffling every
+ * other state sideways each time one is discovered — which would make the animation about
+ * the layout engine instead of about the algorithm.
+ */
+export function partial(automaton: Automaton, at: Construction): Automaton {
+  if (!at.framed) return automaton;
+  return {
+    ...automaton,
+    states: automaton.states.filter((state) => at.present.has(state.id)),
+    transitions: automaton.transitions.slice(0, at.edges),
+  };
 }
 
 /**
