@@ -77,6 +77,41 @@ export function Worklist({
         </span>
       )}
 
+      {at.arrived !== undefined && (
+        // Task D5. The outcome of the round, named rather than left to be inferred from
+        // whether the diagram grew. Three channels agree on it — this word, the motion in the
+        // diagram (a state grows in, or an existing one is struck), and the chip that either
+        // joins the queue or does not — because it is the distinction students most reliably
+        // get wrong, and one channel is what makes a thing missable.
+        <span className="ml-auto flex items-center gap-1.5 font-mono text-[11px]">
+          {at.fresh ? (
+            <>
+              <span className="text-k-text-faint">new subset →</span>
+              <span className="rounded border border-k-primary bg-k-primary/10 px-1.5 py-0.5 text-k-primary">
+                {label(at.arrived)}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-k-text-faint">already seen —</span>
+              <span className="rounded border border-k-secondary/60 px-1.5 py-0.5 text-k-secondary">
+                {label(at.arrived)}
+              </span>
+              <span className="text-k-text-faint">no new state</span>
+            </>
+          )}
+        </span>
+      )}
+
+      {at.arrived === undefined && at.current !== undefined && (
+        // A round that read a symbol and reached nothing. Left unmarked it looks identical to
+        // a round that has not happened yet, and the difference — δ is partial here — is the
+        // one the trap state in `complete` exists to fix.
+        <span className="ml-auto font-mono text-[11px] text-k-text-faint">
+          dead end — no move on this symbol
+        </span>
+      )}
+
       {at.pending.length === 0 && at.current === undefined && (
         // The end condition, stated. "The queue is empty" is *why* the algorithm stops, and
         // an empty row leaves the reader to infer that from an absence.
