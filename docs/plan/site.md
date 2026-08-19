@@ -99,6 +99,20 @@ Building O3 surfaced a real bug: the selection survived deleting the states it r
 convenient path. Now pruned after every history transition, because undoing an *add* removes a
 state and the command alone cannot say so.
 
+## Track Q — the things that make it a product
+
+- [x] **Q1.** A command palette on ⌘K. Every route, example and conversion preset, ranked by a
+      tested matcher — and it surfaces the things a nav bar structurally cannot, because
+      "Convert `(a|b)*abb`" is not a page.
+- [x] **Q2.** `/learn`. The subject rather than the product: four chapters, fifteen
+      definitions, and on every one the specific wrong belief that makes it stop working. The
+      only page here useful to someone who never opens the tool.
+- [ ] **Q3.** ⚑ `/tools/*` landing pages — one page per task ("NFA to DFA", "regex to DFA",
+      "minimize a DFA"), each opening straight into the converter. Roadmap §6.1. Worth doing
+      once sharing by URL exists, because that is what makes them linkable.
+- [ ] **Q4.** Search inside `/learn` and `/docs`, folded into the palette. Waiting on there
+      being enough written to be worth searching.
+
 ## Track P — the details nobody lists
 
 - [x] **P1.** Loading states for the pages that wait on wasm. They pop in today.
