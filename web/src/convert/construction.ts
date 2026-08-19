@@ -82,7 +82,8 @@ export function construction(
   // says how many edges exist at each point, and a second field saying which one is new
   // would be the same fact stored twice.
   const before = step > 0 ? (steps[step - 1]?.frame?.transitions ?? 0) : 0;
-  const drawn = frame.transitions > before ? automaton.transitions[frame.transitions - 1] : undefined;
+  const drawn =
+    frame.transitions > before ? automaton.transitions[frame.transitions - 1] : undefined;
 
   const current = frame.current ?? undefined;
 

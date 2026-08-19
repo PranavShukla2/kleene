@@ -100,7 +100,8 @@ export function StepTable({
                     text={targets
                       .map(
                         (id) =>
-                          automaton.states.find((state) => state.id === id)?.label ?? String(id),
+                          automaton.states.find((state) => state.id === id)?.label ??
+                          String(id),
                       )
                       .join(', ')}
                   />
