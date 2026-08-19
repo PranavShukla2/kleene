@@ -86,11 +86,13 @@
 
   /* Type */
   --font-sans:
-    'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    'Rupee', 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
   /* Headings and the wordmark only. See the note at the top of this file. */
   --font-display:
-    'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    'Rupee', 'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', -apple-system,
+    sans-serif;
+  --font-mono: 'Rupee', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Motion — the 280ms step transition is tuned so the eye can follow which
      subset became which state. Faster is unreadable, slower is tedious to scrub. */
@@ -643,4 +645,25 @@ html {
 
 .k-glass {
   position: relative;
+}
+
+/*
+ * The rupee sign.
+ *
+ * None of the three faces this site ships contains U+20B9 — Bricolage, Plus Jakarta and
+ * JetBrains Mono all substitute for it, which is measurable: each renders `₹` at exactly the
+ * width the generic fallback does, and 3px wider than its own digits.
+ *
+ * That is the same defect the note at the top of this file describes for `ε`, and the same
+ * answer applies: rather than let the browser pick whatever family happens to come first —
+ * which differs per platform and can drop a serif into a monospace price — this pins the one
+ * codepoint to a known UI sans on each platform. The result is still a substitution; it is
+ * just a substitution that was chosen.
+ */
+@font-face {
+  font-family: 'Rupee';
+  src:
+    local('SF Pro Text'), local('-apple-system'), local('Segoe UI'), local('Noto Sans'),
+    local('DejaVu Sans'), local('Arial');
+  unicode-range: U+20B9;
 }

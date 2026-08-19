@@ -19,7 +19,7 @@ export const STATS: readonly { value: string; label: string; detail: string }[] 
   { value: '0', label: 'servers', detail: 'Nothing you draw leaves the browser.' },
   { value: '300+', label: 'tests', detail: 'Rust core, TypeScript views, and end to end.' },
   { value: '92 KB', label: 'engine', detail: 'The whole algorithm library, gzipped.' },
-  { value: '£0', label: 'forever', detail: 'No plan, no seat, no trial.' },
+  { value: '₹0', label: 'forever', detail: 'No plan, no seat, no trial.' },
 ];
 
 /** The three sentences that describe the pipeline, in order. */

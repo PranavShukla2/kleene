@@ -156,7 +156,7 @@ export function Lift({ children, className }: { children: ReactNode; className?:
 /**
  * A number that counts up when it is scrolled to.
  *
- * Takes the *rendered* string rather than a number, so `92 KB`, `300+` and `£0` all work
+ * Takes the *rendered* string rather than a number, so `92 KB`, `300+` and `₹0` all work
  * without the caller decomposing them. The digits animate and everything around them is
  * pinned — which is the whole trick, because a count-up that also animated its unit would
  * read as a value still being computed rather than one arriving.

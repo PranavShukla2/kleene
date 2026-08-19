@@ -542,14 +542,14 @@ function SidePanel({
   return (
     <aside
       aria-label="Panels"
-      className="absolute inset-y-0 right-0 z-30 flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-l border-k-border bg-k-surface p-3 shadow-lg lg:static lg:z-auto lg:w-72 lg:shadow-none"
+      className="absolute inset-y-0 right-0 z-30 flex w-80 shrink-0 flex-col gap-2.5 overflow-y-auto border-l border-k-border bg-k-surface/60 p-3 shadow-lg backdrop-blur lg:static lg:z-auto lg:w-72 lg:shadow-none"
     >
       {/* Only reachable below `lg`, where the panel covers the canvas and the command bar's
           toggle may be behind it. */}
       <button
         type="button"
         onClick={onClose}
-        className="self-end rounded-md px-2 py-0.5 font-mono text-xs text-k-text-faint hover:text-k-text lg:hidden"
+        className="self-end rounded-full px-2 py-0.5 font-mono text-xs text-k-text-faint hover:text-k-text lg:hidden"
       >
         close
       </button>
@@ -581,7 +581,7 @@ function StatusBar({
   autosave: string;
 }) {
   return (
-    <footer className="flex h-7 shrink-0 items-center gap-4 border-t border-k-border bg-k-surface px-3 font-mono text-[11px] text-k-text-faint">
+    <footer className="flex h-7 shrink-0 items-center gap-4 border-t border-k-border bg-k-surface/70 px-3 font-mono text-[11px] text-k-text-faint backdrop-blur">
       <span>{states} states</span>
       <span>{transitions} transitions</span>
       {selected > 0 && <span className="text-k-primary">{selected} selected</span>}

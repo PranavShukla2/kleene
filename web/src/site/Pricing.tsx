@@ -71,7 +71,16 @@ export function Pricing({ onNavigate }: { onNavigate: (to: Route) => void }) {
               />
               <div className="relative">
                 <div className="flex items-baseline gap-3">
-                  <span className="font-mono text-5xl font-semibold tracking-tight">£0</span>
+                  {/*
+                    The mark is set smaller and lighter than the numeral, which is ordinary
+                    price typography and also does real work here: no font on this site
+                    contains ₹, so it is always a substitution, and at a reduced size a small
+                    metric mismatch reads as a considered pairing rather than a missing glyph.
+                  */}
+                  <span className="font-mono font-semibold tracking-tight">
+                    <span className="align-[0.12em] text-3xl text-k-text-muted">₹</span>
+                    <span className="text-5xl">0</span>
+                  </span>
                   <span className="text-k-text-muted">forever</span>
                 </div>
                 <p className="mt-3 max-w-sm text-sm text-k-text-muted">

@@ -164,10 +164,22 @@ function countUses(automaton: Automaton, symbol: Sym): number {
 }
 
 /** A titled block in the sidebar. Shared shape so the panels line up without repeating it. */
+/**
+ * One panel in the side column.
+ *
+ * The finish matches the site — 14px radius, a raised surface, a hairline rule under the
+ * heading — while the *density* does not. Padding stays at 12px and the heading at 11px,
+ * because a workbench earns its screen by fitting more on it, and a panel column set to
+ * marketing spacing would show three panels where this shows five.
+ *
+ * The rule under the heading is doing real work rather than decorating: five stacked panels
+ * with only a gap between them read as one long list, and the eye has to count borders to
+ * find where a section starts.
+ */
 export function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[10px] border border-k-border bg-k-surface p-3">
-      <h2 className="mb-2 text-[11px] font-semibold tracking-[0.06em] text-k-text-faint uppercase">
+    <section className="rounded-2xl border border-k-border bg-k-surface-raised/70 p-3 shadow-[0_1px_2px_0_var(--color-k-glass-shadow)]">
+      <h2 className="mb-2 border-b border-k-border/70 pb-1.5 font-mono text-[10px] font-medium tracking-[0.08em] text-k-text-faint uppercase">
         {title}
       </h2>
       {children}
