@@ -14,7 +14,8 @@ source of truth**; if the two disagree, the stylesheet is right and this documen
 
 Violet primary (`#6D5EF8`), cyan secondary (`#0891B2`), slate neutrals, magenta only as the
 third stop of a gradient. Light mode on white, dark mode on a blue-black (`#0F1117`) rather
-than pure black. Type is Inter for prose and JetBrains Mono for anything that is notation.
+than pure black. Type is Bricolage Grotesque for headings, Plus Jakarta Sans for prose, and
+JetBrains Mono for anything that is notation.
 Motion is one spring for the marketing surface and one linear-ish ease for anything that
 explains a computation, and the two never mix.
 
@@ -143,8 +144,8 @@ type system, not a decision each component gets to make differently.
 
 **The monospace is not decorative.** It carries a rule: anything that is *notation* is
 monospace — state labels, symbols, code, the Greek letters `ε` and `Σ`, and any number that
-will be compared against another number. Prose is Inter. If you are unsure which a piece of
-text is, ask whether a reader would ever need to align it with something above it.
+will be compared against another number. Prose is Plus Jakarta Sans. If you are unsure which a
+piece of text is, ask whether a reader would ever need to align it with something above it.
 
 The JetBrains Mono **Greek subset must be loaded explicitly**. `ε` (U+03B5) and `Σ` (U+03A3)
 live in the Greek block, and an epsilon falling back to a system font next to monospace labels
