@@ -149,15 +149,40 @@ The centrepiece control of the product.
 
 ### Track D — Subset construction view
 
-- [ ] **D1.** The worklist rendered as a live queue — pending subsets, current, done. The
+- [x] **D1.** The worklist rendered as a live queue — pending subsets, current, done. The
       worklist *is* the algorithm; showing it is most of the explanation.
-- [ ] **D2.** Hovering a DFA state highlights its `origin` states in the ε-NFA pane
+- [x] **D2.** Hovering a DFA state highlights its `origin` states in the ε-NFA pane
       (roadmap §2.3). This is the payoff for designing `origin` in at Phase 0.
-- [ ] **D3.** The transition table filling in cell by cell, in step with the diagram. Half of
+- [x] **D3.** The transition table filling in cell by cell, in step with the diagram. Half of
       students think in tables and half in diagrams; showing both, synchronised, reaches both.
-- [ ] **D4.** ε-closure computation shown as its own sub-step, expanding one state at a time.
-- [ ] **D5.** Visually distinguish "this subset is new" from "already seen" — the
+- [x] **D4.** ε-closure computation shown as its own sub-step, expanding one state at a time.
+- [x] **D5.** Visually distinguish "this subset is new" from "already seen" — the
       distinction students most reliably get wrong.
+
+**Track D closed.** It absorbed the structural half of C6, which is where that work belonged:
+a trace could say *which states a step was about* but not *which states existed yet*, so step 3
+of a twelve-step construction drew the finished machine — the answer, presented as the working.
+
+The core change is `Frame`, on `Step`. Two prefix counts and a worklist, not a snapshot: every
+algorithm that emits frames appends in discovery order and never rewrites, so "what existed
+after step *n*" is a prefix, and a prefix is two integers instead of an O(states) clone per step
+crossing the FFI boundary. The prefix property is asserted in tests, because an algorithm that
+renumbered states mid-run would break the animation silently rather than loudly.
+
+Two decisions worth keeping:
+
+- **The layout is not cut down alongside the machine.** Positions come from the finished
+  automaton and the viewport frames *those*, so a state appears where it will end up and the
+  pane does not zoom on every discovery. Framing what is drawn would have made the whole
+  animation about the camera.
+- **`Traced<T>` now crosses the boundary as itself.** `Simulation` left an open question — a
+  wire type per traced algorithm, or teach ts-rs to emit the generic. The second case arrived
+  with D4's ε-closure drill-down and the generic won, so Tracks E and F need no wire type of
+  their own.
+
+D4 also required the core to record the *seeds* a step closed over. A closure cannot be
+recovered from its own answer: `{q0, q2, q4}` says nothing about whether it grew from `q0` or
+from `q4`, and "expand it one state at a time" is a question about the seeds.
 
 ### Track E — Minimization view
 
