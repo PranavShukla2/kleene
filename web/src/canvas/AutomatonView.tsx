@@ -9,7 +9,7 @@
  * rendered is already the thing to export.
  */
 
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 
 import type { Automaton, StateId } from '@/model/automaton';
 import {
@@ -136,6 +136,27 @@ export function AutomatonGraphics({
   /** The pointer entered or left a state. `undefined` means it left. */
   onHoverState?: (id: StateId | undefined) => void;
 }) {
+  /**
+   * Unique ids for this instance's `<defs>`.
+   *
+   * Every graphic carries its own marker and grid pattern so that an exported SVG is
+   * self-contained — that is a Phase 4 requirement, not a style choice. But the ids were
+   * literals, so a page with several diagrams emitted `k-arrow` several times, and
+   * `url(#k-arrow)` resolves to the *first* match in the document. The gallery's nine cards
+   * were all drawing their arrowheads from the first card's marker.
+   *
+   * It looked fine only because every marker was identical. The `context-stroke` fill exists
+   * precisely so that edges can be coloured by meaning later, and the moment one is, eight
+   * diagrams would have taken the ninth's colour.
+   */
+  // Stripped of punctuation: React's ids contain colons, and `url(#a:b)` is not a reference
+  // every SVG renderer resolves — it needs escaping that no one writing a `markerEnd` expects.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const arrowId = `k-arrow-${uid}`;
+  // `gridId`, not `grid`: the boolean prop above already owns that name, and shadowing it here
+  // is how the pattern id ended up rendered as `true`.
+  const gridId = `k-grid-${uid}`;
+
   const box = viewBoxFor(Object.values(positions));
 
   // Routing and label placement depend only on the machine and where its states sit — never
@@ -153,7 +174,7 @@ export function AutomatonGraphics({
           Phase 3 starts colouring edges by meaning.
         */}
         <marker
-          id="k-arrow"
+          id={arrowId}
           viewBox="0 0 10 10"
           refX="9"
           refY="5"
@@ -164,7 +185,7 @@ export function AutomatonGraphics({
           <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
         </marker>
 
-        <pattern id="k-grid" width={GEOM.grid} height={GEOM.grid} patternUnits="userSpaceOnUse">
+        <pattern id={gridId} width={GEOM.grid} height={GEOM.grid} patternUnits="userSpaceOnUse">
           <circle cx="1" cy="1" r="1" className="fill-k-grid-dot" />
         </pattern>
       </defs>
@@ -175,7 +196,7 @@ export function AutomatonGraphics({
           y={box.y}
           width={box.width}
           height={box.height}
-          fill="url(#k-grid)"
+          fill={`url(#${gridId})`}
           className="text-k-grid-dot"
         />
       )}
@@ -196,7 +217,7 @@ export function AutomatonGraphics({
               d={edge.path}
               fill="none"
               strokeWidth={GEOM.edgeStroke}
-              markerEnd="url(#k-arrow)"
+              markerEnd={`url(#${arrowId})`}
               // Renormalises the path to unit length, so `edge-draw` works on a short straight
               // line and a long self-loop alike without measuring either. Set only while an
               // edge is being drawn, so a static diagram exports without it.
@@ -236,7 +257,7 @@ export function AutomatonGraphics({
         );
       })}
 
-      <StartMarker at={positions[automaton.start]} />
+      <StartMarker at={positions[automaton.start]} arrow={arrowId} />
 
       <g>
         {labels.map((label) => (
@@ -395,7 +416,7 @@ function StateNode({
   );
 }
 
-function StartMarker({ at }: { at: Point | undefined }) {
+function StartMarker({ at, arrow }: { at: Point | undefined; arrow: string }) {
   if (!at) return null;
   const tipX = at.x - GEOM.radius - GEOM.startGap;
   return (
@@ -405,7 +426,7 @@ function StartMarker({ at }: { at: Point | undefined }) {
       x2={tipX}
       y2={at.y}
       strokeWidth={GEOM.edgeStroke}
-      markerEnd="url(#k-arrow)"
+      markerEnd={`url(#${arrow})`}
       className="stroke-k-text-muted"
     />
   );

@@ -10,31 +10,31 @@
 <svg viewBox="4 34 502 302" class="w-full" role="img" aria-label="The shape Thompson construction actually emits: ε-transitions, chains of degree-two states, and a label that is a single narrow glyph. What the app renders most often once conversions are wired up." preserveAspectRatio="xMidYMid meet">
 <title>The shape Thompson construction actually emits: ε-transitions, chains of degree-two states, and a label that is a single narrow glyph. What the app renders most often once conversions are wired up.</title>
 <defs>
-<marker id="k-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+<marker id="k-arrow-R2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
 <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke">
 </path>
 </marker>
-<pattern id="k-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+<pattern id="k-grid-R2" width="24" height="24" patternUnits="userSpaceOnUse">
 <circle cx="1" cy="1" r="1" class="fill-k-grid-dot">
 </circle>
 </pattern>
 </defs>
-<rect x="4" y="34" width="502" height="302" fill="url(#k-grid)" class="text-k-grid-dot">
+<rect x="4" y="34" width="502" height="302" fill="url(#k-grid-R2)" class="text-k-grid-dot">
 </rect>
 <g class="stroke-k-text-muted">
-<path d="M 111.06949374994522 168.50754886366624 L 178.93050625005478 131.49245113633376" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 111.06949374994522 168.50754886366624 L 178.93050625005478 131.49245113633376" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 224 120 L 286 120" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 224 120 L 286 120" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 331.0694937499452 131.49245113633376 L 398.9305062500548 168.50754886366624" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 331.0694937499452 131.49245113633376 L 398.9305062500548 168.50754886366624" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 110.24787570557058 192.8850118126358 L 179.75212429442942 237.1149881873642" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 110.24787570557058 192.8850118126358 L 179.75212429442942 237.1149881873642" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 224 250 L 286 250" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 224 250 L 286 250" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 330.2478757055706 237.1149881873642 L 399.7521242944294 192.8850118126358" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 330.2478757055706 237.1149881873642 L 399.7521242944294 192.8850118126358" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 396 180 L 114 180" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 396 180 L 114 180" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
 </g>
 <g>
@@ -69,7 +69,7 @@
 </circle>
 <text x="420" y="180" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q5</text>
 </g>
-<line x1="42" y1="180" x2="64" y2="180" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<line x1="42" y1="180" x2="64" y2="180" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </line>
 <g>
 <text x="150.7462255681669" y="160.5347468749726" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="0" data-edge-to="1" class="fill-k-text cursor-text font-mono text-[12px] select-none">ε</text>

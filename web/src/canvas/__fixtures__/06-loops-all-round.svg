@@ -10,31 +10,31 @@
 <svg viewBox="42 22 316 316" class="w-full" role="img" aria-label="Four states packed close, each with a self-loop. No two can use the same side without colliding, so this exercises the whole preference order rather than just its first entry." preserveAspectRatio="xMidYMid meet">
 <title>Four states packed close, each with a self-loop. No two can use the same side without colliding, so this exercises the whole preference order rather than just its first entry.</title>
 <defs>
-<marker id="k-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+<marker id="k-arrow-R2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
 <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke">
 </path>
 </marker>
-<pattern id="k-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+<pattern id="k-grid-R2" width="24" height="24" patternUnits="userSpaceOnUse">
 <circle cx="1" cy="1" r="1" class="fill-k-grid-dot">
 </circle>
 </pattern>
 </defs>
-<rect x="42" y="22" width="316" height="316" fill="url(#k-grid)" class="text-k-grid-dot">
+<rect x="42" y="22" width="316" height="316" fill="url(#k-grid-R2)" class="text-k-grid-dot">
 </rect>
 <g class="stroke-k-text-muted">
-<path d="M 260.8 154 A 16 16 0 1 1 283.2 154" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 260.8 154 A 16 16 0 1 1 283.2 154" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 188.8 226 A 16 16 0 1 1 211.2 226" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 188.8 226 A 16 16 0 1 1 211.2 226" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 116.8 154 A 16 16 0 1 1 139.2 154" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 116.8 154 A 16 16 0 1 1 139.2 154" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 188.8 82 A 16 16 0 1 1 211.2 82" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 188.8 82 A 16 16 0 1 1 211.2 82" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 255.02943725152286 196.97056274847714 L 216.97056274847714 235.02943725152286" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 255.02943725152286 196.97056274847714 L 216.97056274847714 235.02943725152286" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 183.02943725152286 235.02943725152286 L 144.97056274847714 196.97056274847714" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 183.02943725152286 235.02943725152286 L 144.97056274847714 196.97056274847714" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 144.97056274847714 163.02943725152286 L 183.02943725152286 124.97056274847714" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 144.97056274847714 163.02943725152286 L 183.02943725152286 124.97056274847714" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
 </g>
 <g>
@@ -59,7 +59,7 @@
 </circle>
 <text x="200" y="108" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q3</text>
 </g>
-<line x1="224" y1="180" x2="246" y2="180" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<line x1="224" y1="180" x2="246" y2="180" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </line>
 <g>
 <text x="272" y="125.6" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="0" data-edge-to="0" class="fill-k-text cursor-text font-mono text-[12px] select-none">a</text>

@@ -10,21 +10,21 @@
 <svg viewBox="14 54 372 172" class="w-full" role="img" aria-label="Transitions both ways between two states. Drawn naively this is one line with two arrowheads, which says something the machine does not: that both symbols go both ways." preserveAspectRatio="xMidYMid meet">
 <title>Transitions both ways between two states. Drawn naively this is one line with two arrowheads, which says something the machine does not: that both symbols go both ways.</title>
 <defs>
-<marker id="k-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+<marker id="k-arrow-R2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
 <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke">
 </path>
 </marker>
-<pattern id="k-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+<pattern id="k-grid-R2" width="24" height="24" patternUnits="userSpaceOnUse">
 <circle cx="1" cy="1" r="1" class="fill-k-grid-dot">
 </circle>
 </pattern>
 </defs>
-<rect x="14" y="54" width="372" height="172" fill="url(#k-grid)" class="text-k-grid-dot">
+<rect x="14" y="54" width="372" height="172" fill="url(#k-grid-R2)" class="text-k-grid-dot">
 </rect>
 <g class="stroke-k-text-muted">
-<path d="M 123.11113647314036 146.4711182124793 Q 200 168 276.88886352685967 146.4711182124793" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 123.11113647314036 146.4711182124793 Q 200 168 276.88886352685967 146.4711182124793" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
-<path d="M 276.88886352685967 133.5288817875207 Q 200 112 123.11113647314036 133.5288817875207" fill="none" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<path d="M 276.88886352685967 133.5288817875207 Q 200 112 123.11113647314036 133.5288817875207" fill="none" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </path>
 </g>
 <g>
@@ -39,7 +39,7 @@
 </circle>
 <text x="300" y="140" text-anchor="middle" dominant-baseline="central" class="fill-k-text font-mono text-[13px] font-medium select-none">q1</text>
 </g>
-<line x1="52" y1="140" x2="74" y2="140" stroke-width="1.5" marker-end="url(#k-arrow)" class="stroke-k-text-muted">
+<line x1="52" y1="140" x2="74" y2="140" stroke-width="1.5" marker-end="url(#k-arrow-R2)" class="stroke-k-text-muted">
 </line>
 <g>
 <text x="200" y="169.23555910623963" text-anchor="middle" dominant-baseline="central" stroke="var(--color-k-canvas)" stroke-width="4" paint-order="stroke" data-edge-from="0" data-edge-to="1" class="fill-k-text cursor-text font-mono text-[12px] select-none">a</text>

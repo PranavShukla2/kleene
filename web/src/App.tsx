@@ -270,6 +270,14 @@ export function Editor({ onHome }: { onHome: () => void }) {
       the target machine, the previous centred column spent a third of the width on margins.
     */
     <div className="flex h-dvh flex-col overflow-hidden bg-k-bg text-k-text">
+      {/*
+        The editor's heading, for readers who navigate by one.
+        Visually hidden rather than shown, because the page is a workbench and a title bar
+        would cost 40px of canvas to tell a sighted user what the wordmark, the tab title and
+        the entire screen already tell them. Screen reader users get no such redundancy: this
+        page had no `h1` at all, so jumping by heading found nothing.
+      */}
+      <h1 className="sr-only">Automaton editor</h1>
       <CommandBar
         kind={kind}
         undoState={undoState}
