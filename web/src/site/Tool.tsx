@@ -12,8 +12,6 @@
  * of.
  */
 
-import { useState } from 'react';
-
 import { Convert } from '@/convert/Convert';
 import { Lift, Reveal, RevealGroup, RevealItem } from '@/site/motion';
 import { Band, BandHeading } from '@/site/page';
@@ -37,10 +35,6 @@ export function Tool({
   onOpenTool: (path: string) => void;
   onOpenInEditor: (automaton: Automaton) => void;
 }) {
-  // Remounts the converter when the task changes, so moving between tool pages starts from
-  // that page's example rather than from whatever the last one was left on.
-  const [visit] = useState(() => tool.slug);
-
   return (
     <main>
       <section className="relative overflow-hidden">
@@ -67,8 +61,12 @@ export function Tool({
         The converter, immediately. Everything a landing page would put here — the pitch, the
         features, the proof — is below, because the visitor already decided by searching.
       */}
+      {/*
+        No key needed: the shell keys the whole page on the location, so moving between tool
+        pages remounts this along with everything else. It did not always — that was the bug
+        where the URL changed and the page did not.
+      */}
       <Convert
-        key={visit}
         engine={engine}
         onOpenInEditor={onOpenInEditor}
         embedded={{ source: tool.example, panes: tool.panes }}

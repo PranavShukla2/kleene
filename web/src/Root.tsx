@@ -35,12 +35,12 @@ import { Footer } from '@/site/Footer';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
 import { handOff } from '@/store/handoff';
-import { toolSlug, useRoute, type Route } from '@/router';
+import { toolSlug, useRoute, type Location as LocationOf, type Route } from '@/router';
 import { useTheme } from '@/theme';
 import { loadEngine, type Engine } from '@/wasm/loader';
 
 export function Root() {
-  const { route, go, goPath } = useRoute();
+  const { route, location, go, goPath } = useRoute();
   const { choice, cycle } = useTheme();
   const still = useReducedMotion();
   const [palette, setPalette] = useState(false);
@@ -85,18 +85,21 @@ export function Root() {
       <div className="flex-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={route}
+            // Keyed on the whole location, not the route. Two tool pages are one route, and
+            // keying on the route meant moving between them neither animated nor remounted —
+            // the second page's content simply never arrived.
+            key={location.pathname + location.search}
             initial={still ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={still ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: still ? 0 : 0.14, ease: [0.2, 0.8, 0.2, 1] }}
           >
-            <Page route={route} go={go} goPath={goPath} />
+            <Page route={route} location={location} go={go} goPath={goPath} />
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <Footer onNavigate={go} />
+      <Footer onNavigate={go} onOpenPath={goPath} />
 
       <CommandPalette
         open={palette}
@@ -135,10 +138,13 @@ const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
 
 function Page({
   route,
+  location,
   go,
   goPath,
 }: {
   route: Route;
+  /** Passed rather than read from `window`, so a URL change is a prop change React can see. */
+  location: LocationOf;
   go: (to: Route, search?: string) => void;
   goPath: (path: string) => void;
 }) {
@@ -165,7 +171,7 @@ function Page({
   }
 
   if (route === 'tool') {
-    const tool = toolAt(toolSlug(window.location.pathname));
+    const tool = toolAt(toolSlug(location.pathname));
     // An unknown slug is a wrong URL, not a reason to show a different tool. `Missing` says so
     // and offers everything else, which is what someone who mistyped one actually needs.
     if (!tool) return <Missing onNavigate={go} />;

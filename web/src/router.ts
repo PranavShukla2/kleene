@@ -118,9 +118,17 @@ export function requestedExpression(search: string): string | undefined {
   return asked === null || asked === '' ? undefined : asked;
 }
 
-/** Read the current route, and navigate without a reload. */
+/** Where the app is: enough of the URL that every page can read what it needs. */
+export interface Location {
+  pathname: string;
+  /** Including the leading `?`, or empty. */
+  search: string;
+}
+
+/** Read the current location, and navigate without a reload. */
 export function useRoute(): {
   route: Route;
+  location: Location;
   go: (to: Route, search?: string) => void;
   /**
    * Navigate to a literal path, deriving the route from it.
@@ -131,13 +139,25 @@ export function useRoute(): {
    */
   goPath: (path: string) => void;
 } {
-  const [route, setRoute] = useState<Route>(() => routeOf(window.location.pathname));
+  /**
+   * The **location**, not the route.
+   *
+   * This held a `Route` and nothing else, and two pages paid for it. `/tools/nfa-to-dfa` →
+   * `/tools/minimize-dfa` is one route to the next, so `setRoute` was handed the value it
+   * already had, React saw no change, and the URL updated under a page that never re-rendered.
+   * The same for `/convert?q=a*b*` → `/convert?q=(ab)*+b`.
+   *
+   * Both pages read their argument out of `window.location` during render, which is fine —
+   * what was missing was anything telling React that `window.location` had moved. Holding the
+   * location itself is that thing, and the route is derived from it.
+   */
+  const [location, setLocation] = useState<Location>(here);
 
   // The back button has to work. Without this, navigating away and pressing back changes the
   // URL and leaves the page it came from on screen — which reads as the app being broken.
   useEffect(() => {
     const onPop = () => {
-      setRoute(routeOf(window.location.pathname));
+      setLocation(here());
     };
     window.addEventListener('popstate', onPop);
     return () => {
@@ -145,9 +165,11 @@ export function useRoute(): {
     };
   }, []);
 
+  const route = routeOf(location.pathname);
+
   const go = useCallback((to: Route, search?: string) => {
     window.history.pushState(null, '', pathOf(to) + (search ?? ''));
-    setRoute(to);
+    setLocation({ pathname: pathOf(to), search: search ?? '' });
     // A fresh page starts at the top. Browsers restore scroll on popstate, which is right, but
     // a pushed navigation is a new page and should behave like one.
     window.scrollTo(0, 0);
@@ -155,7 +177,7 @@ export function useRoute(): {
 
   const goPath = useCallback((path: string) => {
     window.history.pushState(null, '', path);
-    setRoute(routeOf(path));
+    setLocation(here());
 
     const [, hash] = path.split('#');
     if (hash === undefined) {
@@ -167,7 +189,12 @@ export function useRoute(): {
     scrollToWhenItExists(hash);
   }, []);
 
-  return { route, go, goPath };
+  return { route, location, go, goPath };
+}
+
+/** The current location, read from the browser. */
+function here(): Location {
+  return { pathname: window.location.pathname, search: window.location.search };
 }
 
 /** How long to keep looking for an anchor before giving up. */

@@ -71,7 +71,14 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
   },
 ];
 
-export function Footer({ onNavigate }: { onNavigate: (to: Route) => void }) {
+export function Footer({
+  onNavigate,
+  onOpenPath,
+}: {
+  onNavigate: (to: Route) => void;
+  /** For links to parameterised routes, which cannot be named by `Route` alone. */
+  onOpenPath: (path: string) => void;
+}) {
   return (
     <footer className="mt-8 border-t border-k-border">
       <div className="mx-auto w-full max-w-6xl px-6 py-14">
@@ -103,7 +110,7 @@ export function Footer({ onNavigate }: { onNavigate: (to: Route) => void }) {
               <ul className="mt-3 space-y-2">
                 {column.items.map((item) => (
                   <li key={item.label}>
-                    <Link item={item} onNavigate={onNavigate} />
+                    <Link item={item} onNavigate={onNavigate} onOpenPath={onOpenPath} />
                   </li>
                 ))}
               </ul>
@@ -123,7 +130,15 @@ export function Footer({ onNavigate }: { onNavigate: (to: Route) => void }) {
   );
 }
 
-function Link({ item, onNavigate }: { item: Item; onNavigate: (to: Route) => void }) {
+function Link({
+  item,
+  onNavigate,
+  onOpenPath,
+}: {
+  item: Item;
+  onNavigate: (to: Route) => void;
+  onOpenPath: (path: string) => void;
+}) {
   const style =
     'text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:text-k-text';
 
@@ -131,11 +146,30 @@ function Link({ item, onNavigate }: { item: Item; onNavigate: (to: Route) => voi
     // Internal links keep the running app; external ones get a new tab and a marker. The
     // leading slash is the whole test, and it is enough for every link this footer holds.
     const external = !item.href.startsWith('/');
+    const href = item.href;
+
     return (
       <a
-        href={item.href}
+        href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer noopener' : undefined}
+        /*
+          A real anchor with a real `href` *and* an onClick that routes, the same pattern the
+          editor's wordmark uses. Either half alone is worse: a button cannot be opened in a
+          new tab, and a bare link throws away the running app — including the WebAssembly
+          module it has already fetched — to render a page it could have shown in a frame.
+        */
+        onClick={
+          external
+            ? undefined
+            : (event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
+                  return;
+                }
+                event.preventDefault();
+                onOpenPath(href);
+              }
+        }
         className={style}
       >
         {item.label}
