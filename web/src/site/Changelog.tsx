@@ -135,7 +135,7 @@ export function Changelog({ onNavigate }: { onNavigate: (to: Route) => void }) {
               onClick={() => {
                 onNavigate('roadmap');
               }}
-              className="rounded-xl border border-k-border-strong bg-k-surface-raised px-5 py-2.5 text-sm font-medium"
+              className="rounded-full border border-k-border-strong bg-k-surface-raised px-5 py-2.5 text-sm font-medium"
             >
               Read the roadmap →
             </button>

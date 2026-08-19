@@ -107,7 +107,7 @@ function Hero({ onNavigate }: { onNavigate: (to: Route) => void }) {
                   onClick={() => {
                     onNavigate('editor');
                   }}
-                  className="k-glow rounded-xl bg-k-primary px-5 py-3 text-[15px] font-medium text-white"
+                  className="k-glow rounded-full bg-k-primary px-5 py-3 text-[15px] font-medium text-white"
                 >
                   Open the editor →
                 </button>
@@ -118,7 +118,7 @@ function Hero({ onNavigate }: { onNavigate: (to: Route) => void }) {
                   onClick={() => {
                     onNavigate('convert');
                   }}
-                  className="rounded-xl border border-k-border-strong bg-k-surface-raised px-5 py-3 text-[15px] font-medium text-k-text"
+                  className="rounded-full border border-k-border-strong bg-k-surface-raised px-5 py-3 text-[15px] font-medium text-k-text"
                 >
                   Convert a regex
                 </button>
@@ -514,7 +514,7 @@ function Closing({ onNavigate }: { onNavigate: (to: Route) => void }) {
                   onClick={() => {
                     onNavigate('editor');
                   }}
-                  className="k-glow rounded-xl bg-k-primary px-6 py-3 font-medium text-white"
+                  className="k-glow rounded-full bg-k-primary px-6 py-3 font-medium text-white"
                 >
                   Open the editor →
                 </button>
@@ -525,7 +525,7 @@ function Closing({ onNavigate }: { onNavigate: (to: Route) => void }) {
                   onClick={() => {
                     onNavigate('roadmap');
                   }}
-                  className="rounded-xl border border-k-border-strong bg-k-surface-raised px-6 py-3 font-medium text-k-text"
+                  className="rounded-full border border-k-border-strong bg-k-surface-raised px-6 py-3 font-medium text-k-text"
                 >
                   Read the roadmap
                 </button>

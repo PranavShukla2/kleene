@@ -173,7 +173,7 @@ export function Docs({ onNavigate }: { onNavigate: (to: Route) => void }) {
                 onClick={() => {
                   onNavigate('editor');
                 }}
-                className="k-glow rounded-xl bg-k-primary px-5 py-2.5 text-sm font-medium text-white"
+                className="k-glow rounded-full bg-k-primary px-5 py-2.5 text-sm font-medium text-white"
               >
                 Open the editor →
               </button>
@@ -211,7 +211,7 @@ export function Docs({ onNavigate }: { onNavigate: (to: Route) => void }) {
               onClick={() => {
                 onNavigate('roadmap');
               }}
-              className="rounded-xl border border-k-border-strong bg-k-surface-raised px-5 py-2.5 text-sm font-medium"
+              className="rounded-full border border-k-border-strong bg-k-surface-raised px-5 py-2.5 text-sm font-medium"
             >
               Read the roadmap →
             </button>

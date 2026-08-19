@@ -156,7 +156,7 @@ export function About({ onNavigate }: { onNavigate: (to: Route) => void }) {
                   href="https://github.com/PranavShukla2/kleene"
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="k-glow inline-block rounded-xl bg-k-primary px-5 py-3 font-medium text-white"
+                  className="k-glow inline-block rounded-full bg-k-primary px-5 py-3 font-medium text-white"
                 >
                   View the source ↗
                 </a>
@@ -167,7 +167,7 @@ export function About({ onNavigate }: { onNavigate: (to: Route) => void }) {
                   onClick={() => {
                     onNavigate('changelog');
                   }}
-                  className="rounded-xl border border-k-border-strong bg-k-surface-raised px-5 py-3 font-medium"
+                  className="rounded-full border border-k-border-strong bg-k-surface-raised px-5 py-3 font-medium"
                 >
                   What has shipped
                 </button>

@@ -28,6 +28,10 @@ const NAV: readonly { route: Route; label: string }[] = [
   { route: 'docs', label: 'Docs' },
   { route: 'pricing', label: 'Pricing' },
   { route: 'roadmap', label: 'Roadmap' },
+  // About was reachable only from the footer, which is a page you have to already be
+  // finished with the site to find. It is the page that answers "who made this and is it
+  // serious", which is a question people have early rather than last.
+  { route: 'about', label: 'About' },
 ];
 
 export function Nav({
@@ -69,7 +73,14 @@ export function Nav({
         initial={still ? false : { opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={SPRING}
-        className={`k-glass mx-auto flex w-full max-w-6xl items-center gap-4 rounded-2xl px-3 transition-[padding,box-shadow] duration-(--duration-k-panel) sm:px-4 ${
+        /*
+          Fully rounded, not a rectangle with softened corners. A floating bar reads as an
+          object sitting on the page, and objects that float have no corners to justify — the
+          square-with-rounded-edges version looked like a panel that had come loose. Every
+          control inside it is a pill for the same reason, so the shape language is one idea
+          rather than three.
+        */
+        className={`k-glass mx-auto flex w-full max-w-6xl items-center gap-4 rounded-full px-3 transition-[padding,box-shadow] duration-(--duration-k-panel) sm:px-5 ${
           scrolled ? 'py-2' : 'py-2.5'
         }`}
       >
@@ -78,7 +89,7 @@ export function Nav({
           onClick={() => {
             go('overview');
           }}
-          className="flex items-baseline gap-2.5 rounded-lg px-1"
+          className="flex items-baseline gap-2.5 rounded-full px-1"
         >
           <span className="k-gradient-text font-mono text-lg font-semibold tracking-tight">
             kleene
@@ -88,7 +99,7 @@ export function Nav({
           </span>
         </button>
 
-        <nav className="ml-2 hidden items-center gap-0.5 md:flex" aria-label="Sections">
+        <nav className="ml-1 hidden items-center gap-0.5 lg:flex" aria-label="Sections">
           {NAV.map((item) => (
             <button
               key={item.route}
@@ -97,7 +108,7 @@ export function Nav({
                 go(item.route);
               }}
               aria-current={current === item.route ? 'page' : undefined}
-              className={`relative rounded-lg px-3 py-1.5 text-sm transition-colors duration-(--duration-k-hover) ${
+              className={`relative rounded-full px-3 py-1.5 text-sm transition-colors duration-(--duration-k-hover) ${
                 current === item.route
                   ? 'font-medium text-k-text'
                   : 'text-k-text-muted hover:text-k-text'
@@ -109,7 +120,7 @@ export function Nav({
                 <motion.span
                   layoutId="nav-pill"
                   aria-hidden
-                  className="absolute inset-0 rounded-lg bg-k-primary/10 ring-1 ring-k-primary/20"
+                  className="absolute inset-0 rounded-full bg-k-primary/10 ring-1 ring-k-primary/20"
                   transition={SPRING}
                 />
               )}
@@ -123,7 +134,7 @@ export function Nav({
             type="button"
             onClick={onCycleTheme}
             aria-label={`Theme: ${themeLabel}. Click to change.`}
-            className="hidden rounded-lg border border-k-border px-2.5 py-1.5 font-mono text-xs text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text sm:block"
+            className="hidden rounded-full border border-k-border px-3 py-1.5 font-mono text-xs text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text lg:block"
           >
             {themeLabel}
           </button>
@@ -134,7 +145,7 @@ export function Nav({
               onClick={() => {
                 go('editor');
               }}
-              className="k-glow rounded-lg bg-k-primary px-3.5 py-1.5 text-sm font-medium text-white"
+              className="k-glow rounded-full bg-k-primary px-4 py-1.5 text-sm font-medium text-white"
             >
               Open the editor
             </button>
@@ -147,7 +158,7 @@ export function Nav({
             onClick={() => {
               setOpen((was) => !was);
             }}
-            className="rounded-lg border border-k-border px-2.5 py-1.5 font-mono text-sm text-k-text-muted md:hidden"
+            className="rounded-full border border-k-border px-3 py-1.5 font-mono text-sm text-k-text-muted lg:hidden"
           >
             {open ? '✕' : '☰'}
           </button>
@@ -162,7 +173,7 @@ export function Nav({
             animate={{ opacity: 1, y: 0 }}
             exit={still ? undefined : { opacity: 0, y: -8 }}
             transition={SPRING}
-            className="k-glass mx-auto mt-2 flex w-full max-w-6xl flex-col rounded-2xl p-2 md:hidden"
+            className="k-glass mx-auto mt-2 flex w-full max-w-6xl flex-col rounded-3xl p-2 lg:hidden"
           >
             {[...NAV, { route: 'changelog' as Route, label: 'Changelog' }].map((item) => (
               <button
@@ -172,7 +183,7 @@ export function Nav({
                   go(item.route);
                 }}
                 aria-current={current === item.route ? 'page' : undefined}
-                className={`rounded-lg px-3 py-2 text-left text-sm ${
+                className={`rounded-full px-4 py-2 text-left text-sm ${
                   current === item.route
                     ? 'bg-k-primary/10 font-medium text-k-text'
                     : 'text-k-text-muted'
@@ -184,7 +195,7 @@ export function Nav({
             <button
               type="button"
               onClick={onCycleTheme}
-              className="mt-1 rounded-lg border-t border-k-border px-3 py-2 text-left font-mono text-xs text-k-text-faint"
+              className="mt-1 rounded-full border-t border-k-border px-4 py-2 text-left font-mono text-xs text-k-text-faint"
             >
               theme: {themeLabel}
             </button>
