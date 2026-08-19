@@ -125,11 +125,21 @@ anything — it exists to give the gradient a third hue.
 ## Type
 
 ```
---font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
---font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+--font-sans:    'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, sans-serif;
+--font-display: 'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', sans-serif;
+--font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 ```
 
-Both are self-hosted, never CDN-fetched, so the app works offline and inside a native shell.
+All three are self-hosted, never CDN-fetched, so the app works offline and inside a native
+shell.
+
+**Two sans faces, and the split is a rule.** Plus Jakarta Sans carries the interface —
+humanist, open apertures, softened terminals, which is what makes a dense page of labels read
+as friendly rather than clinical. Bricolage Grotesque carries display sizes only: `h1`–`h3`
+and the wordmark. Its flared `a`, curled `y` and eared `g` are the difference between a
+headline and a default, and the same character at 16px is noise. Set the split in the
+stylesheet rather than per component — "a heading uses the display face" is a property of the
+type system, not a decision each component gets to make differently.
 
 **The monospace is not decorative.** It carries a rule: anything that is *notation* is
 monospace — state labels, symbols, code, the Greek letters `ε` and `Σ`, and any number that
@@ -140,7 +150,9 @@ The JetBrains Mono **Greek subset must be loaded explicitly**. `ε` (U+03B5) and
 live in the Greek block, and an epsilon falling back to a system font next to monospace labels
 is instantly visible and looks broken.
 
-Headings use `tracking-tight`; the hero uses `-0.03em`. Body text is left at default tracking.
+Headings carry `-0.022em` from the stylesheet; the hero tightens to `-0.03em`. Body text is
+left at default tracking — Bricolage's curves need less air than a neutral grotesque, and Plus
+Jakarta needs none removed.
 
 ---
 
@@ -256,7 +268,10 @@ properties work standalone in any project — delete the `@theme` wrapper and us
   --color-k-aurora-3: #d946ef;
 
   /* Type */
-  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans:
+    'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Motion */
