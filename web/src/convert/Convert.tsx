@@ -16,6 +16,7 @@ import { RegexBar } from '@/convert/RegexBar';
 import { Scrubber } from '@/convert/Scrubber';
 import { clampStep, highlighted, readStepFrom, stepFragment } from '@/convert/scrubbing';
 import { useCompiler } from '@/convert/useCompiler';
+import { Worklist } from '@/convert/Worklist';
 import type { Automaton, Compilation, Stage, StateId } from '@/model/automaton';
 import type { Engine } from '@/wasm/loader';
 
@@ -331,6 +332,23 @@ function Pane({
           }
         />
       </div>
+
+      {/*
+        Between the diagram and the scrubber deliberately. The scrubber is the control, the
+        diagram is the result, and the worklist is the algorithm's own state — which belongs
+        with the thing being controlled rather than with the controls.
+      */}
+      <Worklist
+        automaton={stage.automaton}
+        at={at}
+        onHoverState={
+          onHoverState &&
+          ((id) => {
+            const state = stage.automaton.states.find((candidate) => candidate.id === id);
+            onHoverState(state?.origin ?? []);
+          })
+        }
+      />
 
       <Scrubber steps={stage.steps} step={step} onStep={onStep} label={`${subtitle} steps`} />
     </section>
