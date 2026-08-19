@@ -53,9 +53,13 @@ export const useEditor = create<EditorState>((set) => ({
   history: historyOf(emptyDocument()),
   selection: [],
 
-  run: (command) => set((state) => ({ history: run(state.history, command) })),
-  undo: () => set((state) => ({ history: undo(state.history) })),
-  redo: () => set((state) => ({ history: redo(state.history) })),
+  // Every one of these prunes the selection, for the reason spelled out on `selectAll`: a
+  // selection holding an id that no longer exists is this module's one real hazard. Deleting
+  // three states used to leave "3 states selected" in the panel and "3 selected" in the status
+  // bar next to "0 states" — and every subsequent action was aimed at states that were gone.
+  run: (command) => set((state) => after(run(state.history, command), state.selection)),
+  undo: () => set((state) => after(undo(state.history), state.selection)),
+  redo: () => set((state) => after(redo(state.history), state.selection)),
 
   // Loading starts a fresh history rather than appending. Undoing across a file open would
   // resurrect a document the user deliberately replaced.
@@ -69,6 +73,24 @@ export const useEditor = create<EditorState>((set) => ({
   selectAll: () =>
     set((state) => ({ selection: state.history.present.automaton.states.map((s) => s.id) })),
 }));
+
+/**
+ * A history transition, with the selection narrowed to states that still exist.
+ *
+ * Applied on the way *out* of every transition rather than checked on the way in, because
+ * every path that can remove a state — a command, an undo of an add, a redo of a delete — has
+ * to be covered, and the command alone does not say which of them did.
+ *
+ * The identity check is not an optimisation. Zustand compares by reference, so returning a
+ * fresh array when nothing was pruned would re-render every selection subscriber on every
+ * keystroke of a rename — which is exactly the per-slice subscription this module's header
+ * says it exists to protect.
+ */
+function after(history: History, selection: StateId[]): Partial<EditorState> {
+  const alive = history.present.automaton.states;
+  const kept = selection.filter((id) => alive.some((state) => state.id === id));
+  return kept.length === selection.length ? { history } : { history, selection: kept };
+}
 
 /** The selected state ids. */
 export const useSelection = (): StateId[] => useEditor((s) => s.selection);

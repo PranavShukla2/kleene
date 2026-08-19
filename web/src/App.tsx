@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Canvas } from '@/canvas/Canvas';
+import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { rowLayout } from '@/canvas/geometry';
 import { ShortcutSheet } from '@/canvas/ShortcutSheet';
 import { useShortcuts } from '@/canvas/useShortcuts';
@@ -317,6 +318,20 @@ export function Editor({ onHome }: { onHome: () => void }) {
               onHelp={openHelp}
             />
 
+            {document.automaton.states.length === 0 && (
+              <EmptyCanvas
+                onOpenExample={() => {
+                  const automaton = load.engine.example('ends_with_ab');
+                  loadDocument(
+                    normalize({
+                      automaton,
+                      layout: rowLayout(automaton.states.map((state) => state.id)),
+                    }),
+                  );
+                }}
+              />
+            )}
+
             {/* Docked against the canvas, not below the fold (J5). A problem list you have
                 to scroll to find is a problem list nobody reads. */}
             <Validation report={report} onFocus={focusStates} />
@@ -424,7 +439,14 @@ function CommandBar({
   onCycleTheme: () => void;
 }) {
   return (
-    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-k-border bg-k-surface px-3">
+    /*
+      The command bar takes the site's type and radii but keeps its own density. That split is
+      the whole decision: a workbench earns its screen by fitting more on it, so the bar stays
+      44px tall and its controls stay tight — but there is no reason for the wordmark, the
+      corner radius and the focus ring to differ from the rest of the site, and a visitor
+      clicking the biggest button on the front page should not feel they left the product.
+    */
+    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-k-border bg-k-surface/85 px-3 backdrop-blur">
       {/*
         L5: the wordmark goes home from here too. The editor is the one page someone can arrive
         at directly — a shared link, a bookmark — and a page you can reach but not leave is the
@@ -442,7 +464,7 @@ function CommandBar({
           event.preventDefault();
           onHome();
         }}
-        className="font-mono text-sm font-medium tracking-tight text-k-primary transition-opacity duration-(--duration-k-hover) hover:opacity-80"
+        className="k-gradient-text rounded-full font-mono text-sm font-semibold tracking-tight transition-opacity duration-(--duration-k-hover) hover:opacity-80"
       >
         kleene
       </a>
@@ -587,7 +609,9 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="rounded-md border border-k-border px-3 py-1.5 text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text disabled:opacity-40 disabled:hover:border-k-border"
+      // Pills, matching the site. The padding stays tighter than a marketing button's,
+      // because a command bar with six controls cannot afford marketing spacing.
+      className="rounded-full border border-k-border px-3 py-1 text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text disabled:opacity-40 disabled:hover:border-k-border"
     >
       {children}
     </button>
