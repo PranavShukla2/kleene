@@ -90,9 +90,13 @@ export function Convert({
           <PaneToggles shown={shown} onChange={setShown} parsed={parsed} />
 
           <div
-            className={`mt-4 grid gap-4 ${
+            className={`mt-4 grid items-start gap-4 ${
               // Two panes side by side is the most a 1366×768 laptop reads comfortably, which
               // is what decision D9 is about. A third stacks rather than shrinking the others.
+              //
+              // `items-start` because the panes now differ in height: a pane showing δ and a
+              // worklist is taller than one showing neither, and stretching left a slab of
+              // empty surface under the shorter one's reasoning.
               shown.length > 1 ? 'lg:grid-cols-2' : ''
             }`}
           >
