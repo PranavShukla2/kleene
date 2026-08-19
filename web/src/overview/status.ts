@@ -1,13 +1,14 @@
 /**
  * What actually works, and when the rest arrives.
  *
- * The overview names features Kleene does not have yet, which is fine — a plan is a reasonable
+ * The site names features Kleene does not have yet, which is fine — a plan is a reasonable
  * thing to publish. What is not fine is naming them the same way as the ones that work.
  *
- * So there is no "coming soon" here. A vague badge scattered across a page is a worse lie than
- * an empty page: it promises everything and dates nothing, and a visitor cannot tell which
- * half they can use today. Every unbuilt feature carries **the phase it lands in**, which is a
- * claim specific enough to be wrong — and therefore worth something.
+ * A badge therefore reads **"Coming soon"** *and* the phase it lands in. Two words plus a
+ * number, because they answer different readers: someone skimming for thirty seconds needs the
+ * words, and someone deciding whether to depend on this needs the number. "Coming soon" alone
+ * promises everything and dates nothing; a bare phase number is precise and meaningless to
+ * anyone who has not read the roadmap.
  *
  * The corollary, written into Phase 5 Track E: a marker still standing at v1 is a bug, not a
  * roadmap.
@@ -30,4 +31,16 @@ export function planned(phase: number, detail?: string): Status {
 /** How a status reads on the page. */
 export function statusLabel(status: Status): string {
   return status.kind === 'ready' ? 'available' : `phase ${String(status.phase)}`;
+}
+
+/** The two words a skimming reader needs, ahead of the number that makes them checkable. */
+export function statusHeadline(status: Status): string {
+  return status.kind === 'ready' ? 'Live' : 'Coming soon';
+}
+
+/** Both halves, for a badge that has room. */
+export function statusBadge(status: Status): string {
+  return status.kind === 'ready'
+    ? 'Live'
+    : `Coming soon · phase ${String(status.phase)}`;
 }
