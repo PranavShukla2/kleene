@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kleene">
+  <!--
+    A state with a self-loop: the smallest drawing that is unmistakably an automaton, and the
+    one shape from the product that survives being 16 pixels wide.
+
+    Deliberately not a "K". A letter in a favicon says the name, which the tab title already
+    says; a diagram says what the thing is. Stroked rather than filled so it reads at 16px on
+    both a light and a dark tab strip, and the gradient is the site's own aurora.
+  -->
+  <defs>
+    <linearGradient id="k" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B7CFF" />
+      <stop offset="0.5" stop-color="#D946EF" />
+      <stop offset="1" stop-color="#22D3EE" />
+    </linearGradient>
+  </defs>
+
+  <!-- The incoming start arrow. -->
+  <path d="M4 40 L15 40" stroke="url(#k)" stroke-width="5" stroke-linecap="round" fill="none" />
+  <path d="M13 35.5 L19 40 L13 44.5 Z" fill="url(#k)" />
+
+  <!-- The state, drawn as an accepting one: two rings, which also reads better small. -->
+  <circle cx="34" cy="40" r="13" fill="none" stroke="url(#k)" stroke-width="5" />
+  <circle cx="34" cy="40" r="5.5" fill="none" stroke="url(#k)" stroke-width="3.5" />
+
+  <!-- The self-loop, above. -->
+  <path
+    d="M25 30 C25 14, 43 14, 43 30"
+    fill="none"
+    stroke="url(#k)"
+    stroke-width="5"
+    stroke-linecap="round"
+  />
+  <path d="M39 27 L44.5 31.5 L46.5 24.5 Z" fill="url(#k)" />
+</svg>

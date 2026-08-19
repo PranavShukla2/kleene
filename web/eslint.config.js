@@ -6,7 +6,16 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'dev-dist', 'node_modules', 'src/wasm/generated', 'src/model/generated'],
+    // `scripts/` is build tooling: plain Node ESM, run by hand, outside the app's tsconfig.
+    // Type-aware linting cannot see it and there is nothing there worth type-aware linting.
+    ignores: [
+      'dist',
+      'dev-dist',
+      'node_modules',
+      'scripts',
+      'src/wasm/generated',
+      'src/model/generated',
+    ],
   },
 
   js.configs.recommended,
