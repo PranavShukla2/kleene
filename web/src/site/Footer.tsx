@@ -35,6 +35,7 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
   {
     heading: 'Learn',
     items: [
+      { label: 'Concepts', route: 'learn' },
       { label: 'Docs', route: 'docs' },
       { label: 'Roadmap', route: 'roadmap' },
       { label: 'Changelog', route: 'changelog' },

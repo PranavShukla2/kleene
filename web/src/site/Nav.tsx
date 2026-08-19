@@ -25,6 +25,7 @@ import type { Route } from '@/router';
 const NAV: readonly { route: Route; label: string }[] = [
   { route: 'convert', label: 'Convert' },
   { route: 'examples', label: 'Examples' },
+  { route: 'learn', label: 'Learn' },
   { route: 'docs', label: 'Docs' },
   { route: 'pricing', label: 'Pricing' },
   { route: 'roadmap', label: 'Roadmap' },
@@ -96,7 +97,12 @@ export function Nav({
           <span className="k-gradient-text font-mono text-lg font-semibold tracking-tight">
             kleene
           </span>
-          <span className="hidden text-[13px] text-k-text-faint lg:inline">
+          {/*
+            The tagline is the first thing to go. It says what the nav's own items already
+            imply, and at 1024 the seven of them plus a call to action leave no room for a
+            second opinion about what this is.
+          */}
+          <span className="hidden text-[13px] whitespace-nowrap text-k-text-faint xl:inline">
             automata workbench
           </span>
         </button>
@@ -110,7 +116,7 @@ export function Nav({
                 go(item.route);
               }}
               aria-current={current === item.route ? 'page' : undefined}
-              className={`relative rounded-full px-3 py-1.5 text-sm transition-colors duration-(--duration-k-hover) ${
+              className={`relative rounded-full px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors duration-(--duration-k-hover) ${
                 current === item.route
                   ? 'font-medium text-k-text'
                   : 'text-k-text-muted hover:text-k-text'
@@ -142,7 +148,7 @@ export function Nav({
             type="button"
             onClick={onOpenPalette}
             aria-label="Search pages, examples and expressions"
-            className="hidden items-center gap-2 rounded-full border border-k-border px-3 py-1.5 text-xs text-k-text-faint transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text md:flex"
+            className="hidden items-center gap-2 rounded-full border border-k-border px-3 py-1.5 text-xs whitespace-nowrap text-k-text-faint transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text lg:flex"
           >
             Search
             <kbd className="font-mono text-[10px] text-k-text-faint">⌘K</kbd>
@@ -151,7 +157,7 @@ export function Nav({
             type="button"
             onClick={onCycleTheme}
             aria-label={`Theme: ${themeLabel}. Click to change.`}
-            className="hidden rounded-full border border-k-border px-3 py-1.5 font-mono text-xs text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text lg:block"
+            className="hidden rounded-full border border-k-border px-3 py-1.5 font-mono text-xs whitespace-nowrap text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text xl:block"
           >
             {themeLabel}
           </button>
@@ -162,7 +168,7 @@ export function Nav({
               onClick={() => {
                 go('editor');
               }}
-              className="k-glow rounded-full bg-k-primary px-4 py-1.5 text-sm font-medium text-white"
+              className="k-glow rounded-full bg-k-primary px-4 py-1.5 text-sm font-medium whitespace-nowrap text-white"
             >
               Open the editor
             </button>

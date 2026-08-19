@@ -54,6 +54,12 @@ export function CommandPalette({
       { id: 'go:editor', label: 'The editor', group: 'Go to', keywords: ['draw', 'canvas'] },
       { id: 'go:convert', label: 'Convert', group: 'Go to', keywords: ['regex', 'dfa', 'nfa'] },
       { id: 'go:examples', label: 'Examples', group: 'Go to', keywords: ['gallery'] },
+      {
+        id: 'go:learn',
+        label: 'Learn the concepts',
+        group: 'Go to',
+        keywords: ['theory', 'glossary', 'definitions', 'dfa', 'nfa', 'closure'],
+      },
       { id: 'go:docs', label: 'Docs', group: 'Go to', keywords: ['documentation', 'help'] },
       { id: 'go:pricing', label: 'Pricing', group: 'Go to', keywords: ['free', 'cost'] },
       { id: 'go:roadmap', label: 'Roadmap', group: 'Go to', keywords: ['plan', 'phases'] },

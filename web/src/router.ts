@@ -22,6 +22,7 @@ export type Route =
   | 'editor'
   | 'convert'
   | 'examples'
+  | 'learn'
   | 'roadmap'
   | 'pricing'
   | 'docs'
@@ -36,6 +37,7 @@ const PATHS: Record<Route, string> = {
   editor: '/editor',
   convert: '/convert',
   examples: '/examples',
+  learn: '/learn',
   roadmap: '/roadmap',
   pricing: '/pricing',
   docs: '/docs',

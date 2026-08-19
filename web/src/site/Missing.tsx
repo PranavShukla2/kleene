@@ -28,6 +28,11 @@ const ELSEWHERE: readonly { route: Route; label: string; detail: string }[] = [
     detail: 'Type a regular expression and watch it build.',
   },
   { route: 'examples', label: 'Examples', detail: 'Machines worth reading before your own.' },
+  {
+    route: 'learn',
+    label: 'Learn',
+    detail: 'The vocabulary, and the mistakes that come with it.',
+  },
   { route: 'docs', label: 'Docs', detail: 'What the notation means, and how to use it.' },
   { route: 'roadmap', label: 'Roadmap', detail: 'What is built, what is next, and when.' },
   { route: 'about', label: 'About', detail: 'Why this exists, and who builds it.' },

@@ -23,6 +23,7 @@ import { About } from '@/site/About';
 import { Changelog } from '@/site/Changelog';
 import { Docs } from '@/site/Docs';
 import { Landing } from '@/site/Landing';
+import { Learn } from '@/site/Learn';
 import { Loading } from '@/site/Loading';
 import { Missing } from '@/site/Missing';
 import { Pricing } from '@/site/Pricing';
@@ -159,6 +160,16 @@ function Page({ route, go }: { route: Route; go: (to: Route, search?: string) =>
       return <Changelog onNavigate={go} />;
     case 'about':
       return <About onNavigate={go} />;
+    case 'learn':
+      return (
+        <Learn
+          onNavigate={go}
+          onOpenExample={openExample}
+          onConvert={(expression) => {
+            go('convert', `?q=${encodeURIComponent(expression)}`);
+          }}
+        />
+      );
     case 'missing':
       return <Missing onNavigate={go} />;
     default:
