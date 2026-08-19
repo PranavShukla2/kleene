@@ -6,10 +6,11 @@
  * disagree about which expression they are describing.
  */
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { DiagramView } from '@/canvas/DiagramView';
 import { wrappedRowLayout } from '@/canvas/geometry';
+import { ClosureDrill } from '@/convert/ClosureDrill';
 import { construction, partial } from '@/convert/construction';
 import { DEFAULT_PANES, PANES, reduction, type PaneId } from '@/convert/panes';
 import { RegexBar } from '@/convert/RegexBar';
@@ -36,6 +37,8 @@ export function Convert({
   const [shown, setShown] = useState<readonly PaneId[]>(DEFAULT_PANES);
   // Which ε-NFA states the hovered DFA state was built from (task B3).
   const [origin, setOrigin] = useState<readonly StateId[]>([]);
+  // Which ε-NFA states the open ε-closure drill-down is on (task D4).
+  const [closure, setClosure] = useState<readonly StateId[]>([]);
   // One step position per pane. Seeded from the URL fragment so a link to round four opens
   // there (task C7); after that the fragment follows the scrubber rather than driving it.
   const [steps, setSteps] = useState<Partial<Record<PaneId, number>>>(() =>
@@ -61,6 +64,12 @@ export function Convert({
    * straight into round four arrives with the subset already lit rather than waiting for an
    * interaction that will never come.
    */
+  // Stable, because the drill-down pushes its focus from an effect and an identity that
+  // changed every render would make that effect a loop.
+  const focusClosure = useCallback((ids: readonly StateId[]) => {
+    setClosure(ids);
+  }, []);
+
   const subsetInPlay = useMemo(() => {
     if (!parsed || !shown.includes('dfa')) return [];
     const stage = parsed.dfa;
@@ -108,6 +117,9 @@ export function Convert({
                 <Pane
                   key={pane.id}
                   engine={engine}
+                  // The closure drill-down always computes in the ε-NFA, whichever pane asked.
+                  nfa={parsed.nfa.automaton}
+                  onClosureFocus={pane.id === 'nfa' ? undefined : focusClosure}
                   // Open under the derived panes, where watching δ fill in is the point, and
                   // shut under the ε-NFA, whose table is fourteen rows of ε and teaches
                   // nothing that the diagram does not say more clearly.
@@ -137,19 +149,21 @@ export function Convert({
                     states happened to share those numbers.
 
                     Priority, for the pane that does take one: what the pointer is on, then
-                    what this pane's own scrubber says, then the subset the DFA pane is
-                    working on. Hover first because it is the live gesture; the pane's own
-                    scrubber ahead of another pane's because a scrubber you moved should
-                    not be overruled by one you did not.
+                    an open ε-closure drill-down, then what this pane's own scrubber says,
+                    then the subset the DFA pane is working on. Hover first because it is the
+                    live gesture, and the drill-down next because it is the narrower question
+                    — someone who opened it is asking about those states specifically.
                   */
                   highlight={
                     pane.id !== 'nfa'
                       ? []
                       : origin.length > 0
                         ? origin
-                        : (steps.nfa ?? 0) > 0
-                          ? highlighted(step, stage.steps)
-                          : subsetInPlay
+                        : closure.length > 0
+                          ? closure
+                          : (steps.nfa ?? 0) > 0
+                            ? highlighted(step, stage.steps)
+                            : subsetInPlay
                   }
                   onHoverState={pane.id === 'nfa' ? undefined : setOrigin}
                   onOpenInEditor={() => {
@@ -234,6 +248,8 @@ function PaneToggles({
 
 function Pane({
   engine,
+  nfa,
+  onClosureFocus,
   defaultTable,
   title,
   subtitle,
@@ -247,6 +263,8 @@ function Pane({
   onOpenInEditor,
 }: {
   engine: Engine | undefined;
+  nfa: Automaton;
+  onClosureFocus: ((ids: readonly StateId[]) => void) | undefined;
   defaultTable: boolean;
   title: string;
   subtitle: string;
@@ -295,6 +313,10 @@ function Pane({
     () => (tableOpen ? engine?.transitionTable(stage.automaton) : undefined),
     [engine, stage.automaton, tableOpen],
   );
+
+  // Memoised: the drill-down keys a wasm call and an effect on this array, and a fresh one
+  // every render would make both fire forever.
+  const seeds = useMemo(() => stage.steps[step]?.seeds ?? [], [stage.steps, step]);
 
   const highlightOrigin =
     onHoverState &&
@@ -387,6 +409,10 @@ function Pane({
         with the thing being controlled rather than with the controls.
       */}
       <Worklist automaton={stage.automaton} at={at} onHoverState={highlightOrigin} />
+
+      {onClosureFocus && (
+        <ClosureDrill engine={engine} nfa={nfa} seeds={seeds} onFocus={onClosureFocus} />
+      )}
 
       <Scrubber steps={stage.steps} step={step} onStep={onStep} label={`${subtitle} steps`} />
     </section>
