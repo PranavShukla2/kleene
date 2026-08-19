@@ -110,6 +110,7 @@ export function AutomatonGraphics({
   grid = false,
   selection,
   active,
+  entering,
   onHoverState,
 }: {
   automaton: Automaton;
@@ -120,6 +121,14 @@ export function AutomatonGraphics({
   selection?: readonly StateId[];
   /** Which states the simulator is currently in. */
   active?: readonly StateId[];
+  /**
+   * What this render should animate, when the machine is being built in front of the reader.
+   *
+   * Only the *events* of one step, never the whole picture: the state that just appeared, the
+   * edge that reached it, and — separately — a state an edge arrived at that already existed.
+   * A diagram that animated everything every step would be a diagram that explained nothing.
+   */
+  entering?: { state?: StateId; edge?: string; recognised?: StateId };
   /** The pointer entered or left a state. `undefined` means it left. */
   onHoverState?: (id: StateId | undefined) => void;
 }) {
@@ -175,16 +184,28 @@ export function AutomatonGraphics({
         cut what was drawn before it, so all the lines have to come first.
       */}
       <g className="stroke-k-text-muted">
-        {paths.map((edge) => (
-          <path
-            key={edge.key}
-            d={edge.path}
-            fill="none"
-            strokeWidth={GEOM.edgeStroke}
-            markerEnd="url(#k-arrow)"
-            className="stroke-k-text-muted"
-          />
-        ))}
+        {paths.map((edge) => {
+          const drawing = entering?.edge === edge.key;
+          return (
+            <path
+              key={edge.key}
+              d={edge.path}
+              fill="none"
+              strokeWidth={GEOM.edgeStroke}
+              markerEnd="url(#k-arrow)"
+              // Renormalises the path to unit length, so `edge-draw` works on a short straight
+              // line and a long self-loop alike without measuring either. Set only while an
+              // edge is being drawn, so a static diagram exports without it.
+              pathLength={drawing ? 1 : undefined}
+              className={
+                drawing
+                  ? 'stroke-k-text-muted motion-safe:animate-[edge-draw_280ms_ease-out]'
+                  : 'stroke-k-text-muted'
+              }
+              style={drawing ? { strokeDasharray: 1 } : undefined}
+            />
+          );
+        })}
       </g>
 
       {automaton.states.map((state) => {
@@ -199,6 +220,8 @@ export function AutomatonGraphics({
             accepting={state.accepting ?? false}
             selected={selection?.includes(state.id) ?? false}
             active={active?.includes(state.id) ?? false}
+            entering={entering?.state === state.id}
+            recognised={entering?.recognised === state.id}
             onHover={
               onHoverState &&
               ((entered) => {
@@ -226,6 +249,8 @@ function StateNode({
   accepting,
   selected,
   active,
+  entering = false,
+  recognised = false,
   onHover,
 }: {
   at: Point;
@@ -233,6 +258,10 @@ function StateNode({
   accepting: boolean;
   selected: boolean;
   active: boolean;
+  /** This state was created by the step being shown — grow it into place. */
+  entering?: boolean;
+  /** An edge arrived here, but the state already existed — strike it rather than grow it. */
+  recognised?: boolean;
   onHover?: (entered: boolean) => void;
 }) {
   return (
@@ -251,8 +280,43 @@ function StateNode({
       }
       // Only interactive when something is listening, so a static diagram keeps its pointer
       // events out of the way of whatever is behind it.
-      className={onHover ? 'cursor-help' : undefined}
+      //
+      // `transform-box: fill-box` is what makes `state-in`'s `transform-origin: center` mean
+      // this state's centre. Without it the scale runs from the SVG's origin and the state
+      // flies in from the corner instead of appearing where it belongs.
+      className={
+        [
+          onHover ? 'cursor-help' : '',
+          entering ? 'motion-safe:animate-[state-in_280ms_cubic-bezier(0.2,0.9,0.3,1.2)]' : '',
+        ]
+          .filter(Boolean)
+          .join(' ') || undefined
+      }
+      style={entering ? { transformBox: 'fill-box', transformOrigin: 'center' } : undefined}
     >
+      {/*
+        The recognition pulse. A repeat subset creates nothing, so without this the step reads
+        as though the algorithm did no work — which is exactly the misreading that makes
+        students think every arrow needs a new state.
+      */}
+      {recognised && (
+        <circle
+          cx={at.x}
+          cy={at.y}
+          r={GEOM.radius + GEOM.selectionGap}
+          fill="none"
+          strokeWidth={GEOM.selectionStroke}
+          // `forwards` so the ring ends where the keyframe leaves it — invisible. Without it
+          // the animation would run and then snap back to a solid ring that never goes away.
+          //
+          // Under `prefers-reduced-motion` the class does not apply at all, and what is left
+          // is a static ring on the recognised state: design-system §5's rule that reduced
+          // motion must not mean reduced information, satisfied by the fallback rather than
+          // by a second code path.
+          className="stroke-k-secondary motion-safe:animate-[ring-pulse_420ms_ease-out_forwards]"
+          style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+        />
+      )}
       {/*
         The active glow. A soft disc behind the state rather than a filter, because an SVG
         blur filter is the one thing here that would cost real time per frame — and the
