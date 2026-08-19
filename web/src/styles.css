@@ -194,3 +194,71 @@ body {
     opacity: 1;
   }
 }
+
+/*
+ * A state appearing.
+ *
+ * Subset construction discovers states one at a time, and until now the diagram showed the
+ * finished machine at every step — the answer, drawn while the words described the working.
+ * This is the other half: the state grows into place where it will stay.
+ *
+ * The overshoot past 1 is what makes it read as *appearing* rather than as fading up. A pure
+ * fade is ambiguous with a highlight; a thing that arrives with a small bounce is not.
+ * `transform-box: fill-box` makes `transform-origin: center` mean the state's own centre
+ * rather than the SVG's origin, which is the difference between a state popping into place
+ * and one flying in from the top-left corner.
+ */
+@keyframes state-in {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/*
+ * An edge being drawn, from its source towards its target.
+ *
+ * Relies on `pathLength="1"` at the call site, which tells SVG to renormalise the path's
+ * length to 1 whatever its actual geometry — so one keyframe works for a 40px straight line
+ * and a 300px self-loop without either measuring the path or hard-coding a dash array.
+ *
+ * The opacity ramp is for the arrowhead: a marker is painted at the path's end regardless of
+ * the dash, so without it the head would hang in mid-air waiting for its line to arrive.
+ */
+@keyframes edge-draw {
+  from {
+    stroke-dashoffset: 1;
+    opacity: 0.2;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+/*
+ * Recognition: this subset has been seen before.
+ *
+ * The distinction between a new subset and a repeat is the one students most reliably get
+ * wrong, and it is invisible in the finished diagram — both cases just leave an arrow. So the
+ * two get different motion: a new state grows into place, and an already-seen one is struck
+ * like a bell. Design-system §1.2 — the difference is never carried by colour alone.
+ */
+@keyframes ring-pulse {
+  from {
+    opacity: 0.85;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
