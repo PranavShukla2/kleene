@@ -75,10 +75,28 @@
   /* Motion — the 280ms step transition is tuned so the eye can follow which
      subset became which state. Faster is unreadable, slower is tedious to scrub. */
   --ease-k: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* The marketing surface's easing: a little overshoot, so panels arrive rather than
+     appear. Kept apart from --ease-k, which is tuned for algorithm steps where an
+     overshoot would imply a correction the algorithm did not make. */
+  --ease-k-spring: cubic-bezier(0.22, 1.2, 0.36, 1);
   --duration-k-hover: 120ms;
   --duration-k-panel: 180ms;
   --duration-k-step: 280ms;
   --duration-k-merge: 420ms;
+  --duration-k-reveal: 620ms;
+
+  /* Glass — used only on the marketing surface and the floating nav.
+     Never on the canvas: a translucent panel over a diagram makes the diagram
+     harder to read, and the diagram is the product. */
+  --color-k-glass: rgb(255 255 255 / 0.66);
+  --color-k-glass-edge: rgb(255 255 255 / 0.9);
+  --color-k-glass-shadow: rgb(15 23 42 / 0.08);
+
+  /* Aurora — the three washes behind the hero. Hue-separated rather than one colour
+     at three opacities, so the gradient has somewhere to travel. */
+  --color-k-aurora-1: #6d5ef8;
+  --color-k-aurora-2: #0891b2;
+  --color-k-aurora-3: #d946ef;
 }
 
 /* Dark mode is defined twice on purpose: once for the system preference, once for
@@ -104,6 +122,14 @@
     --color-k-text-muted: #9ba3b8;
     --color-k-text-faint: #6b7488;
 
+    --color-k-glass: rgb(30 34 48 / 0.62);
+    --color-k-glass-edge: rgb(255 255 255 / 0.08);
+    --color-k-glass-shadow: rgb(0 0 0 / 0.4);
+
+    --color-k-aurora-1: #8b7cff;
+    --color-k-aurora-2: #22d3ee;
+    --color-k-aurora-3: #e879f9;
+
     --color-k-active: #8b7cff;
     --color-k-accepting: #22d3ee;
     --color-k-new: #34d399;
@@ -118,6 +144,14 @@
 }
 
 [data-theme='dark'] {
+  --color-k-glass: rgb(30 34 48 / 0.62);
+  --color-k-glass-edge: rgb(255 255 255 / 0.08);
+  --color-k-glass-shadow: rgb(0 0 0 / 0.4);
+
+  --color-k-aurora-1: #8b7cff;
+  --color-k-aurora-2: #22d3ee;
+  --color-k-aurora-3: #e879f9;
+
   --color-k-primary: #8b7cff;
   --color-k-primary-hover: #a394ff;
   --color-k-primary-subtle: #241f45;
@@ -260,5 +294,155 @@ body {
   to {
     opacity: 0;
     transform: scale(1.6);
+  }
+}
+
+/*
+ * ── The marketing surface ──────────────────────────────────────────────────────
+ *
+ * Everything below this line is for the pages a stranger sees before they decide to
+ * use the tool. Roadmap §2.8 calls the front door a different product from the
+ * workbench, and these are the parts that make it one: glass, aurora, a grid that
+ * fades out, and a gradient that moves.
+ *
+ * None of it is allowed near the canvas. Design-system §1.1 says chrome recedes, and
+ * a translucent panel over a diagram makes the diagram harder to read — the diagram
+ * being the entire product. The rule is: decoration lives where there is nothing to
+ * decorate *over*.
+ */
+
+/*
+ * Frosted glass.
+ *
+ * `backdrop-filter` degrades honestly — a browser without it renders the same panel
+ * at the same opacity, just without the blur — so there is no fallback to write.
+ */
+.k-glass {
+  background: var(--color-k-glass);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid var(--color-k-glass-edge);
+  box-shadow:
+    0 1px 0 0 var(--color-k-glass-edge) inset,
+    0 8px 32px -8px var(--color-k-glass-shadow);
+}
+
+/*
+ * The aurora behind the hero.
+ *
+ * Three radial washes on one element rather than three positioned divs: one paint,
+ * one compositing layer, and the whole thing animates as a single transform. It sits
+ * behind `pointer-events: none` and is `aria-hidden` at the call site.
+ */
+.k-aurora {
+  background:
+    radial-gradient(
+      42rem 28rem at 18% 8%,
+      color-mix(in oklab, var(--color-k-aurora-1) 34%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      38rem 26rem at 82% 0%,
+      color-mix(in oklab, var(--color-k-aurora-2) 28%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      34rem 30rem at 60% 46%,
+      color-mix(in oklab, var(--color-k-aurora-3) 20%, transparent),
+      transparent 72%
+    );
+  filter: blur(12px);
+}
+
+@keyframes aurora-drift {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(2%, 2%, 0) scale(1.1);
+  }
+}
+
+.k-aurora-drift {
+  animation: aurora-drift 18s var(--ease-k) infinite alternate;
+}
+
+/*
+ * A dot grid that fades out towards the bottom, so the hero has texture without a
+ * hard edge where the decoration stops.
+ */
+.k-grid-fade {
+  background-image: radial-gradient(var(--color-k-grid-dot) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+/*
+ * Text that carries the brand gradient.
+ *
+ * `background-clip: text` needs a transparent fill, which means the text is invisible
+ * if the gradient fails to paint. Forced-colours mode does exactly that, so the
+ * override below hands the colour back.
+ */
+.k-gradient-text {
+  background: linear-gradient(
+    100deg,
+    var(--color-k-aurora-1),
+    var(--color-k-aurora-3) 42%,
+    var(--color-k-aurora-2)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@media (forced-colors: active) {
+  .k-gradient-text {
+    color: CanvasText;
+    background: none;
+  }
+}
+
+/* A hairline that brightens where the pointer is, for cards worth pointing at. */
+.k-card {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform var(--duration-k-panel) var(--ease-k-spring),
+    border-color var(--duration-k-panel) var(--ease-k);
+}
+
+@media (hover: hover) {
+  .k-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* The soft halo under a primary call to action. */
+.k-glow {
+  box-shadow:
+    0 8px 24px -8px color-mix(in oklab, var(--color-k-primary) 60%, transparent),
+    0 2px 8px -2px color-mix(in oklab, var(--color-k-primary) 40%, transparent);
+}
+
+@keyframes k-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* Half, because the track is rendered twice for a seamless wrap. */
+    transform: translateX(-50%);
+  }
+}
+
+.k-marquee {
+  animation: k-marquee 38s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-marquee,
+  .k-aurora-drift {
+    animation: none;
   }
 }
