@@ -16,17 +16,11 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { EXAMPLES } from '@/overview/examples';
-import { SECTIONS } from '@/site/articles';
-import { allConcepts, conceptId } from '@/site/concepts';
-import { TOOLS } from '@/site/tools';
 import { Pill } from '@/site/Badge';
+import { siteActions } from '@/site/actions';
 import { grouped, moveBy, search, type Action } from '@/site/palette';
 import { SPRING } from '@/site/spring';
 import type { Route } from '@/router';
-
-/** Conversions worth one keystroke. The same expressions the hero offers. */
-const PRESETS = ['(a|b)*abb', 'a*b*', '(ab)*+b', 'a(b|c)*'] as const;
 
 export function CommandPalette({
   open,
@@ -57,79 +51,7 @@ export function CommandPalette({
   const still = useReducedMotion();
   const listRef = useRef<HTMLDivElement>(null);
 
-  const actions: Action[] = useMemo(
-    () => [
-      { id: 'go:overview', label: 'Home', group: 'Go to', keywords: ['overview', 'landing'] },
-      { id: 'go:editor', label: 'The editor', group: 'Go to', keywords: ['draw', 'canvas'] },
-      { id: 'go:convert', label: 'Convert', group: 'Go to', keywords: ['regex', 'dfa', 'nfa'] },
-      { id: 'go:examples', label: 'Examples', group: 'Go to', keywords: ['gallery'] },
-      {
-        id: 'go:learn',
-        label: 'Learn the concepts',
-        group: 'Go to',
-        keywords: ['theory', 'glossary', 'definitions', 'dfa', 'nfa', 'closure'],
-      },
-      { id: 'go:docs', label: 'Docs', group: 'Go to', keywords: ['documentation', 'help'] },
-      { id: 'go:pricing', label: 'Pricing', group: 'Go to', keywords: ['free', 'cost'] },
-      { id: 'go:roadmap', label: 'Roadmap', group: 'Go to', keywords: ['plan', 'phases'] },
-      { id: 'go:changelog', label: 'Changelog', group: 'Go to', keywords: ['releases', 'new'] },
-      { id: 'go:about', label: 'About', group: 'Go to', keywords: ['who', 'why', 'author'] },
-
-      ...TOOLS.map((tool): Action => ({
-        id: `tool:${tool.slug}`,
-        label: tool.title,
-        group: 'Convert',
-        keywords: [tool.slug.replace(/-/g, ' '), tool.example],
-        hint: 'tool page',
-      })),
-
-      ...PRESETS.map((preset): Action => ({
-        id: `regex:${preset}`,
-        label: `Convert ${preset}`,
-        group: 'Convert',
-        keywords: [preset],
-        hint: 'regex → DFA',
-      })),
-
-      // The whole of `/learn`, searchable by term. This is what turns the palette from a
-      // navigator into something you can ask a question of: "what is an ε-closure" is a query
-      // people have, and the nav bar's answer to it is "Learn", which is not one.
-      ...allConcepts().map(({ concept, chapter }): Action => ({
-        id: `concept:${conceptId(concept.term)}`,
-        label: concept.term,
-        group: 'Concepts',
-        keywords: [concept.notation ?? '', chapter.title].filter((word) => word !== ''),
-        hint: chapter.title.toLowerCase(),
-      })),
-
-      ...SECTIONS.flatMap((section) =>
-        section.articles.map((article): Action => ({
-          id: `doc:${article.route ?? ''}`,
-          label: article.title,
-          group: 'Docs',
-          keywords: [section.heading],
-          hint: article.status.kind === 'ready' ? undefined : 'coming soon',
-        })),
-      ),
-
-      ...EXAMPLES.map((example): Action => ({
-        id: `example:${example.key}`,
-        label: example.title,
-        group: 'Open an example',
-        keywords: [...example.topics, example.tier],
-        hint: 'in the editor',
-      })),
-
-      { id: 'theme', label: 'Toggle theme', group: 'Actions', hint: themeLabel },
-      {
-        id: 'source',
-        label: 'View the source on GitHub',
-        group: 'Actions',
-        keywords: ['repository', 'code'],
-      },
-    ],
-    [themeLabel],
-  );
+  const actions = useMemo(() => siteActions(themeLabel), [themeLabel]);
 
   /**
    * The results, grouped once.
