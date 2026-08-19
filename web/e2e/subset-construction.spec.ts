@@ -58,7 +58,9 @@ test('the worklist drains as the construction runs', async ({ page }) => {
   await expect(pane.getByTitle('discovered, waiting its turn')).toHaveCount(0);
 });
 
-test('δ fills in cell by cell, and says which cells are not worked out yet', async ({ page }) => {
+test('δ fills in cell by cell, and says which cells are not worked out yet', async ({
+  page,
+}) => {
   await type(page);
   const pane = dfaPane(page);
 
