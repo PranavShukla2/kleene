@@ -77,15 +77,32 @@ export function Convert({
   }, [parsed, shown, steps.dfa]);
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Convert</h1>
-      <p className="mt-3 max-w-prose text-k-text-muted">
-        Type a regular expression and watch it become a machine — through Thompson&rsquo;s
-        construction, subset construction, and minimization. Every stage below comes from one
-        pass over what you typed, so no two panes can be describing different expressions.
-      </p>
+    <main className="relative mx-auto w-full max-w-6xl px-6 pt-10 pb-4">
+      {/*
+        A wash behind the bar and nothing else. The panes below are diagrams, and design-system
+        §1.1 keeps decoration away from those — but the top of a page a stranger may land on
+        directly should still look like the rest of the site.
+      */}
+      <div
+        aria-hidden
+        className="k-aurora pointer-events-none absolute inset-x-0 -top-24 h-80 opacity-60"
+      />
 
-      <div className="mt-8">
+      <div className="relative">
+        <span className="font-mono text-xs tracking-wider text-k-primary uppercase">
+          Convert
+        </span>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          Type an expression. Watch it become a machine.
+        </h1>
+        <p className="mt-3 max-w-prose text-k-text-muted">
+          Thompson&rsquo;s construction, then subset construction, then minimization. Every
+          stage below comes from one pass over what you typed, so no two panes can be describing
+          different expressions.
+        </p>
+      </div>
+
+      <div className="relative mt-8">
         <RegexBar
           source={source}
           onChange={setSource}
