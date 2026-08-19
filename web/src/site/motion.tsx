@@ -168,7 +168,11 @@ export function Lift({ children, className }: { children: ReactNode; className?:
 export function CountUp({ value, className }: { value: string; className?: string }) {
   const still = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
+  // A *positive* margin, unlike everything else here: this one fires slightly before the
+  // number is on screen. The others wait until an element is properly in view because arriving
+  // early looks like nothing happened — but a counter that starts late is briefly legible at
+  // zero, and "0 tests" is a false claim rather than a missed animation.
+  const inView = useInView(ref, { once: true, margin: '180px' });
 
   // Split into the number and whatever brackets it, so `92 KB` counts and ` KB` does not.
   const match = /^(\D*)(\d[\d,]*)(.*)$/.exec(value);

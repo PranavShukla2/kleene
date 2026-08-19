@@ -27,7 +27,7 @@ import { EXAMPLES } from '@/overview/examples';
 import { statusHeadline } from '@/overview/status';
 import { StatusBadge, Pill } from '@/site/Badge';
 import { AUDIENCES, FAQ, PIPELINE, STATS, TRACE_CLAIM } from '@/site/content';
-import { HeroDemo } from '@/site/HeroDemo';
+import { LiveHero } from '@/site/LiveHero';
 import {
   CountUp,
   Lift,
@@ -159,7 +159,7 @@ function Hero({ onNavigate }: { onNavigate: (to: Route) => void }) {
         </div>
 
         <Reveal delay={0.12}>
-          <HeroDemo />
+          <LiveHero onNavigate={onNavigate} />
         </Reveal>
       </div>
     </section>
