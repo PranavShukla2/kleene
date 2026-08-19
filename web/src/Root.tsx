@@ -14,7 +14,7 @@
  */
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Editor } from '@/App';
 import { Convert } from '@/convert/Convert';
@@ -27,8 +27,10 @@ import { Loading } from '@/site/Loading';
 import { Missing } from '@/site/Missing';
 import { Pricing } from '@/site/Pricing';
 import { Roadmap } from '@/overview/Roadmap';
+import { CommandPalette } from '@/site/CommandPalette';
 import { Footer } from '@/site/Footer';
 import { Nav } from '@/site/Nav';
+import { usePaletteShortcut } from '@/site/usePaletteShortcut';
 import { handOff } from '@/store/handoff';
 import { useRoute, type Route } from '@/router';
 import { useTheme } from '@/theme';
@@ -38,6 +40,14 @@ export function Root() {
   const { route, go } = useRoute();
   const { choice, cycle } = useTheme();
   const still = useReducedMotion();
+  const [palette, setPalette] = useState(false);
+
+  const openPalette = useCallback(() => {
+    setPalette(true);
+  }, []);
+  // Not in the editor. ⌘K there would compete with a canvas that already owns most of the
+  // keyboard, and the editor has its own shortcut sheet behind `?`.
+  usePaletteShortcut(openPalette, route !== 'editor');
 
   if (route === 'editor') {
     return (
@@ -51,7 +61,13 @@ export function Root() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-k-bg text-k-text">
-      <Nav current={route} onNavigate={go} themeLabel={choice} onCycleTheme={cycle} />
+      <Nav
+        current={route}
+        onNavigate={go}
+        themeLabel={choice}
+        onCycleTheme={cycle}
+        onOpenPalette={openPalette}
+      />
 
       {/*
         A crossfade with six pixels of travel, keyed on the route.
@@ -78,6 +94,22 @@ export function Root() {
       </div>
 
       <Footer onNavigate={go} />
+
+      <CommandPalette
+        open={palette}
+        onClose={() => {
+          setPalette(false);
+        }}
+        onNavigate={go}
+        onOpenExample={(key) => {
+          go('editor', `?example=${encodeURIComponent(key)}`);
+        }}
+        onConvert={(source) => {
+          go('convert', `?q=${encodeURIComponent(source)}`);
+        }}
+        onCycleTheme={cycle}
+        themeLabel={choice}
+      />
     </div>
   );
 }

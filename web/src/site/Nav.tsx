@@ -39,11 +39,13 @@ export function Nav({
   onNavigate,
   themeLabel,
   onCycleTheme,
+  onOpenPalette,
 }: {
   current: Route;
   onNavigate: (to: Route) => void;
   themeLabel: string;
   onCycleTheme: () => void;
+  onOpenPalette: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -130,6 +132,21 @@ export function Nav({
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {/*
+            The palette's shortcut, made visible. ⌘K is only discoverable if something says so
+            — every product that ships one and does not advertise it has a feature that four
+            per cent of its users know about. It is also a real button, because a hint that
+            cannot be clicked is a hint that excludes anyone on a touchscreen.
+          */}
+          <button
+            type="button"
+            onClick={onOpenPalette}
+            aria-label="Search pages, examples and expressions"
+            className="hidden items-center gap-2 rounded-full border border-k-border px-3 py-1.5 text-xs text-k-text-faint transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text md:flex"
+          >
+            Search
+            <kbd className="font-mono text-[10px] text-k-text-faint">⌘K</kbd>
+          </button>
           <button
             type="button"
             onClick={onCycleTheme}

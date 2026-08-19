@@ -77,6 +77,19 @@ export function requestedExample(search: string): string | undefined {
   return new URLSearchParams(search).get('example') ?? undefined;
 }
 
+/**
+ * The expression `/convert` should open with, if the URL asked for one.
+ *
+ * `?q=` rather than a path segment, for the same reason as `?example=`: the page is the
+ * converter either way, and the expression is an argument to it. It also has to survive being
+ * pasted — regular expressions are full of characters a URL treats as structure, so this is
+ * always read through `URLSearchParams` and never by splitting a string.
+ */
+export function requestedExpression(search: string): string | undefined {
+  const asked = new URLSearchParams(search).get('q');
+  return asked === null || asked === '' ? undefined : asked;
+}
+
 /** Read the current route, and navigate without a reload. */
 export function useRoute(): { route: Route; go: (to: Route, search?: string) => void } {
   const [route, setRoute] = useState<Route>(() => routeOf(window.location.pathname));

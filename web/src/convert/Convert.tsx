@@ -20,6 +20,7 @@ import { clampStep, highlighted, readStepFrom, stepFragment } from '@/convert/sc
 import { useCompiler } from '@/convert/useCompiler';
 import { Worklist } from '@/convert/Worklist';
 import type { Automaton, Compilation, Stage, StateId } from '@/model/automaton';
+import { requestedExpression } from '@/router';
 import type { Engine } from '@/wasm/loader';
 
 /** The empty-string glyph. From the engine once D7 makes notation a setting; ε until then. */
@@ -33,7 +34,10 @@ export function Convert({
   /** Hand a stage to the editor, so a converted machine can be edited by hand. */
   onOpenInEditor: (automaton: Automaton) => void;
 }) {
-  const [source, setSource] = useState('');
+  // Seeded from the URL, so a link — or the command palette — can open the page with an
+  // expression already compiling. Read once: after that the bar owns the value, and a URL
+  // that kept overriding it would fight the person typing.
+  const [source, setSource] = useState(() => requestedExpression(window.location.search) ?? '');
   const [shown, setShown] = useState<readonly PaneId[]>(DEFAULT_PANES);
   // Which ε-NFA states the hovered DFA state was built from (task B3).
   const [origin, setOrigin] = useState<readonly StateId[]>([]);
