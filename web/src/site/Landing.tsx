@@ -28,7 +28,15 @@ import { statusHeadline } from '@/overview/status';
 import { StatusBadge, Pill } from '@/site/Badge';
 import { AUDIENCES, FAQ, PIPELINE, STATS, TRACE_CLAIM } from '@/site/content';
 import { HeroDemo } from '@/site/HeroDemo';
-import { Lift, Reveal, RevealGroup, RevealItem } from '@/site/motion';
+import {
+  CountUp,
+  Lift,
+  Lines,
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  Spotlight,
+} from '@/site/motion';
 import type { Route } from '@/router';
 
 export function Landing({
@@ -86,11 +94,22 @@ function Hero({ onNavigate }: { onNavigate: (to: Route) => void }) {
             </span>
           </Reveal>
 
-          <Reveal delay={0.05}>
-            <h1 className="mt-6 text-[2.75rem] leading-[1.02] font-semibold tracking-[-0.03em] text-balance sm:text-[4.25rem]">
-              Automata theory you can <span className="k-gradient-text">watch happen</span>.
-            </h1>
-          </Reveal>
+          {/*
+            Set as three fixed lines rather than left to wrap. The break points are part of
+            the writing — "Automata / theory you can / watch happen" lands the accent on its
+            own line — and a headline that rewraps at every viewport cannot be composed.
+          */}
+          <h1 className="mt-6 text-[2.75rem] leading-[1.02] font-semibold tracking-[-0.03em] sm:text-[4.25rem]">
+            <Lines>
+              {[
+                'Automata',
+                'theory you can',
+                <>
+                  <span className="k-gradient-text">watch happen</span>.
+                </>,
+              ]}
+            </Lines>
+          </h1>
 
           <Reveal delay={0.1}>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-k-text-muted">
@@ -155,9 +174,10 @@ function Stats() {
       <RevealGroup className="grid gap-px overflow-hidden rounded-2xl border border-k-border bg-k-border sm:grid-cols-2 lg:grid-cols-4">
         {STATS.map((stat) => (
           <RevealItem key={stat.label} className="bg-k-bg p-6">
-            <div className="font-mono text-3xl font-semibold tracking-tight text-k-text">
-              {stat.value}
-            </div>
+            <CountUp
+              value={stat.value}
+              className="block font-mono text-3xl font-semibold tracking-tight text-k-text tabular-nums"
+            />
             <div className="mt-1 font-mono text-[11px] tracking-wider text-k-primary uppercase">
               {stat.label}
             </div>
@@ -182,16 +202,15 @@ function Pipeline() {
 
       <RevealGroup className="mt-12 grid gap-5 lg:grid-cols-3">
         {PIPELINE.map((stage) => (
-          <RevealItem
-            key={stage.step}
-            className="k-card rounded-2xl border border-k-border bg-k-surface p-6 hover:border-k-primary/40"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-xs text-k-text-faint">{stage.step}</span>
-              <StatusBadge status={stage.status} />
-            </div>
-            <h3 className="mt-4 text-lg font-medium tracking-tight">{stage.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-k-text-muted">{stage.detail}</p>
+          <RevealItem key={stage.step}>
+            <Spotlight className="k-card h-full rounded-2xl border border-k-border bg-k-surface p-6 hover:border-k-primary/40">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-k-text-faint">{stage.step}</span>
+                <StatusBadge status={stage.status} />
+              </div>
+              <h3 className="mt-4 text-lg font-medium tracking-tight">{stage.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-k-text-muted">{stage.detail}</p>
+            </Spotlight>
           </RevealItem>
         ))}
       </RevealGroup>
@@ -274,26 +293,28 @@ function Bento() {
         {FEATURES.map((feature, index) => (
           <RevealItem
             key={feature.title}
-            className={`k-card flex flex-col rounded-2xl border border-k-border bg-k-surface p-6 hover:border-k-primary/40 ${
+            className={
               // The first card is the one someone reads, so it gets the room. A grid where
               // every cell is the same size has no opinion about what matters.
-              index === 0 ? 'sm:col-span-2 sm:row-span-1' : ''
-            }`}
+              index === 0 ? 'sm:col-span-2' : ''
+            }
           >
-            <div className="flex items-start justify-between gap-3">
-              <h3
-                className={`font-medium tracking-tight ${index === 0 ? 'text-xl' : 'text-base'}`}
-              >
-                {feature.title}
-              </h3>
-              <StatusBadge status={feature.status} />
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-k-text-muted">{feature.detail}</p>
-            {feature.status.kind === 'planned' && feature.status.detail && (
-              <p className="mt-3 font-mono text-[11px] text-k-text-faint">
-                {feature.status.detail}
-              </p>
-            )}
+            <Spotlight className="k-card flex h-full flex-col rounded-2xl border border-k-border bg-k-surface p-6 hover:border-k-primary/40">
+              <div className="flex items-start justify-between gap-3">
+                <h3
+                  className={`font-medium tracking-tight ${index === 0 ? 'text-xl' : 'text-base'}`}
+                >
+                  {feature.title}
+                </h3>
+                <StatusBadge status={feature.status} />
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-k-text-muted">{feature.detail}</p>
+              {feature.status.kind === 'planned' && feature.status.detail && (
+                <p className="mt-3 font-mono text-[11px] text-k-text-faint">
+                  {feature.status.detail}
+                </p>
+              )}
+            </Spotlight>
           </RevealItem>
         ))}
       </RevealGroup>

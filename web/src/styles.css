@@ -495,3 +495,63 @@ h3.font-mono,
     animation: none;
   }
 }
+
+/*
+ * A card that catches light under the pointer.
+ *
+ * The highlight is a pseudo-element rather than a background on the card itself, so it can be
+ * faded independently of whatever the card is actually filled with. `--x` and `--y` are
+ * written by `Spotlight` on pointermove; the fallback centres the highlight so a card that has
+ * never been pointed at does not flash from the corner on first hover.
+ */
+.k-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.k-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--duration-k-panel) var(--ease-k);
+  background: radial-gradient(
+    14rem 14rem at var(--x, 50%) var(--y, 50%),
+    color-mix(in oklab, var(--color-k-primary) 12%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (hover: hover) {
+  .k-spotlight:hover::before {
+    opacity: 1;
+  }
+}
+
+/*
+ * The gradient in `k-gradient-text`, drifting.
+ *
+ * Slow enough — 9 seconds for a full pass — that it is never caught moving, which is the
+ * point: a headline that visibly animates is a headline being read second.
+ */
+@keyframes gradient-drift {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+.k-gradient-text {
+  background-size: 220% auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .k-gradient-text {
+    animation: gradient-drift 9s var(--ease-k) infinite alternate;
+  }
+}
