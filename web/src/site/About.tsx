@@ -1,11 +1,14 @@
 /**
- * Why this exists, and what it is built out of.
+ * Why this exists, what it is built out of, and who built it.
  *
  * The page a recruiter, a lecturer or a contributor lands on when they have decided the tool
  * is interesting and now want to know whether the person behind it is serious. So it answers
- * the two questions that actually decide that: what problem it solves, and what it is made of.
+ * the three questions that actually decide that: what problem it solves, what it is made of,
+ * and who made it.
  *
- * No photograph, no origin story, no "our mission". The evidence is the architecture.
+ * No stock photograph and no "our mission" — the "we" of a one-person project is a tell.
+ * The evidence is the architecture, and the maker section is written in the first person
+ * because pretending otherwise fools nobody.
  */
 
 import { Pill } from '@/site/Badge';
@@ -57,6 +60,19 @@ const PRINCIPLES: readonly { title: string; detail: string }[] = [
     detail:
       'Unbuilt features carry the phase they land in as well as the words. A vague badge promises everything and dates nothing; a phase number is a claim specific enough to be wrong, and therefore worth making.',
   },
+];
+
+/**
+ * The numbers in the maker section.
+ *
+ * Every one is checkable by cloning the repository, which is the only kind worth putting next
+ * to a name. Kept as data so they can be updated in one place when they stop being true.
+ */
+const BUILT: readonly { value: string; label: string }[] = [
+  { value: '4', label: 'crates and apps in one workspace' },
+  { value: '300+', label: 'tests, unit through end-to-end' },
+  { value: '6', label: 'algorithms, each one traced' },
+  { value: '0', label: 'servers, by design' },
 ];
 
 export function About({ onNavigate }: { onNavigate: (to: Route) => void }) {
@@ -133,6 +149,8 @@ export function About({ onNavigate }: { onNavigate: (to: Route) => void }) {
         </RevealGroup>
       </Band>
 
+      <Maker />
+
       <Band>
         <div className="relative overflow-hidden rounded-3xl border border-k-border p-8 sm:p-12">
           <div
@@ -177,5 +195,123 @@ export function About({ onNavigate }: { onNavigate: (to: Route) => void }) {
         </div>
       </Band>
     </main>
+  );
+}
+
+/**
+ * Who built it.
+ *
+ * Placed after the architecture rather than before it, on purpose. Someone reading this page
+ * is deciding whether the project is serious; the work is the argument, and the name is the
+ * attribution on it. A biography first would be asking them to take the work on trust.
+ *
+ * Written in the first person because the "we" of a one-person project is a tell, and because
+ * a page that says "our team" and then lists one GitHub account has already lost the reader.
+ */
+function Maker() {
+  return (
+    <Band>
+      <Reveal>
+        <div className="k-glass relative overflow-hidden rounded-3xl p-8 sm:p-10">
+          <div
+            aria-hidden
+            className="k-aurora pointer-events-none absolute inset-0 opacity-50"
+          />
+
+          <div className="relative grid gap-10 lg:grid-cols-[1fr_0.85fr]">
+            <div>
+              <Pill tone="brand">Who built it</Pill>
+
+              <div className="mt-5 flex items-center gap-4">
+                {/*
+                  A monogram rather than a photograph. A portrait on an engineering page is a
+                  claim about a person; a wordmark-shaped initial keeps the page about the
+                  work, and it never loads a face at 200KB over a bad connection.
+                */}
+                <span
+                  aria-hidden
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-k-primary/12 font-display text-xl font-semibold text-k-primary ring-1 ring-k-primary/25"
+                >
+                  PS
+                </span>
+                <div>
+                  <h2 className="text-2xl font-semibold tracking-tight">Pranav Shukla</h2>
+                  <p className="font-mono text-xs text-k-text-faint">
+                    designs and builds Kleene
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4 leading-relaxed text-k-text-muted">
+                <p>
+                  I build Kleene on my own — the Rust core, the WebAssembly boundary, the
+                  interface, and the plan they are all written against. It started from a narrow
+                  complaint: the software students are pointed at can tell you what a minimal
+                  DFA looks like, and cannot tell you how it got there, which is the only part
+                  they are actually being examined on.
+                </p>
+                <p>
+                  Most of what is interesting here is a consequence of one decision — that
+                  reasoning is a <em>return value</em> rather than something the interface
+                  reconstructs afterwards. Every algorithm hands back its explanation with its
+                  answer, produced beside the line that made the move. That is what makes a step
+                  scrubber, a command line and generated documentation three views of one thing
+                  instead of three explanations to keep in sync.
+                </p>
+                <p>
+                  The whole plan is public, including the decisions that turned out to be wrong
+                  and why they were reversed. I would rather be readable than look infallible.
+                </p>
+              </div>
+
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Lift>
+                  <a
+                    href="https://github.com/PranavShukla2"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="k-glow inline-block rounded-full bg-k-primary px-5 py-2.5 text-sm font-medium text-white"
+                  >
+                    GitHub ↗
+                  </a>
+                </Lift>
+                <Lift>
+                  <a
+                    href="mailto:pranavmshukla@gmail.com"
+                    className="inline-block rounded-full border border-k-border-strong bg-k-surface-raised px-5 py-2.5 text-sm font-medium"
+                  >
+                    Get in touch
+                  </a>
+                </Lift>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-mono text-[11px] tracking-wider text-k-text-faint uppercase">
+                What that adds up to
+              </h3>
+              <RevealGroup className="mt-4 grid grid-cols-2 gap-3">
+                {BUILT.map((fact) => (
+                  <RevealItem
+                    key={fact.label}
+                    className="rounded-2xl border border-k-border bg-k-bg/60 p-4"
+                  >
+                    <div className="font-display text-2xl font-semibold tracking-tight">
+                      {fact.value}
+                    </div>
+                    <p className="mt-1 text-xs leading-snug text-k-text-muted">{fact.label}</p>
+                  </RevealItem>
+                ))}
+              </RevealGroup>
+
+              <p className="mt-4 text-xs leading-relaxed text-k-text-faint">
+                All of it checkable by cloning the repository. Numbers on a page about a person
+                are worth nothing unless someone else can count them.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    </Band>
   );
 }
