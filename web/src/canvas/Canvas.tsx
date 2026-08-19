@@ -14,7 +14,7 @@
  * others exist.
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AutomatonGraphics } from '@/canvas/AutomatonView';
 import { GEOM, pointOnRim, type Layout, type Point } from '@/canvas/geometry';
@@ -26,6 +26,7 @@ import { formatChord } from '@/canvas/shortcuts';
 import { useCanvasEditing } from '@/canvas/useCanvasEditing';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { useViewport } from '@/canvas/useViewport';
+import { useGeneration } from '@/store/editor';
 import { formatSymbols, newSymbols, parseSymbols } from '@/canvas/symbols';
 import { SNAP, snapPoint, toScreen } from '@/canvas/viewport';
 import type { Automaton, StateId } from '@/model/automaton';
@@ -90,6 +91,7 @@ export function Canvas({
     fit,
     reset,
     zoomBy,
+    size,
   } = useViewport();
   const { run, select, selectAll } = useActions();
 
@@ -98,6 +100,30 @@ export function Canvas({
     [automaton.states, layout],
   );
   const ids = useMemo(() => automaton.states.map((state) => state.id), [automaton.states]);
+
+  /**
+   * Frame the machine when a document arrives, and never again.
+   *
+   * The editor used to open at 1:1 with the viewport at the origin, so a machine laid out from
+   * (90, 130) sat in the top-left corner of a canvas eight times its size — which reads as the
+   * tool having failed to load the rest of something.
+   *
+   * Keyed on the *generation* rather than on the automaton, because every edit produces a new
+   * automaton too, and re-framing on those would move the camera under someone in the middle
+   * of drawing. Loading is the only moment where the viewport has no user intent to respect.
+   *
+   * `size` is in the condition for the same reason `DiagramView` needs it: `fitTo` returns the
+   * identity viewport for a zero-sized box, so framing before the element is measured silently
+   * does nothing.
+   */
+  const generation = useGeneration();
+  const framed = useRef(-1);
+  useEffect(() => {
+    if (size.width === 0 || size.height === 0) return;
+    if (framed.current === generation) return;
+    framed.current = generation;
+    if (points.length > 0) fit(points);
+  }, [generation, size, points, fit]);
 
   const [menu, setMenu] = useState<Menu | undefined>(undefined);
   const [editing, setEditing] = useState<Editing | undefined>(undefined);

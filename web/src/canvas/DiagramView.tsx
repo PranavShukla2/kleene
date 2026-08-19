@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { AutomatonGraphics } from '@/canvas/AutomatonView';
-import { GEOM, type Layout } from '@/canvas/geometry';
+import { GEOM, type Layout, type Point } from '@/canvas/geometry';
 import { useViewport } from '@/canvas/useViewport';
 import type { Automaton, StateId } from '@/model/automaton';
 
@@ -39,15 +39,21 @@ export function DiagramView({
   const { viewport, ref: viewportRef, panning, fit, reset, size } = useViewport();
 
   /**
-   * What to frame — every position the layout holds, not only the states drawn right now.
+   * What to frame: the states actually drawn.
    *
-   * The difference matters once a machine is shown mid-construction. Framing what is *drawn*
-   * would zoom hard into the single start state at step one and then pull back on every
-   * discovery, so the whole animation would be about the camera. Framing the layout means the
-   * viewport is settled before the first state appears, and the machine grows into a space
-   * that was already the right size.
+   * This was framing the whole layout, so that a machine being built grew into a space that
+   * was already the right size — the camera never moved. It was stable and it looked wrong: at
+   * step one a single state sat against the left edge of a box sized for five, which reads as
+   * a diagram that has failed to load rather than one that has not finished.
+   *
+   * Framing the drawn content instead keeps the machine centred at every step, and the cost —
+   * a camera that moves — is paid off by the eased transform below. The viewport ends up
+   * *pulling back* as the machine grows, which is a truthful thing for it to do.
    */
-  const points = useMemo(() => Object.values(layout), [layout]);
+  const points = useMemo(
+    () => automaton.states.map((state) => layout[state.id]).filter((p): p is Point => !!p),
+    [automaton.states, layout],
+  );
 
   const ref = useCallback(
     (element: HTMLDivElement | null) => {
@@ -75,7 +81,21 @@ export function DiagramView({
     // diagram running off the edge and its arrows apparently missing.
     if (size.width === 0 || size.height === 0) return;
 
-    const key = `${String(points.length)}x${String(size.width)}`;
+    // Keyed on the *extent* rather than the count, so re-framing happens when the machine
+    // changes shape and not when a state is merely renamed. Rounded, because a fresh key from
+    // a sub-pixel difference would re-fit on every render and cancel the transition.
+    const extent = points.reduce(
+      (box, at) => ({
+        minX: Math.min(box.minX, at.x),
+        minY: Math.min(box.minY, at.y),
+        maxX: Math.max(box.maxX, at.x),
+        maxY: Math.max(box.maxY, at.y),
+      }),
+      { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity },
+    );
+    const key = [extent.minX, extent.minY, extent.maxX, extent.maxY, size.width]
+      .map((n) => Math.round(n))
+      .join(':');
     if (framedFor.current === key) return;
     framedFor.current = key;
 
@@ -100,7 +120,23 @@ export function DiagramView({
 
       <svg className="absolute inset-0 h-full w-full" role="img" aria-label={title}>
         <title>{title}</title>
-        <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
+        {/*
+          Eased, so the camera pulling back as the machine grows reads as a camera rather than
+          as the diagram jumping. Never while panning: a transform that lags the pointer by
+          420ms makes a drag feel broken, and a pan is the one viewport change the user is
+          driving frame by frame.
+
+          `motion-reduce` drops it to a cut. Design-system §5 — reduced motion loses the
+          movement, never the information, and the framing is the information here.
+        */}
+        <g
+          transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}
+          className={
+            panning
+              ? undefined
+              : 'motion-safe:transition-transform motion-safe:duration-(--duration-k-merge) motion-safe:ease-(--ease-k)'
+          }
+        >
           <AutomatonGraphics
             automaton={automaton}
             layout={layout}

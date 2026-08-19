@@ -34,6 +34,14 @@ interface EditorState {
   history: History;
   /** Which states are selected, in selection order. */
   selection: StateId[];
+  /**
+   * Bumped by `load`, and by nothing else.
+   *
+   * The canvas needs to tell "a different document arrived" from "the document was edited",
+   * and the document itself cannot say which happened — every edit produces a new object too.
+   * A counter that only `load` touches is the smallest thing that can.
+   */
+  generation: number;
 
   /** Run an edit. */
   run: (command: Command) => void;
@@ -52,6 +60,7 @@ interface EditorState {
 export const useEditor = create<EditorState>((set) => ({
   history: historyOf(emptyDocument()),
   selection: [],
+  generation: 0,
 
   // Every one of these prunes the selection, for the reason spelled out on `selectAll`: a
   // selection holding an id that no longer exists is this module's one real hazard. Deleting
@@ -63,7 +72,12 @@ export const useEditor = create<EditorState>((set) => ({
 
   // Loading starts a fresh history rather than appending. Undoing across a file open would
   // resurrect a document the user deliberately replaced.
-  load: (document) => set({ history: historyOf(document), selection: [] }),
+  load: (document) =>
+    set((state) => ({
+      history: historyOf(document),
+      selection: [],
+      generation: state.generation + 1,
+    })),
 
   select: (ids) => set({ selection: ids }),
 
@@ -94,6 +108,9 @@ function after(history: History, selection: StateId[]): Partial<EditorState> {
 
 /** The selected state ids. */
 export const useSelection = (): StateId[] => useEditor((s) => s.selection);
+
+/** How many documents have been loaded. Changes only when a *different* document arrives. */
+export const useGeneration = (): number => useEditor((s) => s.generation);
 
 /** The document as it stands. */
 export const useDocument = (): EditorDocument => useEditor((s) => s.history.present);
