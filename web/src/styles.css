@@ -9,13 +9,29 @@
  * and live in the Greek block. An epsilon falling back to a system font, sitting
  * beside JetBrains Mono state labels, is immediately visible and looks broken.
  *
- * Inter's variable build ships a single stylesheet whose @font-face rules carry
- * unicode-range, so a browser fetches only the subsets it actually renders — there
- * are no per-subset entry points to import instead. The unused Cyrillic and
- * Vietnamese files are still emitted into dist/, which costs nothing at runtime but
- * will need excluding from the service worker precache in Phase 5 A2.
+ * The variable builds ship one stylesheet whose @font-face rules carry unicode-range,
+ * so a browser fetches only the subsets it actually renders — there are no per-subset
+ * entry points to import instead. The unused Cyrillic and Vietnamese files are still
+ * emitted into dist/, which costs nothing at runtime but will need excluding from the
+ * service worker precache in Phase 5 A2.
  */
-@import '@fontsource-variable/inter/wght.css';
+/*
+ * Two sans faces, not one.
+ *
+ * Plus Jakarta Sans carries the interface: humanist rather than geometric, with open apertures
+ * and slightly softened terminals, which is what makes a dense page of settings and labels
+ * read as friendly rather than clinical.
+ *
+ * Bricolage Grotesque carries the display sizes. It has real character in the curves — a
+ * flared `a`, a curled `y`, a `g` with an actual ear — and character at 16px is noise, while
+ * character at 68px is the difference between a headline and a default. Which is exactly why
+ * it is confined to headings and the wordmark, and never touches body copy.
+ *
+ * Inter is gone. It is an excellent neutral face, and neutral was the problem: a page set
+ * entirely in it looks like every other page set entirely in it.
+ */
+@import '@fontsource-variable/plus-jakarta-sans/wght.css';
+@import '@fontsource-variable/bricolage-grotesque/wght.css';
 @import '@fontsource/jetbrains-mono/latin-400.css';
 @import '@fontsource/jetbrains-mono/latin-500.css';
 @import '@fontsource/jetbrains-mono/greek-400.css';
@@ -69,7 +85,11 @@
   --color-k-error: #dc2626;
 
   /* Type */
-  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans:
+    'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Headings and the wordmark only. See the note at the top of this file. */
+  --font-display:
+    'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Motion — the 280ms step transition is tuned so the eye can follow which
@@ -191,6 +211,35 @@ body {
   color: var(--color-k-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Headings take the display face automatically.
+ *
+ * Set here rather than as a utility on every `<h1>`, because "a heading is set in the display
+ * face" is a property of the type system rather than a decision each component gets to make
+ * differently. The tighter tracking travels with it for the same reason: Bricolage's curves
+ * need less air than a neutral grotesque, and a heading set at default tracking looks
+ * accidentally loose.
+ *
+ * Exempted below: anything already marked as monospace. A heading naming a state or an
+ * expression is notation first.
+ */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.022em;
+}
+
+h1.font-mono,
+h2.font-mono,
+h3.font-mono,
+.font-mono h1,
+.font-mono h2,
+.font-mono h3 {
+  font-family: var(--font-mono);
+  letter-spacing: normal;
 }
 
 /* Focus rings are never removed — they are also what makes the editor demoable
