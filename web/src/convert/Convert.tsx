@@ -14,6 +14,7 @@ import { construction, partial } from '@/convert/construction';
 import { DEFAULT_PANES, PANES, reduction, type PaneId } from '@/convert/panes';
 import { RegexBar } from '@/convert/RegexBar';
 import { Scrubber } from '@/convert/Scrubber';
+import { StepTable } from '@/convert/StepTable';
 import { clampStep, highlighted, readStepFrom, stepFragment } from '@/convert/scrubbing';
 import { useCompiler } from '@/convert/useCompiler';
 import { Worklist } from '@/convert/Worklist';
@@ -102,6 +103,11 @@ export function Convert({
               return (
                 <Pane
                   key={pane.id}
+                  engine={engine}
+                  // Open under the derived panes, where watching δ fill in is the point, and
+                  // shut under the ε-NFA, whose table is fourteen rows of ε and teaches
+                  // nothing that the diagram does not say more clearly.
+                  defaultTable={pane.id !== 'nfa'}
                   title={pane.title}
                   subtitle={pane.subtitle}
                   stage={stage}
@@ -223,6 +229,8 @@ function PaneToggles({
 }
 
 function Pane({
+  engine,
+  defaultTable,
   title,
   subtitle,
   stage,
@@ -234,6 +242,8 @@ function Pane({
   onHoverState,
   onOpenInEditor,
 }: {
+  engine: Engine | undefined;
+  defaultTable: boolean;
   title: string;
   subtitle: string;
   stage: Stage;
@@ -271,6 +281,24 @@ function Pane({
     ? [at.current, at.arrived].filter((id): id is StateId => id !== undefined)
     : highlight;
 
+  const [tableOpen, setTableOpen] = useState(defaultTable);
+
+  // Built from the finished machine and then filtered, rather than rebuilt per step. Which
+  // columns a table has is a property of the alphabet, and an alphabet does not grow during
+  // subset construction — so a table whose columns appeared one at a time would be inventing
+  // a change the algorithm never makes.
+  const table = useMemo(
+    () => (tableOpen ? engine?.transitionTable(stage.automaton) : undefined),
+    [engine, stage.automaton, tableOpen],
+  );
+
+  const highlightOrigin =
+    onHoverState &&
+    ((id: StateId | undefined) => {
+      const state = stage.automaton.states.find((candidate) => candidate.id === id);
+      onHoverState(state?.origin ?? []);
+    });
+
   return (
     <section className="overflow-hidden rounded-[10px] border border-k-border bg-k-surface">
       <header className="flex items-baseline justify-between gap-3 border-b border-k-border px-4 py-2.5">
@@ -293,6 +321,19 @@ function Pane({
             The link the editor was missing. Someone who converts an expression and then wants
             to change the machine by hand had, until now, no route from one to the other.
           */}
+          <button
+            type="button"
+            aria-pressed={tableOpen}
+            onClick={() => {
+              setTableOpen((open) => !open);
+            }}
+            className={`font-mono text-xs transition-colors duration-(--duration-k-hover) ${
+              tableOpen ? 'text-k-primary' : 'text-k-text-faint hover:text-k-text'
+            }`}
+            title="Show the transition table, filling in as you scrub"
+          >
+            δ
+          </button>
           <button
             type="button"
             onClick={onOpenInEditor}
@@ -323,32 +364,25 @@ function Pane({
           }}
           title={`${title} for ${source}`}
           className="h-64 w-full rounded-md border border-k-border"
-          onHoverState={
-            onHoverState &&
-            ((id) => {
-              const state = stage.automaton.states.find((candidate) => candidate.id === id);
-              onHoverState(state?.origin ?? []);
-            })
-          }
+          onHoverState={highlightOrigin}
         />
       </div>
+
+      {table && (
+        <StepTable
+          table={table}
+          automaton={stage.automaton}
+          at={at}
+          onHoverState={highlightOrigin}
+        />
+      )}
 
       {/*
         Between the diagram and the scrubber deliberately. The scrubber is the control, the
         diagram is the result, and the worklist is the algorithm's own state — which belongs
         with the thing being controlled rather than with the controls.
       */}
-      <Worklist
-        automaton={stage.automaton}
-        at={at}
-        onHoverState={
-          onHoverState &&
-          ((id) => {
-            const state = stage.automaton.states.find((candidate) => candidate.id === id);
-            onHoverState(state?.origin ?? []);
-          })
-        }
-      />
+      <Worklist automaton={stage.automaton} at={at} onHoverState={highlightOrigin} />
 
       <Scrubber steps={stage.steps} step={step} onStep={onStep} label={`${subtitle} steps`} />
     </section>

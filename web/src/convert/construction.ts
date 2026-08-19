@@ -43,6 +43,14 @@ export interface Construction {
    * endpoints, not a row of the transition list.
    */
   drew: string | undefined;
+  /**
+   * The transition-table cell this step filled in, keyed as {@link cellKey} keys them.
+   *
+   * Separate from {@link Construction.drew} because a diagram and a table disagree about what
+   * one transition is: the diagram merges `a` and `b` between the same pair into one arrow,
+   * while the table keeps them in two cells.
+   */
+  cell: string | undefined;
   /** Whether the algorithm framed this run at all. */
   framed: boolean;
 }
@@ -65,6 +73,7 @@ export function construction(
       pending: [],
       done: [],
       drew: undefined,
+      cell: undefined,
       framed: false,
     };
   }
@@ -88,6 +97,7 @@ export function construction(
     pending: frame.pending ?? [],
     done: expanded(steps, step).filter((id) => id !== current),
     drew: drawn && `${String(drawn.from)}->${String(drawn.to)}`,
+    cell: drawn?.on == null ? undefined : cellKey(drawn.from, drawn.on),
     framed: true,
   };
 }

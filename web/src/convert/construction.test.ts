@@ -122,6 +122,14 @@ describe('the edge a step drew', () => {
     expect(construction(dfa, steps, 2).drew).toBe('0->0');
   });
 
+  it('names the table cell it filled, which is not the same thing', () => {
+    // The diagram merges `a` and `b` between one pair into a single arrow; the table keeps
+    // them in two cells. One step fills one cell.
+    expect(construction(dfa, steps, 1).cell).toBe(cellKey(0, 'a'));
+    expect(construction(dfa, steps, 2).cell).toBe(cellKey(0, 'b'));
+    expect(construction(dfa, steps, 0).cell).toBeUndefined();
+  });
+
   it('is nothing when the step drew nothing', () => {
     expect(construction(dfa, steps, 0).drew).toBeUndefined();
     expect(construction(dfa, steps, 6).drew).toBeUndefined();
