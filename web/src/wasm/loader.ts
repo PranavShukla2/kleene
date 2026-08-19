@@ -8,6 +8,7 @@
 import init, {
   compile_regex,
   determinism,
+  epsilon_closure,
   example_automaton,
   formal_definition,
   simulate,
@@ -23,6 +24,8 @@ import type {
   FormalDefinition,
   Report,
   Simulation,
+  StateId,
+  Traced,
   TransitionTable,
 } from '@/model/automaton';
 
@@ -72,6 +75,14 @@ export interface Engine {
    * disagree with each other.
    */
   compileRegex: (source: string) => Compilation | undefined;
+  /**
+   * An ε-closure, expanded one state at a time (task D4).
+   *
+   * The narrating implementation, not the precomputed one. Subset construction uses the fast
+   * form and records the seeds it closed over, so a round's closure can be replayed on demand
+   * without the construction's own trace carrying hundreds of ε-steps nobody asked for.
+   */
+  epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) => Traced<StateId[]>;
 }
 
 /**
@@ -100,6 +111,10 @@ export function loadEngine(): Promise<Engine> {
       formalDefinition: (automaton: Automaton) =>
         formal_definition(automaton) as FormalDefinition,
       compileRegex: (source: string) => compile_regex(source) as Compilation | undefined,
+      epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
+        // A copy because the binding takes ownership of a `Uint32Array`, and the caller's
+        // array is a slice of a step it does not own.
+        epsilon_closure(automaton, new Uint32Array(seeds)) as Traced<StateId[]>,
     }))
     .catch((cause: unknown) => {
       // Clear the cache so a later retry can actually retry rather than re-await a

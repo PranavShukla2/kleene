@@ -36,6 +36,7 @@ export type { Verdict } from '@/model/generated/Verdict';
 export type { Step } from '@/model/generated/Step';
 export type { StepKind } from '@/model/generated/StepKind';
 export type { Frame } from '@/model/generated/Frame';
+export type { Traced } from '@/model/generated/Traced';
 export type { TransitionTable } from '@/model/generated/TransitionTable';
 export type { TableRow } from '@/model/generated/TableRow';
 export type { TableColumn } from '@/model/generated/TableColumn';

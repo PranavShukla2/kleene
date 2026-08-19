@@ -9,11 +9,10 @@ import type { Step } from "./Step";
  * frontend can name — so the boundary carries this instead: the same two fields, flattened,
  * for one concrete `T`. Exactly the role `io::wire` plays for `Automaton`.
  *
- * **Resolved.** The second case arrived with Phase 3's ε-closure drill-down, and the answer
- * was the generic: `Traced<T>` exports to TypeScript directly, so no further algorithm needs
- * a wire type of its own. This one stays flattened, because its field is called `run` rather
- * than `result` and reads better for it at every call site — renaming it to converge would
- * churn the frontend to make two shapes identical that nobody has to hold side by side.
+ * This is the first of these. Every traced algorithm Phase 3 exposes will want one, and the
+ * honest options at that point are a wire type per algorithm or teaching ts-rs to emit a
+ * generic. That decision belongs where there is more than one case to look at; guessing now
+ * would be designing against a single example.
  */
 export type Simulation = { 
 /**

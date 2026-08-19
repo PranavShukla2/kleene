@@ -20,6 +20,11 @@ use serde::{Deserialize, Serialize};
 /// assert_eq!(doubled.steps.len(), 1);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Traced")
+)]
 pub struct Traced<T> {
     /// What the algorithm computed.
     pub result: T,

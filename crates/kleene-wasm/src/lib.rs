@@ -114,9 +114,10 @@ pub fn simulate(automaton: JsValue, input: &str) -> Result<JsValue, JsError> {
 
     let traced = kleene_core::simulate::simulate(&automaton, input);
 
-    // `Simulation` rather than `Traced<Run>`: a generic type has no TypeScript name the
-    // frontend can use, so the core carries a flattened wire shape for it — the same role
-    // `io::wire` plays for `Automaton`.
+    // `Simulation` rather than `Traced<Run>`: its field is called `run`, which reads better
+    // than `result` everywhere the tester touches it. `Traced<T>` does now export to
+    // TypeScript on its own, so this is a naming preference rather than a boundary limit —
+    // see the note on `Simulation` itself.
     let simulation = kleene_core::simulate::Simulation::from(traced);
 
     serde_wasm_bindgen::to_value(&simulation).map_err(|e| JsError::new(&e.to_string()))
@@ -205,4 +206,28 @@ mod tests {
     fn version_is_not_empty() {
         assert!(!kleene_core::VERSION.is_empty());
     }
+}
+
+/// An ε-closure, computed one state at a time.
+///
+/// The narrating implementation rather than the precomputed one, deliberately: this exists to
+/// answer *how* a closure was arrived at, and `Closures` answers only *what*. Subset
+/// construction uses the fast one and records the seeds, so the UI can replay any round's
+/// closure in slow motion without the trace carrying hundreds of ε-steps it would never show
+/// (see `convert::epsilon`'s note on why the two forms are separate).
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton, or if the result cannot be
+/// serialized.
+#[wasm_bindgen]
+pub fn epsilon_closure(automaton: JsValue, seeds: Vec<u32>) -> Result<JsValue, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let traced = kleene_core::convert::epsilon_closure(&automaton, seeds);
+
+    // `Traced<T>` crosses the boundary as itself — it has a TypeScript name now, which is what
+    // made a wire type per algorithm unnecessary.
+    serde_wasm_bindgen::to_value(&traced).map_err(|e| JsError::new(&e.to_string()))
 }
