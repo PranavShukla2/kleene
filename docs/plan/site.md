@@ -81,9 +81,11 @@ wanted.
 The editor is the one page that does not look like the rest, which is the failure a visitor
 notices at the exact moment they click the primary call to action.
 
-- [ ] **O1.** ⚑ Decide how far the editor moves. A workbench genuinely needs different
-      furniture from a marketing page — the risk here is making the tool worse to look
-      prettier.
+- [x] **O1.** How far the editor moves. Answered by doing it rather than by deciding it: the
+      editor takes the site's *finish* — type, radii, wordmark, pill controls, panel surfaces —
+      and keeps its own *density*. The bar stays 44px, panel padding stays 12px, headings stay
+      11px. A panel column at marketing spacing shows three panels where this shows five, and
+      the thing a workbench is for is fitting more on the screen.
 - [x] **O2.** At minimum: the command bar takes the site's glass, radii and type, and the
       wordmark matches.
 - [x] **O3.** A first-run state. An empty canvas with no instruction is the worst moment in
@@ -107,11 +109,19 @@ state and the command alone cannot say so.
 - [x] **Q2.** `/learn`. The subject rather than the product: four chapters, fifteen
       definitions, and on every one the specific wrong belief that makes it stop working. The
       only page here useful to someone who never opens the tool.
-- [ ] **Q3.** ⚑ `/tools/*` landing pages — one page per task ("NFA to DFA", "regex to DFA",
+- [x] **Q3.** `/tools/*` landing pages — one page per task ("NFA to DFA", "regex to DFA",
       "minimize a DFA"), each opening straight into the converter. Roadmap §6.1. Worth doing
       once sharing by URL exists, because that is what makes them linkable.
-- [ ] **Q4.** Search inside `/learn` and `/docs`, folded into the palette. Waiting on there
-      being enough written to be worth searching.
+- [x] **Q4.** Search inside `/learn` and `/docs`, folded into the palette.
+
+**Tracks O and Q closed.** Q3 and Q4 each surfaced a bug that had been sitting there:
+`conceptId` stripped Greek so `ε-NFA` and `NFA` collided, and `routeOf` did not expect a
+fragment. Both were invisible until a feature depended on them, which is the argument for
+building the feature.
+
+The case-collision bug appeared for the **third** time (`Docs.tsx` / `docs.ts`, after
+`Examples` and `Roadmap`). The rule is now written where it will be read: a data file never
+shares a name with its component, and the note is in `articles.ts` itself.
 
 ## Track P — the details nobody lists
 
