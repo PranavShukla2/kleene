@@ -23,11 +23,7 @@
 import { motion, useReducedMotion, type Variants } from 'motion/react';
 import type { ReactNode } from 'react';
 
-/** The site's one spring. Everything that moves, moves like this. */
-export const SPRING = { type: 'spring', stiffness: 260, damping: 30, mass: 0.9 } as const;
-
-/** How far a revealing element travels. Small: the point is the timing, not the distance. */
-const TRAVEL = 24;
+import { SPRING, TRAVEL } from '@/site/spring';
 
 /**
  * Content that arrives when it is scrolled to.

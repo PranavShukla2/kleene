@@ -1,10 +1,13 @@
 /**
  * Which page is showing.
  *
- * Hand-rolled rather than a routing library. Kleene has three routes, and roadmap §6.1's
- * `/tools/*` pages are the only planned growth — 20KB of matcher, params and nested outlets
- * would be paying for a problem this app does not have. What it *does* need is a seam, so that
- * adding those pages later is a case in a switch rather than a refactor.
+ * Hand-rolled rather than a routing library. Nine flat routes with no params and no nesting —
+ * 20KB of matcher, dynamic segments and outlets would be paying for a problem this app does
+ * not have. The seam was the point: every page added since has been one row in `PATHS` and one
+ * case in a switch, which is exactly what it was built to be.
+ *
+ * Roadmap §6.1's `/tools/*` pages are the first thing here that will want a real segment, and
+ * that is the point at which this file should be reconsidered rather than extended.
  *
  * The History API, not a hash. Shared links are the distribution mechanism (roadmap §6.4), and
  * `kleene.pranavmshukla.in/tools/nfa-to-dfa` is a URL someone will type or paste into a
@@ -14,7 +17,16 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /** Every page the app can show. */
-export type Route = 'overview' | 'editor' | 'convert' | 'examples' | 'roadmap';
+export type Route =
+  | 'overview'
+  | 'editor'
+  | 'convert'
+  | 'examples'
+  | 'roadmap'
+  | 'pricing'
+  | 'docs'
+  | 'changelog'
+  | 'about';
 
 /** Where each route lives. One table, so the two directions cannot disagree. */
 const PATHS: Record<Route, string> = {
@@ -23,6 +35,10 @@ const PATHS: Record<Route, string> = {
   convert: '/convert',
   examples: '/examples',
   roadmap: '/roadmap',
+  pricing: '/pricing',
+  docs: '/docs',
+  changelog: '/changelog',
+  about: '/about',
 };
 
 /** Where a path leads. Anything unrecognised falls to the overview rather than a 404. */
