@@ -60,7 +60,8 @@ const SECTIONS: readonly { heading: string; blurb: string; articles: readonly Ar
     articles: [
       {
         title: 'Regular expression syntax',
-        detail: 'Union, concatenation, Kleene star, ∅ and ε — and which spellings are accepted.',
+        detail:
+          'Union, concatenation, Kleene star, ∅ and ε — and which spellings are accepted.',
         status: READY,
         route: 'convert',
       },
@@ -119,9 +120,21 @@ const SECTIONS: readonly { heading: string; blurb: string; articles: readonly Ar
         detail: 'A documented JSON schema with a version field, so old files keep opening.',
         status: planned(4),
       },
-      { title: 'Exporting to TikZ', detail: 'The diagram, as LaTeX, with your layout kept.', status: planned(4) },
-      { title: 'Sharing as a URL', detail: 'How a machine is encoded into a link.', status: planned(4) },
-      { title: 'The command line', detail: 'Converting and checking equivalence in a script.', status: planned(4) },
+      {
+        title: 'Exporting to TikZ',
+        detail: 'The diagram, as LaTeX, with your layout kept.',
+        status: planned(4),
+      },
+      {
+        title: 'Sharing as a URL',
+        detail: 'How a machine is encoded into a link.',
+        status: planned(4),
+      },
+      {
+        title: 'The command line',
+        detail: 'Converting and checking equivalence in a script.',
+        status: planned(4),
+      },
     ],
   },
 ];
@@ -209,13 +222,7 @@ export function Docs({ onNavigate }: { onNavigate: (to: Route) => void }) {
   );
 }
 
-function Entry({
-  article,
-  onNavigate,
-}: {
-  article: Article;
-  onNavigate: (to: Route) => void;
-}) {
+function Entry({ article, onNavigate }: { article: Article; onNavigate: (to: Route) => void }) {
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -243,6 +250,8 @@ function Entry({
 
   // Not a link. A docs card that opens an empty page is worse than one that says it is empty.
   return (
-    <div className="rounded-2xl border border-dashed border-k-border p-5 opacity-80">{body}</div>
+    <div className="rounded-2xl border border-dashed border-k-border p-5 opacity-80">
+      {body}
+    </div>
   );
 }

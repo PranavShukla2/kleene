@@ -40,7 +40,5 @@ export function statusHeadline(status: Status): string {
 
 /** Both halves, for a badge that has room. */
 export function statusBadge(status: Status): string {
-  return status.kind === 'ready'
-    ? 'Live'
-    : `Coming soon · phase ${String(status.phase)}`;
+  return status.kind === 'ready' ? 'Live' : `Coming soon · phase ${String(status.phase)}`;
 }

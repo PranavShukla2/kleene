@@ -66,7 +66,9 @@ export function Band({
 export function BandHeading({ title, detail }: { title: string; detail?: string }) {
   return (
     <Reveal>
-      <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{title}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+        {title}
+      </h2>
       {detail && <p className="mt-3 max-w-2xl leading-relaxed text-k-text-muted">{detail}</p>}
     </Reveal>
   );

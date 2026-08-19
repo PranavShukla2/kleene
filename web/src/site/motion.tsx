@@ -130,13 +130,7 @@ export function RevealItem({
  * Used on the primary calls to action and nowhere else. It is a strong effect and it stops
  * being charming the third time it appears on one screen.
  */
-export function Lift({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function Lift({ children, className }: { children: ReactNode; className?: string }) {
   const still = useReducedMotion();
 
   return (

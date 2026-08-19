@@ -16,8 +16,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 
-import { AutomatonGraphics } from '@/canvas/AutomatonView';
-import { rowLayout } from '@/canvas/geometry';
+import { AutomatonView } from '@/canvas/AutomatonView';
 import type { Automaton, StateId } from '@/model/automaton';
 
 /**
@@ -91,28 +90,24 @@ export function HeroDemo() {
         </span>
         <span
           className={`ml-auto rounded-full px-2 py-0.5 font-mono text-[10px] transition-colors duration-(--duration-k-step) ${
-            accepted
-              ? 'bg-k-success/15 text-k-success'
-              : 'bg-k-surface text-k-text-faint'
+            accepted ? 'bg-k-success/15 text-k-success' : 'bg-k-surface text-k-text-faint'
           }`}
         >
           {accepted ? 'accepted' : 'reading'}
         </span>
       </div>
 
-      <svg
-        viewBox="-70 -70 460 200"
-        className="h-56 w-full sm:h-64"
-        role="img"
-        aria-label="A DFA accepting strings over a and b that end in ab, with a string running through it"
-      >
-        <title>A DFA accepting strings that end in ab</title>
-        <AutomatonGraphics
-          automaton={MACHINE}
-          layout={rowLayout(MACHINE.states.map((state) => state.id))}
-          active={active === undefined ? [] : [active]}
-        />
-      </svg>
+      {/*
+        `AutomatonView` rather than the raw graphics, so the viewBox is computed from the
+        layout instead of guessed. A hard-coded box was cropping the self-loops, which are
+        drawn *above* the states and so fall outside any box fitted to the states alone.
+      */}
+      <AutomatonView
+        automaton={MACHINE}
+        title="A DFA accepting strings over {a, b} that end in ab"
+        className="h-56 w-full px-4 sm:h-64"
+        active={active === undefined ? [] : [active]}
+      />
 
       {/* The tape. Read symbols dim, the current one lit, the rest waiting. */}
       <div className="flex items-center gap-2 border-t border-k-border/60 px-4 py-3">

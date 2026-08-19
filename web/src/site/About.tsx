@@ -135,10 +135,15 @@ export function About({ onNavigate }: { onNavigate: (to: Route) => void }) {
 
       <Band>
         <div className="relative overflow-hidden rounded-3xl border border-k-border p-8 sm:p-12">
-          <div aria-hidden className="k-aurora pointer-events-none absolute inset-0 opacity-50" />
+          <div
+            aria-hidden
+            className="k-aurora pointer-events-none absolute inset-0 opacity-50"
+          />
           <div className="relative flex flex-wrap items-center gap-6">
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight">Open source, plan included</h2>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Open source, plan included
+              </h2>
               <p className="mt-2 max-w-xl text-k-text-muted">
                 The Rust core, the bindings, the command line tool and this site are in one
                 repository — along with the full implementation plan, the design system, and the

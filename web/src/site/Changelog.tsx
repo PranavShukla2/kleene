@@ -106,8 +106,14 @@ export function Changelog({ onNavigate }: { onNavigate: (to: Route) => void }) {
               <h2 className="mt-1.5 text-xl font-medium tracking-tight">{entry.title}</h2>
               <ul className="mt-3 space-y-2">
                 {entry.changes.map((change) => (
-                  <li key={change} className="flex gap-3 text-sm leading-relaxed text-k-text-muted">
-                    <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-k-border-strong" />
+                  <li
+                    key={change}
+                    className="flex gap-3 text-sm leading-relaxed text-k-text-muted"
+                  >
+                    <span
+                      aria-hidden
+                      className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-k-border-strong"
+                    />
                     {change}
                   </li>
                 ))}

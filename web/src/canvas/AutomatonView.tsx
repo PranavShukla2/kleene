@@ -43,6 +43,8 @@ interface Props {
   className?: string;
   /** Which states to mark, for a view that highlights without an editor's selection. */
   selection?: readonly StateId[];
+  /** Which states a run is currently in. Forwarded, so a static view can show a simulation. */
+  active?: readonly StateId[];
   /**
    * The pointer entered or left a state.
    *
@@ -66,6 +68,7 @@ export function AutomatonView({
   title,
   className,
   selection,
+  active,
   onHoverState,
 }: Props) {
   // Memoised so the fallback layout keeps its identity between renders. It feeds
@@ -91,6 +94,7 @@ export function AutomatonView({
         layout={positions}
         grid
         selection={selection}
+        active={active}
         onHoverState={onHoverState}
       />
     </svg>

@@ -63,7 +63,7 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
 
 export function Footer({ onNavigate }: { onNavigate: (to: Route) => void }) {
   return (
-    <footer className="mt-24 border-t border-k-border">
+    <footer className="mt-8 border-t border-k-border">
       <div className="mx-auto w-full max-w-6xl px-6 py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
           <div>
@@ -140,10 +140,18 @@ function Link({ item, onNavigate }: { item: Item; onNavigate: (to: Route) => voi
   }
 
   // Not a link. A footer link that goes nowhere is the cheapest way to look unfinished.
+  //
+  // Stacked rather than inline: a footer column is narrow, and a label with a badge beside it
+  // wraps into two ragged lines at every width worth supporting.
   return (
-    <span className="flex items-center gap-2 text-sm text-k-text-faint">
+    <span className="block text-sm text-k-text-faint">
       {item.label}
-      <Pill tone="soon">soon · {item.soon}</Pill>
+      {/* Wrapped rather than given `block` directly: `Pill` sets `inline-flex`, and two
+          display utilities in one class list are decided by stylesheet order, not by which
+          was written last. */}
+      <span className="mt-1 block">
+        <Pill tone="soon">soon · {item.soon}</Pill>
+      </span>
     </span>
   );
 }

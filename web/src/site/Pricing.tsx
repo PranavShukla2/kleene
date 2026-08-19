@@ -20,7 +20,10 @@ import type { Route } from '@/router';
 const INCLUDED: readonly { label: string; detail: string }[] = [
   { label: 'The whole editor', detail: 'Every drawing, editing and simulation feature.' },
   { label: 'Every conversion', detail: 'Regex, ε-NFA, DFA, minimal DFA — with the traces.' },
-  { label: 'Unlimited machines', detail: 'Stored in your browser, so there is nothing to cap.' },
+  {
+    label: 'Unlimited machines',
+    detail: 'Stored in your browser, so there is nothing to cap.',
+  },
   { label: 'Every example', detail: 'The full gallery, all of it openable and editable.' },
   { label: 'No watermark', detail: 'Exports are yours, unbranded.' },
   { label: 'No telemetry', detail: 'Nothing is measured, because nothing is sent.' },
@@ -29,7 +32,11 @@ const INCLUDED: readonly { label: string; detail: string }[] = [
 const LATER: readonly { label: string; detail: string; phase: number }[] = [
   { label: 'TikZ and SVG export', detail: 'Diagrams straight into LaTeX.', phase: 4 },
   { label: 'Share as a URL', detail: 'The machine encoded in the link itself.', phase: 4 },
-  { label: 'Command line tool', detail: 'Equivalence checking and batch conversion.', phase: 4 },
+  {
+    label: 'Command line tool',
+    detail: 'Equivalence checking and batch conversion.',
+    phase: 4,
+  },
   { label: 'Offline and desktop', detail: 'An installable app and a native build.', phase: 5 },
 ];
 
@@ -150,9 +157,7 @@ export function Pricing({ onNavigate }: { onNavigate: (to: Route) => void }) {
         <div className="rounded-2xl border border-k-border bg-k-surface p-8">
           <div className="flex flex-wrap items-center gap-4">
             <div>
-              <h2 className="text-lg font-medium tracking-tight">
-                Using it for a course?
-              </h2>
+              <h2 className="text-lg font-medium tracking-tight">Using it for a course?</h2>
               <p className="mt-1 max-w-xl text-sm text-k-text-muted">
                 There is nothing to arrange — send your students a link. A course kit with
                 problem sets and per-institution examples is planned, and it will be free too.

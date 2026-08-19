@@ -46,7 +46,12 @@ export function Landing({
       <Trace onNavigate={onNavigate} />
       <Bento />
       <Audiences />
-      <Examples onOpen={onOpenExample} onBrowseAll={() => { onNavigate('examples'); }} />
+      <Examples
+        onOpen={onOpenExample}
+        onBrowseAll={() => {
+          onNavigate('examples');
+        }}
+      />
       <Comparison />
       <Questions />
       <Closing onNavigate={onNavigate} />
@@ -82,9 +87,8 @@ function Hero({ onNavigate }: { onNavigate: (to: Route) => void }) {
           </Reveal>
 
           <Reveal delay={0.05}>
-            <h1 className="mt-6 text-[2.6rem] leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
-              Automata theory you can{' '}
-              <span className="k-gradient-text">watch happen</span>.
+            <h1 className="mt-6 text-[2.75rem] leading-[1.02] font-semibold tracking-[-0.03em] text-balance sm:text-[4.25rem]">
+              Automata theory you can <span className="k-gradient-text">watch happen</span>.
             </h1>
           </Reveal>
 
@@ -201,10 +205,7 @@ function Trace({ onNavigate }: { onNavigate: (to: Route) => void }) {
   return (
     <Section>
       <div className="relative overflow-hidden rounded-3xl border border-k-border bg-k-surface">
-        <div
-          aria-hidden
-          className="k-aurora pointer-events-none absolute inset-0 opacity-40"
-        />
+        <div aria-hidden className="k-aurora pointer-events-none absolute inset-0 opacity-40" />
         <div className="relative grid gap-10 p-8 lg:grid-cols-[0.9fr_1.1fr] lg:p-12">
           <div>
             <Reveal>
@@ -309,10 +310,7 @@ function Audiences() {
 
       <RevealGroup className="mt-12 grid gap-5 lg:grid-cols-3">
         {AUDIENCES.map((audience) => (
-          <RevealItem
-            key={audience.who}
-            className="rounded-2xl border border-k-border p-6"
-          >
+          <RevealItem key={audience.who} className="rounded-2xl border border-k-border p-6">
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs tracking-wider text-k-primary uppercase">
                 {audience.who}
