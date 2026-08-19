@@ -95,8 +95,16 @@ export function Convert({
     return highlighted(clampStep(steps.dfa ?? 0, stage.steps), stage.steps);
   }, [parsed, shown, steps.dfa]);
 
+  /*
+    A `<main>` on its own page, and a plain `<div>` inside a tool page, which brings its own.
+    Making this component embeddable turned it into a `<div>` unconditionally, which quietly
+    cost `/convert` its only landmark — the page still looked right and had nothing for a
+    screen reader to skip to.
+  */
+  const Frame = embedded ? 'div' : 'main';
+
   return (
-    <div
+    <Frame
       className={`relative mx-auto w-full max-w-6xl px-6 pb-4 ${embedded ? 'pt-2' : 'pt-10'}`}
     >
       {/*
@@ -234,7 +242,7 @@ export function Convert({
           in the result.
         </p>
       )}
-    </div>
+    </Frame>
   );
 }
 

@@ -296,8 +296,14 @@ export function Editor({ onHome }: { onHome: () => void }) {
         onCycleTheme={cycle}
       />
 
+      {/*
+        `<main>` in both branches, not only the ready one. The editor had no landmark at all —
+        the command bar is a banner and the status bar is contentinfo, so there was nothing
+        between them for a screen reader to skip to, on the one page where the content *is*
+        the product.
+      */}
       {load.status !== 'ready' ? (
-        <div className="flex flex-1 items-center justify-center p-6">
+        <main className="flex flex-1 items-center justify-center p-6">
           {load.status === 'loading' ? (
             <Panel>Loading the engine…</Panel>
           ) : (
@@ -309,12 +315,12 @@ export function Editor({ onHome }: { onHome: () => void }) {
               </p>
             </Panel>
           )}
-        </div>
+        </main>
       ) : (
         /* `min-h-0` is what lets the canvas column actually shrink inside a flex parent —
            without it a flex child refuses to go below its content height and the canvas
            pushes the status bar off the bottom of the window. */
-        <div className="flex min-h-0 flex-1">
+        <main className="flex min-h-0 flex-1">
           <div className="relative flex min-w-0 flex-1 flex-col">
             <Canvas
               automaton={perf ? perf.automaton : document.automaton}
@@ -384,7 +390,7 @@ export function Editor({ onHome }: { onHome: () => void }) {
               }}
             />
           </SidePanel>
-        </div>
+        </main>
       )}
 
       <StatusBar

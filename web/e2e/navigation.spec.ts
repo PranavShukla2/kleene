@@ -84,3 +84,33 @@ test('an unknown tool slug is a 404 rather than a different tool', async ({ page
   await expect(page.getByRole('heading', { name: /no page at that address/ })).toBeVisible();
   await expect(page.getByText('/tools/does-not-exist')).toBeVisible();
 });
+
+/**
+ * Landmarks and headings, on every page.
+ *
+ * Both of these regressed silently while the pages looked perfect. Making `Convert`
+ * embeddable turned its `<main>` into a `<div>`, so `/convert` had nothing for a screen
+ * reader to skip to; and the editor never had an `h1` at all, so jumping by heading found
+ * nothing. Neither is visible, which is exactly why it is worth a test rather than a look.
+ */
+const PAGES = [
+  '/',
+  '/editor',
+  '/convert',
+  '/examples',
+  '/learn',
+  '/docs',
+  '/pricing',
+  '/roadmap',
+  '/changelog',
+  '/about',
+  '/tools/nfa-to-dfa',
+];
+
+for (const path of PAGES) {
+  test(`${path} has one main landmark and one h1`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.locator('main')).toHaveCount(1);
+    await expect(page.locator('h1')).toHaveCount(1);
+  });
+}
