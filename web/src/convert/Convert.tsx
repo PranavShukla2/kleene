@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 
 import { DiagramView } from '@/canvas/DiagramView';
 import { wrappedRowLayout } from '@/canvas/geometry';
+import { construction, partial } from '@/convert/construction';
 import { DEFAULT_PANES, PANES, reduction, type PaneId } from '@/convert/panes';
 import { RegexBar } from '@/convert/RegexBar';
 import { Scrubber } from '@/convert/Scrubber';
@@ -46,6 +47,23 @@ export function Convert({
 
   const compilation = useCompiler(engine, source);
   const parsed = compilation?.kind === 'parsed' ? compilation : undefined;
+
+  /**
+   * The ε-NFA states the DFA pane's step is talking about (task D2, widened).
+   *
+   * B3 gave this to hover; scrubbing wants it too, because the whole claim of subset
+   * construction is that a DFA state *is* a set of NFA states, and the moment to see that is
+   * while the round that builds it is on screen.
+   *
+   * Derived from the step rather than pushed by the scrubber's callback, so a deep link
+   * straight into round four arrives with the subset already lit rather than waiting for an
+   * interaction that will never come.
+   */
+  const subsetInPlay = useMemo(() => {
+    if (!parsed || !shown.includes('dfa')) return [];
+    const stage = parsed.dfa;
+    return highlighted(clampStep(steps.dfa ?? 0, stage.steps), stage.steps);
+  }, [parsed, shown, steps.dfa]);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-10">
@@ -100,15 +118,27 @@ export function Convert({
                       window.location.pathname + stepFragment(pane.id, next),
                     );
                   }}
-                  // Two highlights, two sources. Hovering a DFA state points at the ε-NFA
-                  // states it came from; scrubbing points at the states the *step* is about.
-                  // The scrubber wins where they collide, because it is the deliberate act.
+                  /*
+                    Only the ε-NFA pane takes a highlight from outside. The two derived
+                    panes mark themselves from their own frames, which is the fix for a
+                    quiet mistake: `step.highlight` on a subset-construction step holds
+                    *ε-NFA* ids, and feeding those to the DFA diagram lit up whichever DFA
+                    states happened to share those numbers.
+
+                    Priority, for the pane that does take one: what the pointer is on, then
+                    what this pane's own scrubber says, then the subset the DFA pane is
+                    working on. Hover first because it is the live gesture; the pane's own
+                    scrubber ahead of another pane's because a scrubber you moved should
+                    not be overruled by one you did not.
+                  */
                   highlight={
-                    highlighted(step, stage.steps).length > 0
-                      ? highlighted(step, stage.steps)
-                      : pane.id === 'nfa'
+                    pane.id !== 'nfa'
+                      ? []
+                      : origin.length > 0
                         ? origin
-                        : []
+                        : (steps.nfa ?? 0) > 0
+                          ? highlighted(step, stage.steps)
+                          : subsetInPlay
                   }
                   onHoverState={pane.id === 'nfa' ? undefined : setOrigin}
                   onOpenInEditor={() => {
@@ -226,6 +256,20 @@ function Pane({
     [stage.automaton.states],
   );
 
+  // How much of this machine existed at the step being shown, and what the step did to it.
+  // Unframed traces — Thompson's, which glues fragments rather than growing a prefix —
+  // report everything present, so this pane behaves exactly as it did before.
+  const at = useMemo(
+    () => construction(stage.automaton, stage.steps, step),
+    [stage.automaton, stage.steps, step],
+  );
+  const drawn = useMemo(() => partial(stage.automaton, at), [stage.automaton, at]);
+
+  // A framed pane marks itself: the subset being expanded, and the one just arrived at.
+  const marked = at.framed
+    ? [at.current, at.arrived].filter((id): id is StateId => id !== undefined)
+    : highlight;
+
   return (
     <section className="overflow-hidden rounded-[10px] border border-k-border bg-k-surface">
       <header className="flex items-baseline justify-between gap-3 border-b border-k-border px-4 py-2.5">
@@ -236,7 +280,13 @@ function Pane({
         <div className="flex items-baseline gap-3">
           {note && <span className="font-mono text-xs text-k-secondary">{note}</span>}
           <span className="font-mono text-xs text-k-text-faint">
-            {stage.automaton.states.length} states
+            {/*
+              Counted against the total while the machine is still being built, because "3 of
+              5" is the sentence a reader wants there — how far along, not how big it ends up.
+            */}
+            {at.present.size < stage.automaton.states.length
+              ? `${String(at.present.size)} of ${String(stage.automaton.states.length)} states`
+              : `${String(stage.automaton.states.length)} states`}
           </span>
           {/*
             The link the editor was missing. Someone who converts an expression and then wants
@@ -259,9 +309,17 @@ function Pane({
         }}
       >
         <DiagramView
-          automaton={stage.automaton}
+          automaton={drawn}
           layout={layout}
-          selection={highlight}
+          selection={marked}
+          entering={{
+            state: at.fresh ? at.arrived : undefined,
+            edge: at.drew,
+            // An arrival at a state that already existed. The step created nothing, and
+            // without a mark of its own it would look as though nothing happened — which is
+            // the misreading that has students inventing a new state per arrow.
+            recognised: at.fresh ? undefined : at.arrived,
+          }}
           title={`${title} for ${source}`}
           className="h-64 w-full rounded-md border border-k-border"
           onHoverState={
