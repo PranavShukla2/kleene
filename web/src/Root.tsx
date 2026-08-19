@@ -13,6 +13,7 @@
  * on its cards, so it does.
  */
 
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 
 import { Editor } from '@/App';
@@ -22,6 +23,7 @@ import { About } from '@/site/About';
 import { Changelog } from '@/site/Changelog';
 import { Docs } from '@/site/Docs';
 import { Landing } from '@/site/Landing';
+import { Missing } from '@/site/Missing';
 import { Pricing } from '@/site/Pricing';
 import { Roadmap } from '@/overview/Roadmap';
 import { Footer } from '@/site/Footer';
@@ -34,6 +36,7 @@ import { loadEngine, type Engine } from '@/wasm/loader';
 export function Root() {
   const { route, go } = useRoute();
   const { choice, cycle } = useTheme();
+  const still = useReducedMotion();
 
   if (route === 'editor') {
     return (
@@ -49,8 +52,28 @@ export function Root() {
     <div className="flex min-h-dvh flex-col bg-k-bg text-k-text">
       <Nav current={route} onNavigate={go} themeLabel={choice} onCycleTheme={cycle} />
 
+      {/*
+        A crossfade with six pixels of travel, keyed on the route.
+        `mode="wait"` so the outgoing page is gone before the incoming one arrives — two pages
+        dissolving through each other at these opacities produces a moment of unreadable text,
+        and 140ms out is short enough that nobody experiences it as a delay.
+
+        This is what makes nine routes read as one product rather than as nine documents. It
+        is also the only place on the site where motion is *purely* transitional, which is why
+        it stays this quiet.
+      */}
       <div className="flex-1">
-        <Page route={route} go={go} />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={route}
+            initial={still ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={still ? undefined : { opacity: 0, y: -6 }}
+            transition={{ duration: still ? 0 : 0.14, ease: [0.2, 0.8, 0.2, 1] }}
+          >
+            <Page route={route} go={go} />
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <Footer onNavigate={go} />
@@ -89,6 +112,8 @@ function Page({ route, go }: { route: Route; go: (to: Route, search?: string) =>
       return <Changelog onNavigate={go} />;
     case 'about':
       return <About onNavigate={go} />;
+    case 'missing':
+      return <Missing onNavigate={go} />;
     default:
       return <Landing onNavigate={go} onOpenExample={openExample} />;
   }

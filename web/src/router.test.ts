@@ -18,11 +18,17 @@ describe('routeOf', () => {
     expect(routeOf('/editor//')).toBe('editor');
   });
 
-  it('falls back to the overview rather than a not-found', () => {
-    // Shared links are the distribution mechanism. A mistyped or stale URL should land
-    // somewhere that explains what this is, not on an apology.
-    expect(routeOf('/nonsense')).toBe('overview');
-    expect(routeOf('/tools/nfa-to-dfa')).toBe('overview');
+  it('reports an unknown path as missing rather than pretending it was the overview', () => {
+    // **Reversed.** This used to fall through to the overview, on the grounds that a stale
+    // link should land somewhere explaining what this is rather than on an apology. The
+    // reasoning was right and the mechanism was wrong: silently rendering the front page
+    // tells the visitor their URL was fine, so an old link in someone's notes reads as "the
+    // site changed" and they have no way to find out otherwise.
+    //
+    // The original goal is met by the *page* instead — `Missing` carries the pitch and every
+    // route, so it explains what this is while still admitting the URL did not exist.
+    expect(routeOf('/nonsense')).toBe('missing');
+    expect(routeOf('/tools/nfa-to-dfa')).toBe('missing');
   });
 
   it('round-trips every route through its path', () => {

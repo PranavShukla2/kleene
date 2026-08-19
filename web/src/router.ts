@@ -26,7 +26,9 @@ export type Route =
   | 'pricing'
   | 'docs'
   | 'changelog'
-  | 'about';
+  | 'about'
+  /** No such page. Not a path anyone navigates *to* — only where an unknown one lands. */
+  | 'missing';
 
 /** Where each route lives. One table, so the two directions cannot disagree. */
 const PATHS: Record<Route, string> = {
@@ -39,13 +41,24 @@ const PATHS: Record<Route, string> = {
   docs: '/docs',
   changelog: '/changelog',
   about: '/about',
+  // Never matched by `routeOf`, and deliberately not `/404`: the address bar must keep the
+  // URL that failed, so someone can see their own typo and fix it.
+  missing: '/',
 };
 
-/** Where a path leads. Anything unrecognised falls to the overview rather than a 404. */
+/**
+ * Where a path leads.
+ *
+ * An unknown path is `missing`, not the overview. Silently rendering the front page tells a
+ * visitor their URL was fine when it was not — so a stale link in someone's notes looks like
+ * the site changed rather than like the link is old, and they have no way to tell.
+ */
 export function routeOf(pathname: string): Route {
   const normalised = pathname.replace(/\/+$/, '') || '/';
-  const found = (Object.keys(PATHS) as Route[]).find((route) => PATHS[route] === normalised);
-  return found ?? 'overview';
+  const found = (Object.keys(PATHS) as Route[])
+    .filter((route) => route !== 'missing')
+    .find((route) => PATHS[route] === normalised);
+  return found ?? 'missing';
 }
 
 /** The path a route lives at. */

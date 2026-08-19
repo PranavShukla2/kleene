@@ -555,3 +555,92 @@ h3.font-mono,
     animation: gradient-drift 9s var(--ease-k) infinite alternate;
   }
 }
+
+/*
+ * The browser's own furniture, themed.
+ *
+ * Selection, scrollbars and the caret ship blue and grey in every browser, and a site that
+ * leaves them is a site wearing someone else's accent colour in the two places a reader
+ * interacts with it most. None of this is noticed when it is right; all of it is noticed when
+ * it is wrong.
+ */
+
+/* Tinted rather than solid: a solid fill hides the syntax colouring in the regex bar and the
+   step highlight in a trace, which are the two things most worth selecting on this site. */
+::selection {
+  background: color-mix(in oklab, var(--color-k-primary) 26%, transparent);
+  color: var(--color-k-text);
+}
+
+::-moz-selection {
+  background: color-mix(in oklab, var(--color-k-primary) 26%, transparent);
+  color: var(--color-k-text);
+}
+
+/* Firefox and anything else honouring the standard properties. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-k-border-strong) transparent;
+}
+
+/* WebKit. A transparent track rather than a filled one, so a scrollbar over the canvas or a
+   glass panel does not cut a grey stripe through it. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-k-border-strong);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-k-text-faint);
+  background-clip: content-box;
+}
+
+/* The corner where two scrollbars meet, which defaults to a grey square. */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html {
+  /* The text cursor in inputs, and the highlight colour on tap in mobile Safari. */
+  caret-color: var(--color-k-primary);
+  -webkit-tap-highlight-color: color-mix(in oklab, var(--color-k-primary) 18%, transparent);
+  /* Anchors and focus moves land below the floating nav rather than under it. */
+  scroll-padding-top: 6rem;
+}
+
+/*
+ * A lit rim on glass.
+ *
+ * One inset gradient along the top edge, which does more for depth than a shadow does: a
+ * shadow says an object is above the page, and a rim light says it has a surface. Layered
+ * over the existing inset highlight rather than replacing it, so the effect survives a
+ * browser without `color-mix`.
+ */
+.k-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-k-glass-edge) 60%, transparent),
+    transparent 38%
+  );
+  mix-blend-mode: overlay;
+}
+
+.k-glass {
+  position: relative;
+}
