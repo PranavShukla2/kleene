@@ -105,7 +105,45 @@ as **H4**, which is where that entry said they belonged.
 
 ## Phase 3 — The conversion pipeline
 
-*Not started.*
+**Tracks A–D closed.** The regex bar, the three panes, the step scrubber and the subset
+construction view all work; `/convert` is the page they live on.
+
+Carried forward:
+
+| # | What | Why it is not done | Where it goes |
+|---|---|---|---|
+| **B5** | Per-pane export | Nothing to export *to* until Phase 4 builds the exporters. Exporting a pane is one call once TikZ and SVG exist. | Phase 4 Track A |
+| **D-anim** | Minimization and state elimination do not emit `Frame`s | Subset construction does, and Track D is what the shape was designed against. Fitting it to partition refinement is Track E's first task, and doing it now would be designing against one example. | Phase 3 Track E |
+| **F5–F7 (Phase 2)** | Play/pause and animating the transition being taken during a run | Play/pause landed with the scrubber. Animating the *run* still has not: it needs the simulator to say which transition was taken, which is the same shape of change `Frame` was for. | Phase 3 Track G |
+| **I6 (Phase 2)** | Copy the transition table as TSV | An export, and exports are Phase 4. | Phase 4 Track A |
+
+### Tracks E–H — not started
+
+Minimization view, DFA → regex, cross-cutting concerns, and validation of the conversion
+surface.
+
+## The site — front-of-house
+
+**Built 2026-08-19,** ahead of Phase 5 Track E, which is where the marketing surface was
+scheduled. Pulled forward deliberately: the tool is being shown to people who will spend a
+minute on it, and a workbench with no front door reads as a prototype however good the engine
+is. Nine routes now — landing, pricing, docs, changelog, about, plus the four workbench pages.
+
+**One decision was reversed.** `status.ts` used to forbid the words "coming soon" outright, on
+the grounds that a vague badge promises everything and dates nothing. That reasoning still
+holds for a badge that says *only* "coming soon" — but a bare phase number turned out to have
+the opposite failure, being precise and meaningless to anyone who has not read the roadmap.
+Badges now carry both. The rule is unchanged in substance: never claim a date you do not have,
+and never hide that something is missing.
+
+Carried forward:
+
+| # | What | Why it is not done | Where it goes |
+|---|---|---|---|
+| **S1** | Docs pages have no bodies | The map is real and every card says whether it is written. Writing twelve articles is its own piece of work, and doing it badly to fill a route is worse than the map. | Phase 4 |
+| **S2** | No `/tools/*` landing pages | Roadmap §6.1. They need the exporters and the URL encoding to be worth landing on. | Phase 4 |
+| **S3** | Editor keeps its own chrome | Correct for now — a workbench and a document need different furniture — but the editor is the one page that does not look like the site. Worth revisiting once its command bar settles. | Phase 5 |
+| **S4** | No Open Graph images or meta tags | Sharing is the distribution mechanism (roadmap §6.4) and a shared link with no card is a wasted one. Belongs with the URL encoding that makes links worth sharing. | Phase 4 |
 
 ## Phase 4 — Export and share
 
