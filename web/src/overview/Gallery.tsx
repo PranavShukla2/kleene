@@ -28,6 +28,8 @@ import {
   type Example,
   type Topic,
 } from '@/overview/examples';
+import { Reveal } from '@/site/motion';
+import { Band, Masthead } from '@/site/page';
 import type { Engine } from '@/wasm/loader';
 
 export function Gallery({
@@ -42,49 +44,52 @@ export function Gallery({
   const shown = filterByTopic(topic);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-14">
-      <h1 className="text-3xl font-semibold tracking-tight">Examples</h1>
-      <p className="mt-3 max-w-prose text-k-text-muted">
-        Machines worth reading before you draw your own. Each opens in the editor, ready to
-        change — and changing one never affects anyone else&rsquo;s, because nothing here is
-        stored on a server.
-      </p>
+    <main>
+      <Masthead
+        eyebrow="Examples"
+        title="Machines worth reading before you draw your own"
+        detail="Each opens in the editor, ready to change — and changing one never affects anyone else’s, because nothing here is stored on a server."
+      />
 
-      <div className="mt-8 flex flex-wrap items-center gap-2">
-        <TopicChip
-          label="everything"
-          active={topic === undefined}
-          onClick={() => {
-            setTopic(undefined);
-          }}
-        />
-        {availableTopics().map((option) => (
+      <Band>
+        <div className="flex flex-wrap items-center gap-2">
           <TopicChip
-            key={option}
-            label={option}
-            active={topic === option}
+            label="everything"
+            active={topic === undefined}
             onClick={() => {
-              setTopic(option);
+              setTopic(undefined);
             }}
           />
-        ))}
-        <span className="ml-auto font-mono text-xs text-k-text-faint">
-          {shown.length} of {EXAMPLES.length} · more in phase 5
-        </span>
-      </div>
+          {availableTopics().map((option) => (
+            <TopicChip
+              key={option}
+              label={option}
+              active={topic === option}
+              onClick={() => {
+                setTopic(option);
+              }}
+            />
+          ))}
+          <span className="ml-auto font-mono text-xs text-k-text-faint">
+            {shown.length} of {EXAMPLES.length} · more in phase 5
+          </span>
+        </div>
 
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-        {shown.map((example) => (
-          <ExampleCard key={example.key} example={example} engine={engine} onOpen={onOpen} />
-        ))}
-      </ul>
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+          {shown.map((example, index) => (
+            <Reveal as="li" key={example.key} delay={Math.min(index, 5) * 0.05}>
+              <ExampleCard example={example} engine={engine} onOpen={onOpen} />
+            </Reveal>
+          ))}
+        </ul>
 
-      {shown.length === 0 && (
-        <p className="mt-10 text-k-text-muted">
-          Nothing tagged <span className="font-mono">{topic}</span> yet — Phase 5 adds about
-          twenty more.
-        </p>
-      )}
+        {shown.length === 0 && (
+          <p className="mt-10 text-k-text-muted">
+            Nothing tagged <span className="font-mono">{topic}</span> yet — Phase 5 adds about
+            twenty more.
+          </p>
+        )}
+      </Band>
     </main>
   );
 }
@@ -129,43 +134,41 @@ function ExampleCard({
   const machine: Automaton | undefined = engine ? tryExample(engine, example.key) : undefined;
 
   return (
-    <li>
-      <button
-        type="button"
-        onClick={() => {
-          onOpen(example.key);
-        }}
-        className="flex h-full w-full flex-col rounded-[10px] border border-k-border bg-k-surface p-4 text-left transition-colors duration-(--duration-k-hover) hover:border-k-primary/50"
-      >
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-medium text-k-text">{example.title}</h2>
-          <span className="shrink-0 rounded-full border border-k-border px-2 py-0.5 font-mono text-[10px] text-k-text-faint">
-            {example.tier}
+    <button
+      type="button"
+      onClick={() => {
+        onOpen(example.key);
+      }}
+      className="k-card flex h-full w-full flex-col rounded-2xl border border-k-border bg-k-surface p-4 text-left hover:border-k-primary/50"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-medium text-k-text">{example.title}</h2>
+        <span className="shrink-0 rounded-full border border-k-border px-2 py-0.5 font-mono text-[10px] text-k-text-faint">
+          {example.tier}
+        </span>
+      </div>
+
+      <p className="mt-2 font-mono text-xs text-k-text-muted">{example.language}</p>
+
+      {machine && (
+        <AutomatonView
+          automaton={machine}
+          layout={rowLayout(machine.states.map((state) => state.id))}
+          title={`${example.title}: ${example.language}`}
+          className="mt-4 h-32 w-full"
+        />
+      )}
+
+      <p className="mt-4 text-sm text-k-text-muted">{example.teaches}</p>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {example.topics.map((topic) => (
+          <span key={topic} className="font-mono text-[10px] text-k-text-faint">
+            #{topic}
           </span>
-        </div>
-
-        <p className="mt-2 font-mono text-xs text-k-text-muted">{example.language}</p>
-
-        {machine && (
-          <AutomatonView
-            automaton={machine}
-            layout={rowLayout(machine.states.map((state) => state.id))}
-            title={`${example.title}: ${example.language}`}
-            className="mt-4 h-32 w-full"
-          />
-        )}
-
-        <p className="mt-4 text-sm text-k-text-muted">{example.teaches}</p>
-
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {example.topics.map((topic) => (
-            <span key={topic} className="font-mono text-[10px] text-k-text-faint">
-              #{topic}
-            </span>
-          ))}
-        </div>
-      </button>
-    </li>
+        ))}
+      </div>
+    </button>
   );
 }
 

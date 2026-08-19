@@ -1,49 +1,75 @@
 /**
  * `/roadmap` — what is built, what is next, and when.
  *
- * L4. This page exists so that **nothing else on the site carries a "coming soon" badge**. One
- * honest page beats a marker on every surface: markers accumulate, get missed when the feature
- * lands, and end up describing a product that no longer exists. A page has one owner and one
- * place to be wrong.
+ * L4. This is the page every "Coming soon" elsewhere on the site points at. A badge says a
+ * feature is not here; only this page says *when*, and says it in enough detail to be wrong.
+ * Markers scattered across a product accumulate, get missed when the feature lands, and end up
+ * describing something that no longer exists — so they carry a phase number, and the number
+ * resolves here.
  *
- * It is also the page that survives v1. "What are you building next" keeps being asked; "coming
- * soon" stops being an answer the moment something ships.
+ * It is also the page that survives v1. "What are you building next" keeps being asked; a
+ * badge stops being an answer the moment something ships.
  */
 
 import { AFTER_V1, PHASES, type Phase, type PhaseState } from '@/overview/phases';
+import { Reveal } from '@/site/motion';
+import { Band, Masthead } from '@/site/page';
 
 export function Roadmap() {
   const done = PHASES.filter((phase) => phase.state === 'done').length;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-14">
-      <h1 className="text-3xl font-semibold tracking-tight">Roadmap</h1>
-      <p className="mt-3 max-w-prose text-k-text-muted">
-        Everything below is either working today or has a phase attached. Nothing on this site
-        says &ldquo;coming soon&rdquo; — a promise without a date is not a plan, and this page
-        is where the dates live.
-      </p>
-      <p className="mt-2 font-mono text-xs text-k-text-faint">
-        {done} of {PHASES.length} phases complete
-      </p>
+    <main>
+      <Masthead
+        eyebrow="Roadmap"
+        title="What is built, what is next, and when"
+        detail="Every “Coming soon” on this site carries a phase number, and this is where the numbers resolve. A promise without a date is not a plan."
+      >
+        <div className="mx-auto flex max-w-md flex-col gap-2">
+          <div className="flex items-baseline justify-between font-mono text-xs text-k-text-faint">
+            <span>
+              {done} of {PHASES.length} phases complete
+            </span>
+            <span>v1</span>
+          </div>
+          {/*
+            A bar as well as a count. "3 of 6" is precise and takes a moment to picture; a bar
+            is imprecise and takes none, and the two together are read faster than either.
+          */}
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-k-border"
+            role="img"
+            aria-label={`${String(done)} of ${String(PHASES.length)} phases complete`}
+          >
+            <div
+              className="h-full rounded-full bg-k-primary transition-[width] duration-700 ease-(--ease-k-spring)"
+              style={{ width: `${String((done / PHASES.length) * 100)}%` }}
+            />
+          </div>
+        </div>
+      </Masthead>
 
-      <ol className="mt-10 space-y-4">
-        {PHASES.map((phase) => (
-          <PhaseCard key={phase.number} phase={phase} />
-        ))}
-      </ol>
+      <Band>
+        <ol className="mx-auto max-w-3xl space-y-4">
+          {PHASES.map((phase, index) => (
+            <Reveal as="li" key={phase.number} delay={Math.min(index, 4) * 0.04}>
+              <PhaseCard phase={phase} />
+            </Reveal>
+          ))}
+        </ol>
 
-      <section className="mt-10 rounded-[10px] border border-dashed border-k-border p-5">
-        <h2 className="font-medium text-k-text-muted">After v1 — {AFTER_V1.title}</h2>
-        <p className="mt-2 max-w-prose text-sm text-k-text-muted">{AFTER_V1.detail}</p>
-      </section>
+        <section className="mx-auto mt-4 max-w-3xl rounded-2xl border border-dashed border-k-border p-5">
+          <h2 className="font-medium text-k-text-muted">After v1 — {AFTER_V1.title}</h2>
+          <p className="mt-2 max-w-prose text-sm text-k-text-muted">{AFTER_V1.detail}</p>
+        </section>
 
-      <p className="mt-10 max-w-prose text-sm text-k-text-faint">
-        Phases are ordered by dependency, not by how interesting they are. The engine came
-        before the editor because an editor for algorithms that do not exist is a drawing
-        program, and the conversions came after both because they are the thing the other two
-        were for.
-      </p>
+        <p className="mx-auto mt-10 max-w-3xl text-sm text-k-text-faint">
+          Phases are ordered by dependency, not by how interesting they are. The engine came
+          before the editor because an editor for algorithms that do not exist is a drawing
+          program, and the conversions came after both because they are the thing the other two
+          were for.
+        </p>
+      </Band>
     </main>
   );
 }
@@ -52,8 +78,8 @@ function PhaseCard({ phase }: { phase: Phase }) {
   const done = phase.state === 'done';
 
   return (
-    <li
-      className={`rounded-[10px] border p-5 ${
+    <div
+      className={`k-card rounded-2xl border p-5 ${
         done
           ? 'border-k-border bg-k-surface'
           : phase.state === 'building'
@@ -87,7 +113,7 @@ function PhaseCard({ phase }: { phase: Phase }) {
           </li>
         ))}
       </ul>
-    </li>
+    </div>
   );
 }
 
