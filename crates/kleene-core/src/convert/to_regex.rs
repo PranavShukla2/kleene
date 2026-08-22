@@ -53,6 +53,34 @@ pub enum Order {
     Textbook,
 }
 
+impl Order {
+    /// The name this order goes by outside Rust — in a URL, a CLI flag, or a button.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::FewestEdges => "fewest-edges",
+            Self::Textbook => "textbook",
+        }
+    }
+
+    /// Every order, for a UI that offers the choice (task F3).
+    pub fn all() -> [Self; 2] {
+        [Self::FewestEdges, Self::Textbook]
+    }
+}
+
+impl std::str::FromStr for Order {
+    type Err = ();
+
+    /// Parses the names [`Order::name`] produces, and nothing else.
+    ///
+    /// The error is `()` because every caller has the same reasonable fallback — the default
+    /// order — and none of them has anything useful to say about *why* a string was not one of
+    /// two known values.
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
+        Self::all().into_iter().find(|o| o.name() == text).ok_or(())
+    }
+}
+
 /// A GNFA edge label: `None` means no edge at all, which is different from an ε edge.
 type Label = Option<Regex>;
 
@@ -451,6 +479,41 @@ mod elimination_tests {
 
     fn dfa_of(source: &str) -> Automaton {
         crate::convert::determinize(&thompson(&parse(source).expect("parses")).result).result
+    }
+
+    #[test]
+    fn every_order_round_trips_through_its_name() {
+        // The names cross the FFI boundary and end up in URLs. A name that does not parse back
+        // is an order the UI can select and the engine will silently ignore.
+        for order in Order::all() {
+            assert_eq!(order.name().parse::<Order>(), Ok(order));
+        }
+    }
+
+    #[test]
+    fn an_unknown_order_is_rejected_rather_than_guessed() {
+        assert!("spiral".parse::<Order>().is_err());
+        assert!("".parse::<Order>().is_err());
+    }
+
+    #[test]
+    fn the_order_changes_the_working_but_never_the_language() {
+        // Task F3 lets a reader pick the order so it matches their notes. That is only safe
+        // because the answer is the same language either way — the expressions differ, and
+        // both are correct.
+        use crate::counterexample::equivalent;
+        use crate::regex::thompson::thompson;
+
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b"] {
+            let dfa = dfa_of(input);
+            for order in Order::all() {
+                let text = elimination(&dfa, order).regex;
+                let rebuilt =
+                    crate::convert::determinize(&thompson(&parse(&text).expect("parses")).result)
+                        .result;
+                assert!(equivalent(&dfa, &rebuilt), "{input} under {}", order.name());
+            }
+        }
     }
 
     #[test]

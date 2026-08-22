@@ -8,6 +8,7 @@
 import init, {
   compile_regex,
   determinism,
+  elimination,
   epsilon_closure,
   minimization,
   example_automaton,
@@ -22,6 +23,7 @@ import type {
   Automaton,
   Compilation,
   Determinism,
+  Elimination,
   FormalDefinition,
   Minimization,
   Report,
@@ -94,6 +96,15 @@ export interface Engine {
    * table would be labelling blocks with states that machine does not have.
    */
   minimization: (automaton: Automaton) => Minimization;
+  /**
+   * State elimination, with the GNFA recorded at every step (Phase 3 Track F).
+   *
+   * `order` picks which state goes next. It is a string rather than a union because the engine
+   * owns the list — a TypeScript union here would be a second copy of it, and the two would
+   * disagree the first time one is renamed. An unrecognised order falls back to the default
+   * rather than failing.
+   */
+  elimination: (automaton: Automaton, order: string) => Elimination;
 }
 
 /**
@@ -123,6 +134,8 @@ export function loadEngine(): Promise<Engine> {
         formal_definition(automaton) as FormalDefinition,
       compileRegex: (source: string) => compile_regex(source) as Compilation | undefined,
       minimization: (automaton: Automaton) => minimization(automaton) as Minimization,
+      elimination: (automaton: Automaton, order: string) =>
+        elimination(automaton, order) as Elimination,
       epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
         // A copy because the binding takes ownership of a `Uint32Array`, and the caller's
         // array is a slice of a step it does not own.

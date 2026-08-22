@@ -253,3 +253,25 @@ pub fn minimization(automaton: JsValue) -> Result<JsValue, JsError> {
 
     serde_wasm_bindgen::to_value(&result).map_err(|e| JsError::new(&e.to_string()))
 }
+
+/// State elimination, with the GNFA recorded at every step.
+///
+/// The order is a string rather than an enum across the boundary, for the same reason
+/// `determinism` returns one: there are three of them, the UI is the only caller, and a
+/// caller mapping three variants onto three strings would be a fourth place for the
+/// definition to live. An unrecognised order falls back to the default rather than failing —
+/// a stale link asking for an order that has been renamed should still convert something.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton, or if the result cannot be
+/// serialized.
+#[wasm_bindgen]
+pub fn elimination(automaton: JsValue, order: &str) -> Result<JsValue, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let result = kleene_core::convert::elimination(&automaton, order.parse().unwrap_or_default());
+
+    serde_wasm_bindgen::to_value(&result).map_err(|e| JsError::new(&e.to_string()))
+}
