@@ -12,6 +12,7 @@ import { DiagramView } from '@/canvas/DiagramView';
 import { wrappedRowLayout } from '@/canvas/geometry';
 import { ClosureDrill } from '@/convert/ClosureDrill';
 import { construction, partial } from '@/convert/construction';
+import { Elimination } from '@/convert/Elimination';
 import { MarkingTable } from '@/convert/MarkingTable';
 import { Partitions } from '@/convert/Partitions';
 import { splitAt } from '@/convert/refinement';
@@ -250,6 +251,12 @@ export function Convert({
       {!parsed && (
         <p className="mt-10 text-sm text-k-text-faint">The machines appear here as you type.</p>
       )}
+
+      {/*
+        Below the panes, because it runs the pipeline backwards and putting it among the
+        stages would suggest it is one of them.
+      */}
+      {parsed && <Elimination engine={engine} dfa={parsed.dfa.automaton} epsilon={EPSILON} />}
 
       {parsed && (
         <p className="mt-8 max-w-prose text-sm text-k-text-faint">
