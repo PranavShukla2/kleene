@@ -186,22 +186,50 @@ from `q4`, and "expand it one state at a time" is a question about the seeds.
 
 ### Track E — Minimization view
 
-- [ ] **E1.** Partition blocks rendered as visual groupings over the DFA.
-- [ ] **E2.** Each refinement round shows the blocks before and after.
-- [ ] **E3.** **The distinguishing string for each split, displayed prominently** — from
+- [x] **E1.** Partition blocks rendered as visual groupings over the DFA.
+- [x] **E2.** Each refinement round shows the blocks before and after.
+- [x] **E3.** **The distinguishing string for each split, displayed prominently** — from
       Phase 1 D2. This is the thing JFLAP does not do (roadmap §1.1), the thing the exam
       asks for, and therefore the single most important element on this screen.
 - [ ] **E4.** Merge animation when equivalent states collapse (420ms, design-system §5).
-- [ ] **E5.** **Two switchable presentations of the same trace**, because CSE2004 teaches
+- [x] **E5.** **Two switchable presentations of the same trace**, because CSE2004 teaches
       both and a student revising from their notes needs whichever one their notes use:
       the round-by-round **partition** view, and the triangular **marking table**
       (Myhill–Nerode). Neither is a secondary "alternative view" — they are peers, and the
       switch is visible rather than buried.
-- [ ] **E6.** In the marking table, each marked cell shows the round it was marked and its
+- [x] **E6.** In the marking table, each marked cell shows the round it was marked and its
       distinguishing string on hover. This is where the exam's actual question lives.
-- [ ] **E7.** Switching views mid-scrub keeps position — round 3 of the partition view is
+- [x] **E7.** Switching views mid-scrub keeps position — round 3 of the partition view is
       round 3 of the table. They are the same trace, so the scrubber must not reset.
-- [ ] **E8.** Highlight the *pair* of states being distinguished, not just the block.
+- [x] **E8.** Highlight the *pair* of states being distinguished, not just the block.
+
+**Track E closed but for E4.**
+
+**E1 is done differently from how it was written.** The task says "partition blocks rendered as
+visual groupings over the DFA", and colouring states in the diagram was the first attempt. It
+fails on the thing that matters: a block is a *set*, and four states scattered across a diagram
+do not read as one object however they are tinted. Written as `{q0, q2}` they do — and that is
+also the notation a course uses on the board. The link to the diagram is kept by hover, which
+is the gesture that asks "which ones are those".
+
+**Frame does not fit here, and that is the answer to the question Track D left open.** Track D
+deferred "fit `Frame` to partition refinement" to this track. It should not be fitted: `Frame`
+describes a result being *appended to*, and refinement describes a partition being *divided*.
+Forcing one onto the other would have produced a count that meant nothing. Minimization has its
+own wire shape — `Split` per step — and the two coexist because they describe different kinds
+of algorithm.
+
+**The two views are derived from one fact.** "Is this pair marked yet" is answered by asking
+whether the two states sit in different blocks of the partition at that step, not by reading
+the table's round number. That makes E5's duality hold at *every* step rather than only at the
+end, and it sidesteps a timing bug: a round can contain several splits, so "round 2" is not a
+moment, and a table filling in a whole round at once would jump ahead of the diagram beside it.
+
+Carried forward:
+
+| # | What | Why it is not done | Where it goes |
+|---|---|---|---|
+| **E4** | Merging states animated in the *diagram* | The blocks view animates its chips merging, which is the half of E4 that carries meaning. The other half — two states in the DFA diagram collapsing into one in the minimal diagram — needs a shared layout across two panes that currently lay out independently, and that is a canvas change rather than a minimization one. | Phase 3 Track G |
 
 ### Track F — DFA → regex
 
