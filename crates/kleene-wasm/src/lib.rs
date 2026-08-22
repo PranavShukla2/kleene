@@ -231,3 +231,25 @@ pub fn epsilon_closure(automaton: JsValue, seeds: Vec<u32>) -> Result<JsValue, J
     // made a wire type per algorithm unnecessary.
     serde_wasm_bindgen::to_value(&traced).map_err(|e| JsError::new(&e.to_string()))
 }
+
+/// Partition refinement and its result, in one call.
+///
+/// Returns the machine refinement actually ran on as well as the answer, and that is not
+/// redundancy: refinement restricts to reachable states and completes δ before it starts, so
+/// the ids in the rounds and the marking table index a machine the caller never saw. A view
+/// drawing the caller's DFA beside this table would be labelling blocks with states that
+/// machine does not have.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton, or if the result cannot be
+/// serialized.
+#[wasm_bindgen]
+pub fn minimization(automaton: JsValue) -> Result<JsValue, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let result = kleene_core::convert::minimization(&automaton);
+
+    serde_wasm_bindgen::to_value(&result).map_err(|e| JsError::new(&e.to_string()))
+}

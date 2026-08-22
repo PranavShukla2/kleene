@@ -9,6 +9,7 @@ import init, {
   compile_regex,
   determinism,
   epsilon_closure,
+  minimization,
   example_automaton,
   formal_definition,
   simulate,
@@ -22,6 +23,7 @@ import type {
   Compilation,
   Determinism,
   FormalDefinition,
+  Minimization,
   Report,
   Simulation,
   StateId,
@@ -83,6 +85,15 @@ export interface Engine {
    * without the construction's own trace carrying hundreds of ε-steps nobody asked for.
    */
   epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) => Traced<StateId[]>;
+  /**
+   * Partition refinement and its result, in one call (Phase 3 Track E).
+   *
+   * Carries the machine it ran on as well as the answer. Refinement restricts to reachable
+   * states and completes δ first, so every id in the rounds and the marking table indexes a
+   * machine the caller never passed in — and a view that drew the caller's DFA beside this
+   * table would be labelling blocks with states that machine does not have.
+   */
+  minimization: (automaton: Automaton) => Minimization;
 }
 
 /**
@@ -111,6 +122,7 @@ export function loadEngine(): Promise<Engine> {
       formalDefinition: (automaton: Automaton) =>
         formal_definition(automaton) as FormalDefinition,
       compileRegex: (source: string) => compile_regex(source) as Compilation | undefined,
+      minimization: (automaton: Automaton) => minimization(automaton) as Minimization,
       epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
         // A copy because the binding takes ownership of a `Uint32Array`, and the caller's
         // array is a slice of a step it does not own.
