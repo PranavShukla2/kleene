@@ -41,6 +41,8 @@ export type { Minimization } from '@/model/generated/Minimization';
 export type { MarkingTable } from '@/model/generated/MarkingTable';
 export type { Cell } from '@/model/generated/Cell';
 export type { Mark } from '@/model/generated/Mark';
+export type { Split } from '@/model/generated/Split';
+export type { Evidence } from '@/model/generated/Evidence';
 export type { TransitionTable } from '@/model/generated/TransitionTable';
 export type { TableRow } from '@/model/generated/TableRow';
 export type { TableColumn } from '@/model/generated/TableColumn';

@@ -76,6 +76,52 @@ impl Mark {
 /// The states grouped into blocks after one refinement round.
 pub type Partition = Vec<BTreeSet<StateId>>;
 
+/// What one step of refinement did, structured.
+///
+/// One per [`Step`], in the same order, so a UI scrubbing the trace can render *this* rather
+/// than parse the sentence beside it. That parsing is the thing worth avoiding: the prose says
+/// "Round 2 — {q1, q3} splits into {q1} and {q3}" and a view could recover all of it with a
+/// regular expression, right up until the day the wording changes.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Split")
+)]
+pub struct Split {
+    /// Which refinement round this step belongs to. Round 0 is the accepting/non-accepting cut.
+    pub round: usize,
+    /// The partition as it stands *after* this step — including blocks this round has not
+    /// reached yet, which is exactly the half-finished picture a student draws by hand.
+    pub partition: Partition,
+    /// The block that split, if this step split one.
+    pub from: Option<BTreeSet<StateId>>,
+    /// What it became. Empty when nothing split.
+    pub into: Partition,
+    /// One pair this split separated, and the string that separates it.
+    ///
+    /// The same pair the prose names, taken from the same place, because a diagram
+    /// highlighting one pair while the sentence beside it names another is worse than either
+    /// alone (task E8).
+    pub evidence: Option<Evidence>,
+}
+
+/// A pair of states and the string that tells them apart.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Evidence")
+)]
+pub struct Evidence {
+    /// One of the pair. Ordered as the split found them, not by id.
+    pub left: StateId,
+    /// The other.
+    pub right: StateId,
+    /// Empty means the empty string itself — one is accepting and the other is not.
+    pub witness: String,
+}
+
 /// Everything one refinement pass discovered.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Refinement {
@@ -83,6 +129,8 @@ pub struct Refinement {
     pub rounds: Vec<Partition>,
     /// Every distinguishable pair, with the round it separated and its witness.
     pub marks: BTreeMap<Pair, Mark>,
+    /// What each step did, in step order.
+    pub splits: Vec<Split>,
     /// The machine the refinement ran on: reachable-only and completed.
     pub source: Automaton,
 }
@@ -192,8 +240,12 @@ pub struct Minimization {
     /// the caller passed in. Every state id in `rounds` and `table` indexes this one.
     #[cfg_attr(feature = "ts", ts(as = "crate::io::wire::WireAutomaton"))]
     pub source: Automaton,
-    /// The partition after each round, starting with the accepting/non-accepting split.
-    pub rounds: Vec<Vec<Vec<StateId>>>,
+    /// What each step did — one per entry of `steps`, in the same order.
+    ///
+    /// Replaces a bare list of rounds. A round is a useful grouping and a useless *unit*: a
+    /// round can split three blocks, and a scrubber that could only stop between rounds would
+    /// skip the two splits a reader most wants to look at.
+    pub splits: Vec<Split>,
     /// The Myhill–Nerode lower triangle — the same marks, arranged the way a course draws them.
     pub table: MarkingTable,
     /// The minimal machine, with one state per block of the final partition.
@@ -214,17 +266,7 @@ pub fn minimization(dfa: &Automaton) -> Minimization {
     let minimal = minimize(dfa);
 
     Minimization {
-        rounds: refinement
-            .result
-            .rounds
-            .iter()
-            .map(|round| {
-                round
-                    .iter()
-                    .map(|block| block.iter().copied().collect())
-                    .collect()
-            })
-            .collect(),
+        splits: refinement.result.splits.clone(),
         table: refinement.result.marking_table(),
         source: refinement.result.source.clone(),
         minimal: minimal.result,
@@ -279,6 +321,12 @@ pub fn refine(dfa: &Automaton) -> Traced<Refinement> {
         .highlighting(source.states.keys().copied()),
     );
 
+    let mut splits = vec![Split {
+        round: 0,
+        partition: partition.clone(),
+        ..Split::default()
+    }];
+
     let mut rounds = vec![partition.clone()];
 
     for round in 1.. {
@@ -286,7 +334,7 @@ pub fn refine(dfa: &Automaton) -> Traced<Refinement> {
         let mut next: Partition = Vec::new();
         let mut split_happened = false;
 
-        for block in &partition {
+        for (at, block) in partition.iter().enumerate() {
             // Group by where each state goes: two states stay together only while every
             // symbol sends them into the same block.
             let mut groups: IndexMap<Vec<usize>, BTreeSet<StateId>> = IndexMap::new();
@@ -321,6 +369,27 @@ pub fn refine(dfa: &Automaton) -> Traced<Refinement> {
             }
 
             steps.push(split_step(&source, block, &parts, &marks, round));
+
+            // The partition *right now*: what this round has rebuilt so far, then this
+            // block's new pieces, then the blocks the round has not reached yet. That is the
+            // half-finished picture a student has on the page, and showing the round's final
+            // answer here instead would skip the part being explained.
+            let mut so_far = next.clone();
+            so_far.extend(parts.iter().cloned());
+            so_far.extend(partition[at + 1..].iter().cloned());
+
+            splits.push(Split {
+                round,
+                partition: so_far,
+                from: Some(block.clone()),
+                into: parts.clone(),
+                evidence: example_pair(&parts, &marks).map(|(left, right, mark)| Evidence {
+                    left,
+                    right,
+                    witness: mark.witness.clone(),
+                }),
+            });
+
             next.extend(parts);
         }
 
@@ -341,6 +410,11 @@ pub fn refine(dfa: &Automaton) -> Traced<Refinement> {
                 )
                 .highlighting(source.states.keys().copied()),
             );
+            splits.push(Split {
+                round,
+                partition: partition.clone(),
+                ..Split::default()
+            });
             break;
         }
 
@@ -352,6 +426,7 @@ pub fn refine(dfa: &Automaton) -> Traced<Refinement> {
         Refinement {
             rounds,
             marks,
+            splits,
             source,
         },
         steps,
@@ -423,6 +498,22 @@ fn witness_for(
     }
 }
 
+/// One separated pair, to name concretely.
+///
+/// An explanation that says "these split" without saying *why* is the thing this whole module
+/// exists to avoid — and the diagram and the sentence must pick the *same* pair, which is why
+/// this is a function rather than two expressions that happen to agree today.
+fn example_pair<'a>(
+    parts: &[BTreeSet<StateId>],
+    marks: &'a BTreeMap<Pair, Mark>,
+) -> Option<(StateId, StateId, &'a Mark)> {
+    parts
+        .first()
+        .and_then(|l| l.first())
+        .zip(parts.get(1).and_then(|r| r.first()))
+        .and_then(|(&p, &q)| marks.get(&pair(p, q)).map(|m| (p, q, m)))
+}
+
 /// The prose for one block splitting.
 fn split_step(
     dfa: &Automaton,
@@ -431,13 +522,7 @@ fn split_step(
     marks: &BTreeMap<Pair, Mark>,
     round: usize,
 ) -> Step {
-    // Pick one separated pair to name concretely. An explanation that says "these split"
-    // without saying *why* is the thing this whole module exists to avoid.
-    let example = parts
-        .first()
-        .and_then(|l| l.first())
-        .zip(parts.get(1).and_then(|r| r.first()))
-        .and_then(|(&p, &q)| marks.get(&pair(p, q)).map(|m| (p, q, m)));
+    let example = example_pair(parts, marks);
 
     // Naming which side accepts, rather than hedging with "or the other way round". The
     // direction is knowable and is half the diagnostic information; making a student work
@@ -626,8 +711,8 @@ mod wire_tests {
         // beside this table would be labelling blocks with ids that machine does not have.
         for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a"] {
             let m = minimization(&dfa_of(input));
-            for round in &m.rounds {
-                for block in round {
+            for split in &m.splits {
+                for block in &split.partition {
                     for id in block {
                         assert!(
                             m.source.state(*id).is_some(),
@@ -644,12 +729,13 @@ mod wire_tests {
         // A partition, not a selection: every state in exactly one block, every round.
         for input in ["(a|b)*abb", "a*b*", "(ab)*+b"] {
             let m = minimization(&dfa_of(input));
-            for (index, round) in m.rounds.iter().enumerate() {
-                let mut seen: Vec<StateId> = round.iter().flatten().copied().collect();
+            let mut all: Vec<StateId> = m.source.states.keys().copied().collect();
+            all.sort_unstable();
+
+            for (index, split) in m.splits.iter().enumerate() {
+                let mut seen: Vec<StateId> = split.partition.iter().flatten().copied().collect();
                 seen.sort_unstable();
-                let mut all: Vec<StateId> = m.source.states.keys().copied().collect();
-                all.sort_unstable();
-                assert_eq!(seen, all, "{input}: round {index} is not a partition");
+                assert_eq!(seen, all, "{input}: step {index} is not a partition");
             }
         }
     }
@@ -659,9 +745,69 @@ mod wire_tests {
         // Refinement never merges. A round with fewer blocks than the one before it would mean
         // the algorithm had un-distinguished a pair, which nothing in it can do.
         let m = minimization(&dfa_of("(a|b)*abb"));
-        for pair in m.rounds.windows(2) {
-            assert!(pair[1].len() >= pair[0].len(), "a round lost a block");
+        for pair in m.splits.windows(2) {
+            assert!(
+                pair[1].partition.len() >= pair[0].partition.len(),
+                "a step lost a block"
+            );
         }
+    }
+
+    #[test]
+    fn there_is_exactly_one_split_per_step() {
+        // The alignment the whole wire shape depends on. A view scrubbing to step 4 reads
+        // `splits[4]`, and an off-by-one here would show the reasoning for one move beside the
+        // picture of another — which is worse than showing no picture at all.
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a", "ε"] {
+            let m = minimization(&dfa_of(input));
+            assert_eq!(m.splits.len(), m.steps.len(), "{input}");
+        }
+    }
+
+    #[test]
+    fn a_split_names_the_same_pair_its_sentence_does() {
+        // Task E8. A diagram highlighting one pair while the sentence beside it names another
+        // is worse than either alone.
+        let m = minimization(&dfa_of("(a|b)*abb"));
+        for (split, step) in m.splits.iter().zip(&m.steps) {
+            let Some(evidence) = &split.evidence else {
+                continue;
+            };
+            let left = m.source.state(evidence.left).expect("exists");
+            let right = m.source.state(evidence.right).expect("exists");
+            assert!(
+                step.detail.contains(&left.label) && step.detail.contains(&right.label),
+                "{} does not name {} and {}",
+                step.detail,
+                left.label,
+                right.label
+            );
+        }
+    }
+
+    #[test]
+    fn a_split_records_what_broke_and_what_it_became() {
+        let m = minimization(&dfa_of("(a|b)*abb"));
+        let split = m
+            .splits
+            .iter()
+            .find(|s| s.from.is_some())
+            .expect("something splits");
+
+        let from = split.from.as_ref().expect("checked");
+        assert!(
+            split.into.len() >= 2,
+            "a split produces at least two pieces"
+        );
+
+        let mut rejoined: Vec<StateId> = split.into.iter().flatten().copied().collect();
+        rejoined.sort_unstable();
+        let mut original: Vec<StateId> = from.iter().copied().collect();
+        original.sort_unstable();
+        assert_eq!(
+            rejoined, original,
+            "the pieces must account for the whole block"
+        );
     }
 
     #[test]
@@ -687,7 +833,7 @@ mod wire_tests {
         // switching views mid-revision sees two different answers.
         for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a*"] {
             let m = minimization(&dfa_of(input));
-            let last = m.rounds.last().expect("at least one round");
+            let last = &m.splits.last().expect("at least one step").partition;
 
             for cell in &m.table.cells {
                 let together = last
@@ -710,7 +856,7 @@ mod wire_tests {
             let m = minimization(&dfa_of(input));
             assert_eq!(
                 m.minimal.state_count(),
-                m.rounds.last().expect("a round").len(),
+                m.splits.last().expect("a step").partition.len(),
                 "{input}"
             );
         }
