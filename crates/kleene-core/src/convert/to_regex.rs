@@ -25,6 +25,8 @@
 
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::automaton::{Automaton, StateId};
 use crate::convert::prune::prune;
 use crate::regex::ast::Regex;
@@ -71,6 +73,155 @@ fn then(left: &Label, right: &Label) -> Label {
     }
 }
 
+/// One endpoint of a GNFA edge.
+///
+/// State elimination adds a fresh start and accept state, so an endpoint is either a state of
+/// the machine or one of those two. They are carried as a tagged variant rather than as the
+/// sentinel ids the algorithm uses internally (`u32::MAX` and its neighbour), because a view
+/// that had to know those numbers would be reading an implementation detail — and would draw a
+/// state labelled `4294967295` the first time the check was forgotten.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Endpoint")
+)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum Endpoint {
+    /// The fresh start state, which has nothing incoming.
+    Start,
+    /// The fresh accept state, which has nothing outgoing.
+    Accept,
+    /// A state of the machine being converted.
+    State {
+        /// Its id in [`Elimination::source`].
+        id: StateId,
+    },
+}
+
+/// One labelled edge of the GNFA, as it stands at some point in the elimination.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "GnfaEdge")
+)]
+pub struct GnfaEdge {
+    /// Where the edge starts.
+    pub from: Endpoint,
+    /// Where it ends. Equal to `from` for a self-loop, which is the case `r*` comes from.
+    pub to: Endpoint,
+    /// The regular expression on the edge, rendered.
+    ///
+    /// A string rather than the `Regex` tree. The view puts it on an arrow and never inspects
+    /// it, and shipping the tree would export five more TypeScript types to no end — watching
+    /// a label grow from `a` to `ab*c` (task F2) is a text change.
+    pub label: String,
+}
+
+/// The GNFA after one step of elimination.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "EliminationStep")
+)]
+pub struct EliminationStep {
+    /// The state this step removed, if it removed one.
+    pub eliminated: Option<StateId>,
+    /// Machine states still present, in elimination order — so a view can show what is next.
+    pub remaining: Vec<StateId>,
+    /// Every labelled edge, after the step. Sorted, so the same machine always renders the same.
+    pub edges: Vec<GnfaEdge>,
+}
+
+/// State elimination, in the shape a view can render.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Elimination")
+)]
+pub struct Elimination {
+    /// The machine elimination ran on: pruned of dead and unreachable states, which is *not*
+    /// the machine the caller passed. Every id in the steps indexes this one.
+    #[cfg_attr(feature = "ts", ts(as = "crate::io::wire::WireAutomaton"))]
+    pub source: Automaton,
+    /// One per entry of `steps`, in the same order.
+    pub stages: Vec<EliminationStep>,
+    /// Why each state was eliminated and what it did to the edges.
+    pub steps: Vec<Step>,
+    /// The answer, rendered.
+    pub regex: String,
+}
+
+/// Convert to a regular expression, recording the GNFA at every step.
+///
+/// The plain [`to_regex`] returns only the answer and its narration. This returns the *pictures*
+/// as well, which is what task F2 needs: watching one edge label grow from `a` to `ab*c` is the
+/// whole lesson, and a trace of sentences cannot show it.
+pub fn elimination(automaton: &Automaton, order: Order) -> Elimination {
+    let run = eliminate(automaton, order);
+
+    Elimination {
+        regex: run.result.to_string(),
+        source: run.source,
+        stages: run.stages,
+        steps: run.steps,
+    }
+}
+
+/// The GNFA right now, as a sorted list of labelled edges.
+///
+/// Sorted so the same machine always renders the same. A `HashMap` iterates in whatever order
+/// it likes, and an arrow list that reshuffled between steps would make every step look like it
+/// had changed every edge.
+fn snapshot(
+    edges: &HashMap<(StateId, StateId), Regex>,
+    source: StateId,
+    sink: StateId,
+) -> Vec<GnfaEdge> {
+    let endpoint = |id: StateId| {
+        if id == source {
+            Endpoint::Start
+        } else if id == sink {
+            Endpoint::Accept
+        } else {
+            Endpoint::State { id }
+        }
+    };
+
+    let mut out: Vec<GnfaEdge> = edges
+        .iter()
+        .map(|(&(from, to), label)| GnfaEdge {
+            from: endpoint(from),
+            to: endpoint(to),
+            label: label.to_string(),
+        })
+        .collect();
+
+    out.sort_by(|a, b| {
+        let key = |e: &GnfaEdge| {
+            let rank = |p: Endpoint| match p {
+                Endpoint::Start => (0, 0),
+                Endpoint::State { id } => (1, id),
+                Endpoint::Accept => (2, 0),
+            };
+            (rank(e.from), rank(e.to))
+        };
+        key(a).cmp(&key(b))
+    });
+    out
+}
+
+/// Everything one elimination produced.
+struct Run {
+    result: Regex,
+    source: Automaton,
+    stages: Vec<EliminationStep>,
+    steps: Vec<Step>,
+}
+
 /// Convert a machine to a regular expression describing the same language.
 ///
 /// ```
@@ -90,6 +241,17 @@ pub fn to_regex(automaton: &Automaton) -> Traced<Regex> {
 
 /// Convert to a regular expression, choosing the elimination order.
 pub fn to_regex_with(automaton: &Automaton, order: Order) -> Traced<Regex> {
+    let run = eliminate(automaton, order);
+    Traced::new(run.result, run.steps)
+}
+
+/// The elimination itself, recording the GNFA as it goes.
+///
+/// One implementation, two callers: [`to_regex_with`] throws the pictures away and
+/// [`elimination`] keeps them. Running it twice with a flag would have been the other option,
+/// and the snapshots cost a string per edge per step on machines this tool is for — far less
+/// than the risk of two code paths that are supposed to agree.
+fn eliminate(automaton: &Automaton, order: Order) -> Run {
     // Dead and unreachable states contribute nothing but produce large ∅-laden fragments
     // that simplification then has to grind away. Removing them first is both faster and
     // produces a far more readable trace.
@@ -142,6 +304,11 @@ pub fn to_regex_with(automaton: &Automaton, order: Order) -> Traced<Regex> {
     ));
 
     let mut remaining = ids;
+    let mut stages = vec![EliminationStep {
+        eliminated: None,
+        remaining: remaining.clone(),
+        edges: snapshot(&edges, source, sink),
+    }];
 
     while !remaining.is_empty() {
         let index = choose(&remaining, &edges, order);
@@ -203,6 +370,12 @@ pub fn to_regex_with(automaton: &Automaton, order: Order) -> Traced<Regex> {
             )
             .highlighting([victim]),
         );
+
+        stages.push(EliminationStep {
+            eliminated: Some(victim),
+            remaining: remaining.clone(),
+            edges: snapshot(&edges, source, sink),
+        });
     }
 
     // Whatever is left between the two added states is the answer. Nothing left means no
@@ -214,7 +387,22 @@ pub fn to_regex_with(automaton: &Automaton, order: Order) -> Traced<Regex> {
         format!("Only the added states remain; the edge between them is the answer: {result}"),
     ));
 
-    Traced::new(result, steps)
+    stages.push(EliminationStep {
+        eliminated: None,
+        remaining: Vec::new(),
+        edges: vec![GnfaEdge {
+            from: Endpoint::Start,
+            to: Endpoint::Accept,
+            label: result.to_string(),
+        }],
+    });
+
+    Run {
+        result,
+        source: machine,
+        stages,
+        steps,
+    }
 }
 
 /// Pick the index of the next state to eliminate.
@@ -253,6 +441,116 @@ fn label(automaton: &Automaton, id: StateId) -> String {
     automaton
         .state(id)
         .map_or_else(|| format!("#{id}"), |s| s.label.clone())
+}
+
+#[cfg(test)]
+mod elimination_tests {
+    use super::*;
+    use crate::regex::parse;
+    use crate::regex::thompson::thompson;
+
+    fn dfa_of(source: &str) -> Automaton {
+        crate::convert::determinize(&thompson(&parse(source).expect("parses")).result).result
+    }
+
+    #[test]
+    fn there_is_exactly_one_stage_per_step() {
+        // The alignment every consumer relies on: a view scrubbing to step 3 reads stages[3].
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a"] {
+            let e = elimination(&dfa_of(input), Order::default());
+            assert_eq!(e.stages.len(), e.steps.len(), "{input}");
+        }
+    }
+
+    #[test]
+    fn every_state_is_eliminated_exactly_once() {
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b"] {
+            let e = elimination(&dfa_of(input), Order::default());
+            let mut removed: Vec<StateId> = e.stages.iter().filter_map(|s| s.eliminated).collect();
+            removed.sort_unstable();
+
+            let mut all: Vec<StateId> = e.source.states.keys().copied().collect();
+            all.sort_unstable();
+            assert_eq!(removed, all, "{input}");
+        }
+    }
+
+    #[test]
+    fn remaining_shrinks_by_one_each_time_a_state_goes() {
+        let e = elimination(&dfa_of("(a|b)*abb"), Order::default());
+        for pair in e.stages.windows(2) {
+            let expected = if pair[1].eliminated.is_some() {
+                pair[0].remaining.len() - 1
+            } else {
+                // The closing stage, which removes nothing and empties the list.
+                pair[1].remaining.len()
+            };
+            assert_eq!(pair[1].remaining.len(), expected);
+        }
+    }
+
+    #[test]
+    fn no_edge_ever_names_a_state_that_has_been_eliminated() {
+        // The property a view depends on to draw anything at all. An arrow to a state that is
+        // no longer there is the visible half of an off-by-one in the snapshot.
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b"] {
+            let e = elimination(&dfa_of(input), Order::default());
+            for stage in &e.stages {
+                for edge in &stage.edges {
+                    for end in [edge.from, edge.to] {
+                        if let Endpoint::State { id } = end {
+                            assert!(
+                                stage.remaining.contains(&id),
+                                "{input}: an edge names {id}, which is gone"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_last_stage_is_one_edge_holding_the_answer() {
+        for input in ["(a|b)*abb", "a*b*", "a"] {
+            let e = elimination(&dfa_of(input), Order::default());
+            let last = e.stages.last().expect("a stage");
+
+            assert_eq!(last.edges.len(), 1);
+            assert_eq!(last.edges[0].from, Endpoint::Start);
+            assert_eq!(last.edges[0].to, Endpoint::Accept);
+            assert_eq!(last.edges[0].label, e.regex, "{input}");
+        }
+    }
+
+    #[test]
+    fn the_recorded_run_agrees_with_the_plain_one() {
+        // Two callers, one implementation — and this is what says so. If `to_regex_with` and
+        // `elimination` ever diverge, the page showing the working would be showing the
+        // working of a different conversion.
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a", "ε"] {
+            let dfa = dfa_of(input);
+            let plain = to_regex_with(&dfa, Order::default());
+            let recorded = elimination(&dfa, Order::default());
+
+            assert_eq!(recorded.regex, plain.result.to_string(), "{input}");
+            assert_eq!(recorded.steps, plain.steps, "{input}");
+        }
+    }
+
+    #[test]
+    fn a_label_only_ever_grows_or_stays() {
+        // Task F2's claim: watching an edge label grow from `a` to `ab*c` is the lesson. It is
+        // only a lesson if labels do not silently shrink — simplification runs *inside* a step,
+        // never between them.
+        let e = elimination(&dfa_of("(a|b)*abb"), Order::default());
+        assert!(
+            e.stages
+                .iter()
+                .any(|s| s.edges.iter().any(|edge| edge.label.len() > 3)),
+            "no label ever grew, so there is nothing to watch"
+        );
+    }
 }
 
 #[cfg(test)]

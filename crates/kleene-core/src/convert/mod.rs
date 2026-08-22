@@ -27,4 +27,6 @@ pub use epsilon::{Closures, epsilon_closure};
 pub use minimize::{Mark, MarkingTable, Minimization, Refinement, minimization, minimize, refine};
 pub use prune::{co_reachable, prune, retaining};
 pub use subset::determinize;
-pub use to_regex::{Order, to_regex, to_regex_with};
+pub use to_regex::{
+    Elimination, EliminationStep, Endpoint, GnfaEdge, Order, elimination, to_regex, to_regex_with,
+};
