@@ -233,12 +233,39 @@ Carried forward:
 
 ### Track F — DFA → regex
 
-- [ ] **F1.** State elimination with the eliminated state animated out and edges relabelled.
-- [ ] **F2.** The intermediate GNFA regex on each edge, updating per step. Watching an edge
+- [x] **F1.** State elimination with the eliminated state animated out and edges relabelled.
+- [x] **F2.** The intermediate GNFA regex on each edge, updating per step. Watching an edge
       label grow from `a` to `ab*c` is the whole lesson.
-- [ ] **F3.** Elimination order shown and, ideally, selectable. 🔴 **D6**
-- [ ] **F4.** Final regex displayed with its simplification steps, so the tidy output does
+- [x] **F3.** Elimination order shown and, ideally, selectable. 🔴 **D6**
+- [x] **F4.** Final regex displayed with its simplification steps, so the tidy output does
       not look like magic.
+
+**Track F closed, and F1 is done differently from how it was written.**
+
+The task says "state elimination with the eliminated state animated out and edges relabelled",
+which assumes a diagram. Drawing the GNFA was the first attempt and it does not work: labels
+grow to `(a + bb*a)(a + ba)*bb` — twenty characters on a forty-pixel arrow — and every layout
+either overlapped them or spread the states until the machine stopped being readable.
+
+A list has room, keeps each label in a stable place so a change is visible *as* a change, and
+is how the working is written out by hand anyway. The relabelling is the lesson; the diagram
+was only ever the assumed way to show it.
+
+**D6 is answered by not answering it.** The decision asks what order elimination removes states
+in. Both orders ship, selectable, with what each is for written on the control: *fewest edges*
+gives a much shorter expression, *in order* matches a worked example line for line. A test says
+the order changes the working and never the language, which is what makes offering the choice
+safe rather than confusing.
+
+**It lives below the panes, not among them.** Decision D9 says there is no regex pane because
+the bar *is* the regex. A fourth pane holding a different expression for the same language
+would read as a contradiction rather than as the answer to a different question.
+
+Carried forward:
+
+| # | What | Why it is not done | Where it goes |
+|---|---|---|---|
+| **F-tool** | A `/tools/dfa-to-regex` landing page | The section renders inside `/convert`, so the tool pages already reach it — but collapsed, under a heading about a different conversion. A tool page for it wants the section open and first, which is a small change to how `Convert` is embedded. | Phase 3 Track G |
 
 ### Track G — Cross-cutting
 
