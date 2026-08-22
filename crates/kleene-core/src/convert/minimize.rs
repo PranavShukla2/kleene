@@ -47,6 +47,11 @@ fn pair(p: StateId, q: StateId) -> Pair {
 
 /// Why and when two states were shown to be different.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Mark")
+)]
 pub struct Mark {
     /// The refinement round at which the pair first separated. Round 0 is accepting vs not.
     pub round: usize,
@@ -121,6 +126,11 @@ impl Refinement {
 
 /// One cell of the marking table.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Cell")
+)]
 pub struct Cell {
     /// The row state.
     pub row: StateId,
@@ -132,6 +142,11 @@ pub struct Cell {
 
 /// The triangular table students fill in by hand.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "MarkingTable")
+)]
 pub struct MarkingTable {
     /// States in row/column order.
     pub states: Vec<StateId>,
@@ -147,6 +162,73 @@ impl MarkingTable {
             .iter()
             .find(|c| pair(c.row, c.col) == (a, b))
             .and_then(|c| c.mark.as_ref())
+    }
+}
+
+/// Minimization, flattened for the boundary.
+///
+/// `Refinement` is the right shape in Rust and the wrong one on a wire. Its `marks` field is a
+/// `BTreeMap` keyed by a *pair of state ids*, and JSON has no such key — every serializer
+/// either errors or invents a string encoding that the other side then has to parse back.
+/// `Partition` has the same problem in miniature: a `BTreeSet` is a set in Rust and an array
+/// everywhere else, and pretending otherwise would put an ordering promise in the type that
+/// JSON cannot keep.
+///
+/// So the boundary carries the two *views* a UI actually renders — the rounds, and the lower
+/// triangle — rather than the structure they are computed from. Nothing is lost: the marking
+/// table already holds every mark, and `Refinement::marking_table` is where that was decided.
+///
+/// This is not the wire-type-per-algorithm pattern `Simulation`'s note ruled out. That was
+/// about `Traced<T>` having no TypeScript name, which the generic export fixed. This is about
+/// a field whose Rust type has no JSON counterpart at all.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "ts",
+    derive(ts_rs::TS),
+    ts(export, export_to = "generated/", rename = "Minimization")
+)]
+pub struct Minimization {
+    /// The machine refinement ran on: reachable-only and completed, which is *not* the machine
+    /// the caller passed in. Every state id in `rounds` and `table` indexes this one.
+    #[cfg_attr(feature = "ts", ts(as = "crate::io::wire::WireAutomaton"))]
+    pub source: Automaton,
+    /// The partition after each round, starting with the accepting/non-accepting split.
+    pub rounds: Vec<Vec<Vec<StateId>>>,
+    /// The Myhill–Nerode lower triangle — the same marks, arranged the way a course draws them.
+    pub table: MarkingTable,
+    /// The minimal machine, with one state per block of the final partition.
+    #[cfg_attr(feature = "ts", ts(as = "crate::io::wire::WireAutomaton"))]
+    pub minimal: Automaton,
+    /// Why each round split what it split.
+    pub steps: Vec<Step>,
+}
+
+/// Refine and minimize in one call, in the shape a UI can render.
+///
+/// One call rather than two because the two must agree: a caller running `refine` and
+/// `minimize` separately would restrict and complete the machine twice, and any disagreement
+/// between those two passes would show up as a marking table whose state ids do not exist in
+/// the diagram beside it.
+pub fn minimization(dfa: &Automaton) -> Minimization {
+    let refinement = refine(dfa);
+    let minimal = minimize(dfa);
+
+    Minimization {
+        rounds: refinement
+            .result
+            .rounds
+            .iter()
+            .map(|round| {
+                round
+                    .iter()
+                    .map(|block| block.iter().copied().collect())
+                    .collect()
+            })
+            .collect(),
+        table: refinement.result.marking_table(),
+        source: refinement.result.source.clone(),
+        minimal: minimal.result,
+        steps: refinement.steps,
     }
 }
 
@@ -525,6 +607,145 @@ impl<'a, I: Iterator<Item = (&'a StateId, &'a State)>> PartitionMapIds for I {
             }
         }
         (accepting, rejecting)
+    }
+}
+
+#[cfg(test)]
+mod wire_tests {
+    use super::*;
+    use crate::regex::{parse, thompson::thompson};
+
+    fn dfa_of(source: &str) -> Automaton {
+        crate::convert::determinize(&thompson(&parse(source).expect("parses")).result).result
+    }
+
+    #[test]
+    fn every_id_in_the_rounds_exists_in_the_source() {
+        // The reason `source` is on the wire at all. Refinement runs on a *restricted and
+        // completed* machine, not the one the caller passed, so a UI drawing the caller's DFA
+        // beside this table would be labelling blocks with ids that machine does not have.
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a"] {
+            let m = minimization(&dfa_of(input));
+            for round in &m.rounds {
+                for block in round {
+                    for id in block {
+                        assert!(
+                            m.source.state(*id).is_some(),
+                            "{input}: block names a state the source does not have"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_round_partitions_the_source_exactly() {
+        // A partition, not a selection: every state in exactly one block, every round.
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b"] {
+            let m = minimization(&dfa_of(input));
+            for (index, round) in m.rounds.iter().enumerate() {
+                let mut seen: Vec<StateId> = round.iter().flatten().copied().collect();
+                seen.sort_unstable();
+                let mut all: Vec<StateId> = m.source.states.keys().copied().collect();
+                all.sort_unstable();
+                assert_eq!(seen, all, "{input}: round {index} is not a partition");
+            }
+        }
+    }
+
+    #[test]
+    fn rounds_only_ever_get_finer() {
+        // Refinement never merges. A round with fewer blocks than the one before it would mean
+        // the algorithm had un-distinguished a pair, which nothing in it can do.
+        let m = minimization(&dfa_of("(a|b)*abb"));
+        for pair in m.rounds.windows(2) {
+            assert!(pair[1].len() >= pair[0].len(), "a round lost a block");
+        }
+    }
+
+    #[test]
+    fn the_table_covers_every_distinct_pair_once() {
+        let m = minimization(&dfa_of("(a|b)*abb"));
+        let n = m.source.state_count();
+        assert_eq!(m.table.cells.len(), n * (n - 1) / 2);
+
+        let mut seen = std::collections::BTreeSet::new();
+        for cell in &m.table.cells {
+            assert_ne!(cell.row, cell.col, "the diagonal carries no information");
+            assert!(
+                seen.insert(pair(cell.row, cell.col)),
+                "a pair appears twice"
+            );
+        }
+    }
+
+    #[test]
+    fn two_states_share_a_final_block_exactly_when_the_table_leaves_them_unmarked() {
+        // The two presentations are duals (task E5), and this is the property that makes them
+        // peers rather than one being a summary of the other. If it ever fails, a student
+        // switching views mid-revision sees two different answers.
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a*"] {
+            let m = minimization(&dfa_of(input));
+            let last = m.rounds.last().expect("at least one round");
+
+            for cell in &m.table.cells {
+                let together = last
+                    .iter()
+                    .any(|block| block.contains(&cell.row) && block.contains(&cell.col));
+                assert_eq!(
+                    together,
+                    cell.mark.is_none(),
+                    "{input}: {} and {} disagree between the views",
+                    cell.row,
+                    cell.col
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_minimal_machine_has_one_state_per_final_block() {
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a"] {
+            let m = minimization(&dfa_of(input));
+            assert_eq!(
+                m.minimal.state_count(),
+                m.rounds.last().expect("a round").len(),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_witness_really_separates_the_pair_it_is_attached_to() {
+        // The claim E3 puts on screen. A witness that did not actually distinguish the pair
+        // would be the most confidently wrong thing this interface could say.
+        use crate::simulate::simulate;
+
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b"] {
+            let m = minimization(&dfa_of(input));
+            for cell in &m.table.cells {
+                let Some(mark) = &cell.mark else { continue };
+
+                let from = |start: StateId| {
+                    let mut machine = m.source.clone();
+                    machine.start = start;
+                    simulate(&machine, &mark.witness)
+                        .result
+                        .verdict
+                        .is_accepted()
+                };
+
+                assert_ne!(
+                    from(cell.row),
+                    from(cell.col),
+                    "{input}: `{}` does not separate {} from {}",
+                    mark.witness,
+                    cell.row,
+                    cell.col
+                );
+            }
+        }
     }
 }
 
