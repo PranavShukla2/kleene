@@ -265,12 +265,30 @@ pub fn minimization(dfa: &Automaton) -> Minimization {
     let refinement = refine(dfa);
     let minimal = minimize(dfa);
 
+    // `minimize` narrates one step more than `refine` — the sentence that announces the
+    // finished machine. The trace on the wire is `minimize`'s, because that is the one the
+    // conversion pipeline shows in its minimal pane, and a view scrubbing one trace while
+    // indexing another is the off-by-one that shows one move's reasoning beside another's
+    // picture.
+    //
+    // So the closing step gets a split too. It changes nothing — the partition is already
+    // final — and it keeps the two arrays the same length, which is the invariant every
+    // consumer relies on.
+    let mut splits = refinement.result.splits.clone();
+    if let Some(last) = splits.last().cloned() {
+        splits.push(Split {
+            round: last.round,
+            partition: last.partition,
+            ..Split::default()
+        });
+    }
+
     Minimization {
-        splits: refinement.result.splits.clone(),
+        splits,
         table: refinement.result.marking_table(),
         source: refinement.result.source.clone(),
         minimal: minimal.result,
-        steps: refinement.steps,
+        steps: minimal.steps,
     }
 }
 
@@ -761,6 +779,16 @@ mod wire_tests {
         for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a", "ε"] {
             let m = minimization(&dfa_of(input));
             assert_eq!(m.splits.len(), m.steps.len(), "{input}");
+        }
+    }
+
+    #[test]
+    fn the_trace_is_the_one_the_pipeline_shows() {
+        // The minimal pane scrubs `minimize`'s steps. If this carried `refine`'s instead, the
+        // pane would be one step longer than the splits it indexes.
+        for input in ["(a|b)*abb", "a*b*", "a"] {
+            let dfa = dfa_of(input);
+            assert_eq!(minimization(&dfa).steps, minimize(&dfa).steps, "{input}");
         }
     }
 
