@@ -12,6 +12,9 @@ import { DiagramView } from '@/canvas/DiagramView';
 import { wrappedRowLayout } from '@/canvas/geometry';
 import { ClosureDrill } from '@/convert/ClosureDrill';
 import { construction, partial } from '@/convert/construction';
+import { MarkingTable } from '@/convert/MarkingTable';
+import { Partitions } from '@/convert/Partitions';
+import { splitAt } from '@/convert/refinement';
 import { DEFAULT_PANES, PANES, reduction, type PaneId } from '@/convert/panes';
 import { RegexBar } from '@/convert/RegexBar';
 import { Scrubber } from '@/convert/Scrubber';
@@ -19,7 +22,13 @@ import { StepTable } from '@/convert/StepTable';
 import { clampStep, highlighted, readStepFrom, stepFragment } from '@/convert/scrubbing';
 import { useCompiler } from '@/convert/useCompiler';
 import { Worklist } from '@/convert/Worklist';
-import type { Automaton, Compilation, Stage, StateId } from '@/model/automaton';
+import type {
+  Automaton,
+  Compilation,
+  Minimization as MinimizationOf,
+  Stage,
+  StateId,
+} from '@/model/automaton';
 import { requestedExpression } from '@/router';
 import type { Engine } from '@/wasm/loader';
 
@@ -58,6 +67,15 @@ export function Convert({
   const [origin, setOrigin] = useState<readonly StateId[]>([]);
   // Which ε-NFA states the open ε-closure drill-down is on (task D4).
   const [closure, setClosure] = useState<readonly StateId[]>([]);
+  /**
+   * Which DFA states the refinement views are pointing at (tasks E1, E8).
+   *
+   * Hovering a block or a marking-table cell lights the states it names in the DFA pane. The
+   * ids come from refinement's own machine, which is the DFA restricted and completed — so a
+   * trap state added by completion simply matches nothing, which is the right outcome rather
+   * than one worth guarding against.
+   */
+  const [refineFocus, setRefineFocus] = useState<readonly StateId[]>([]);
   // One step position per pane. Seeded from the URL fragment so a link to round four opens
   // there (task C7); after that the fragment follows the scrubber rather than driving it.
   const [steps, setSteps] = useState<Partial<Record<PaneId, number>>>(() =>
@@ -174,6 +192,7 @@ export function Convert({
                   engine={engine}
                   // The closure drill-down always computes in the ε-NFA, whichever pane asked.
                   nfa={parsed.nfa.automaton}
+                  refineFrom={pane.id === 'minimal' ? parsed.dfa.automaton : undefined}
                   onClosureFocus={pane.id === 'nfa' ? undefined : focusClosure}
                   // Open under the derived panes, where watching δ fill in is the point, and
                   // shut under the ε-NFA, whose table is fourteen rows of ε and teaches
@@ -209,18 +228,15 @@ export function Convert({
                     live gesture, and the drill-down next because it is the narrower question
                     — someone who opened it is asking about those states specifically.
                   */
-                  highlight={
-                    pane.id !== 'nfa'
-                      ? []
-                      : origin.length > 0
-                        ? origin
-                        : closure.length > 0
-                          ? closure
-                          : (steps.nfa ?? 0) > 0
-                            ? highlighted(step, stage.steps)
-                            : subsetInPlay
-                  }
+                  highlight={paneHighlight(pane.id, {
+                    origin,
+                    closure,
+                    refineFocus,
+                    ownStep: (steps.nfa ?? 0) > 0 ? highlighted(step, stage.steps) : [],
+                    subsetInPlay,
+                  })}
                   onHoverState={pane.id === 'nfa' ? undefined : setOrigin}
+                  onSourceHighlight={setRefineFocus}
                   onOpenInEditor={() => {
                     onOpenInEditor(stage.automaton);
                   }}
@@ -301,9 +317,45 @@ function PaneToggles({
   );
 }
 
+/**
+ * Which states a pane marks, given everything competing to say.
+ *
+ * A function rather than a nested ternary in the JSX. It was four levels deep and about to be
+ * five, and the ordering *is* the design — each branch is a judgement about which of two
+ * simultaneous signals a reader meant.
+ */
+function paneHighlight(
+  pane: PaneId,
+  from: {
+    origin: readonly StateId[];
+    closure: readonly StateId[];
+    refineFocus: readonly StateId[];
+    ownStep: readonly StateId[];
+    subsetInPlay: readonly StateId[];
+  },
+): readonly StateId[] {
+  // The DFA is the machine refinement runs on, so it is the pane the block and marking-table
+  // hovers point into.
+  if (pane === 'dfa') return from.refineFocus;
+
+  // Only the ε-NFA takes a highlight from elsewhere: a subset-construction step's `highlight`
+  // holds ε-NFA ids, and feeding those to any other diagram lights whichever states happen to
+  // share those numbers.
+  if (pane !== 'nfa') return [];
+
+  // Hover first, because it is the live gesture. Then an open ε-closure drill-down, which is
+  // the narrower question. Then this pane's own scrubber, ahead of another pane's, because a
+  // scrubber you moved should not be overruled by one you did not.
+  if (from.origin.length > 0) return from.origin;
+  if (from.closure.length > 0) return from.closure;
+  if (from.ownStep.length > 0) return from.ownStep;
+  return from.subsetInPlay;
+}
+
 function Pane({
   engine,
   nfa,
+  refineFrom,
   onClosureFocus,
   defaultTable,
   title,
@@ -315,10 +367,13 @@ function Pane({
   onStep,
   highlight,
   onHoverState,
+  onSourceHighlight,
   onOpenInEditor,
 }: {
   engine: Engine | undefined;
   nfa: Automaton;
+  /** The DFA this pane's machine was minimized from, when this is the minimal pane. */
+  refineFrom: Automaton | undefined;
   onClosureFocus: ((ids: readonly StateId[]) => void) | undefined;
   defaultTable: boolean;
   title: string;
@@ -330,6 +385,8 @@ function Pane({
   onStep: (next: number) => void;
   highlight: readonly StateId[];
   onHoverState: ((origin: readonly StateId[]) => void) | undefined;
+  /** Light states in the *DFA* pane, for the refinement views that name them. */
+  onSourceHighlight: (states: readonly StateId[]) => void;
   onOpenInEditor: () => void;
 }) {
   // Wrapped, because Thompson's construction produces chains: `(a|b)*abb` is fourteen states
@@ -353,12 +410,40 @@ function Pane({
   );
   const drawn = useMemo(() => partial(stage.automaton, at), [stage.automaton, at]);
 
-  // A framed pane marks itself: the subset being expanded, and the one just arrived at.
-  const marked = at.framed
-    ? [at.current, at.arrived].filter((id): id is StateId => id !== undefined)
-    : highlight;
+  /*
+    A highlight from outside wins over the pane's own frame, on the same grounds hover beats
+    the scrubber elsewhere: it is the live gesture, and someone pointing at a block in the
+    refinement view is asking about *those* states right now. With nothing being pointed at,
+    a framed pane marks itself — the subset being expanded, and the one just arrived at.
+  */
+  const marked =
+    highlight.length > 0
+      ? highlight
+      : at.framed
+        ? [at.current, at.arrived].filter((id): id is StateId => id !== undefined)
+        : highlight;
 
   const [tableOpen, setTableOpen] = useState(defaultTable);
+
+  /**
+   * The refinement behind the minimal pane (Track E).
+   *
+   * Only for that pane, and only from the DFA it was minimized *from* — asking the engine to
+   * minimize the already-minimal machine would produce a trace with nothing in it.
+   */
+  const minimization = useMemo(
+    () => (refineFrom && engine ? engine.minimization(refineFrom) : undefined),
+    [engine, refineFrom],
+  );
+
+  /**
+   * Which presentation of the refinement is showing (task E5).
+   *
+   * Both are peers, so the switch is a visible pair of buttons rather than a menu — and the
+   * *step* lives outside it, which is what makes E7 work: switching views mid-scrub keeps
+   * position, because the position was never the view's to hold.
+   */
+  const [view, setView] = useState<'blocks' | 'table'>('blocks');
 
   // Built from the finished machine and then filtered, rather than rebuilt per step. Which
   // columns a table has is a property of the alphabet, and an alphabet does not grow during
@@ -465,11 +550,98 @@ function Pane({
       */}
       <Worklist automaton={stage.automaton} at={at} onHoverState={highlightOrigin} />
 
+      {minimization && (
+        <Refinement
+          minimization={minimization}
+          step={step}
+          view={view}
+          onView={setView}
+          onHighlight={onSourceHighlight}
+        />
+      )}
+
       {onClosureFocus && (
         <ClosureDrill engine={engine} nfa={nfa} seeds={seeds} onFocus={onClosureFocus} />
       )}
 
       <Scrubber steps={stage.steps} step={step} onStep={onStep} label={`${subtitle} steps`} />
     </section>
+  );
+}
+
+/**
+ * The refinement, in whichever presentation is showing (tasks E5, E7).
+ *
+ * The switch is two buttons rather than a menu, because neither is the primary — CSE2004
+ * teaches both, and a student revising from their notes needs whichever one their notes use.
+ * The scrubber position lives in the pane above rather than in here, which is the whole of E7:
+ * switching views mid-scrub keeps position because the position was never the view's to hold.
+ */
+function Refinement({
+  minimization,
+  step,
+  view,
+  onView,
+  onHighlight,
+}: {
+  minimization: MinimizationOf;
+  step: number;
+  view: 'blocks' | 'table';
+  onView: (next: 'blocks' | 'table') => void;
+  onHighlight: (states: readonly StateId[]) => void;
+}) {
+  const split = splitAt(minimization, step);
+  const previous = step > 0 ? splitAt(minimization, step - 1) : undefined;
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 border-t border-k-border px-4 py-2">
+        <span className="font-mono text-[11px] tracking-wide text-k-text-faint uppercase">
+          refinement
+        </span>
+        <div className="ml-auto flex gap-1">
+          {(
+            [
+              ['blocks', 'blocks'],
+              ['table', 'table'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={view === id}
+              onClick={() => {
+                onView(id);
+              }}
+              className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors duration-(--duration-k-hover) ${
+                view === id
+                  ? 'border-k-primary bg-k-primary/10 text-k-primary'
+                  : 'border-k-border text-k-text-muted hover:border-k-border-strong hover:text-k-text'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'blocks' ? (
+        <Partitions
+          split={split}
+          automaton={minimization.source}
+          epsilon={EPSILON}
+          onHoverBlock={onHighlight}
+        />
+      ) : (
+        <MarkingTable
+          table={minimization.table}
+          automaton={minimization.source}
+          split={split}
+          previous={previous}
+          epsilon={EPSILON}
+          onHoverPair={onHighlight}
+        />
+      )}
+    </div>
   );
 }
