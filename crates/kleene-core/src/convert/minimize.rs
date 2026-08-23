@@ -283,12 +283,25 @@ pub fn minimization(dfa: &Automaton) -> Minimization {
         });
     }
 
+    // Capped together, because `splits` runs parallel to `steps` and a view scrubbing to
+    // step *n* reads `splits[n]`. Cutting one without the other is the alignment bug the
+    // tests below exist to catch.
+    let (steps, dropped) = crate::trace::cap(minimal.steps);
+    splits.truncate(steps.len().saturating_sub(usize::from(dropped > 0)));
+    if dropped > 0 {
+        // The note that replaced the tail gets a split of its own: the final partition, which
+        // is what the machine beside it is showing.
+        if let Some(last) = splits.last().cloned() {
+            splits.push(last);
+        }
+    }
+
     Minimization {
         splits,
         table: refinement.result.marking_table(),
         source: refinement.result.source.clone(),
         minimal: minimal.result,
-        steps: minimal.steps,
+        steps,
     }
 }
 

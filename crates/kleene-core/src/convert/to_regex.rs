@@ -163,6 +163,28 @@ pub struct EliminationStep {
     pub edges: Vec<GnfaEdge>,
 }
 
+/// The largest machine state elimination will run on, measured rather than guessed.
+///
+/// Elimination's cost is not in its step count — it produces one step per state — it is in the
+/// *size of the expression*, which roughly squares at every elimination. Measured on
+/// `(a+b)*a(a+b)ⁿ`, whose DFA doubles with each `n`:
+///
+/// | states | time | answer |
+/// |---|---|---|
+/// | 5 | 0.15 ms | 49 chars |
+/// | 9 | 1.5 ms | 477 chars |
+/// | 17 | 17 ms | 6,193 chars |
+/// | 33 | 741 ms | 177,197 chars |
+///
+/// Every doubling costs about 40× the time and 30× the output. At 65 states that is half a
+/// minute and several megabytes of expression, which is not an answer anyone can read.
+///
+/// So this is a refusal, not a cap. Truncating the *explanation* is right for subset
+/// construction (decision D18) because the machine stays correct and complete; truncating an
+/// expression would leave a wrong answer that looks like a right one. Refusing, and saying to
+/// minimize first, is both honest and the advice a reader actually needs.
+pub const ELIMINATION_LIMIT: usize = 25;
+
 /// State elimination, in the shape a view can render.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(
@@ -179,8 +201,13 @@ pub struct Elimination {
     pub stages: Vec<EliminationStep>,
     /// Why each state was eliminated and what it did to the edges.
     pub steps: Vec<Step>,
-    /// The answer, rendered.
+    /// The answer, rendered. Empty when `refused` is set.
     pub regex: String,
+    /// Why elimination did not run, when it did not.
+    ///
+    /// Set only for machines past [`ELIMINATION_LIMIT`]. `None` means the answer above is
+    /// real; anything else would be a wrong expression that looks like a right one.
+    pub refused: Option<String>,
 }
 
 /// Convert to a regular expression, recording the GNFA at every step.
@@ -189,13 +216,46 @@ pub struct Elimination {
 /// as well, which is what task F2 needs: watching one edge label grow from `a` to `ab*c` is the
 /// whole lesson, and a trace of sentences cannot show it.
 pub fn elimination(automaton: &Automaton, order: Order) -> Elimination {
+    // Pruned first, because that is what elimination runs on — a machine full of unreachable
+    // states should not be refused for a size it does not really have.
+    let machine = prune(automaton).result;
+    let states = machine.state_count();
+
+    if states > ELIMINATION_LIMIT {
+        return Elimination {
+            source: machine,
+            stages: Vec::new(),
+            steps: Vec::new(),
+            regex: String::new(),
+            refused: Some(format!(
+                "This machine has {states} states. State elimination roughly squares the \
+                 expression at every step, so the answer here would run to hundreds of \
+                 thousands of characters — long past anything readable. Minimize it first: \
+                 the smallest machine for a language is usually far smaller, and its \
+                 expression is the one worth reading."
+            )),
+        };
+    }
+
     let run = eliminate(automaton, order);
+
+    // Capped together with the stages that run parallel to them (decision D18). See the same
+    // note in `convert::minimize::minimization`.
+    let (steps, dropped) = crate::trace::cap(run.steps);
+    let mut stages = run.stages;
+    stages.truncate(steps.len().saturating_sub(usize::from(dropped > 0)));
+    if dropped > 0 {
+        if let Some(last) = stages.last().cloned() {
+            stages.push(last);
+        }
+    }
 
     Elimination {
         regex: run.result.to_string(),
         source: run.source,
-        stages: run.stages,
-        steps: run.steps,
+        stages,
+        steps,
+        refused: None,
     }
 }
 
@@ -513,6 +573,40 @@ mod elimination_tests {
                         .result;
                 assert!(equivalent(&dfa, &rebuilt), "{input} under {}", order.name());
             }
+        }
+    }
+
+    #[test]
+    fn a_machine_past_the_limit_is_refused_rather_than_ground_through() {
+        // The measured hazard, and the one decision D18's step cap does *not* cover:
+        // elimination produces one step per state, so a step cap never fires — the blow-up is
+        // in the expression, which roughly squares at every elimination.
+        let big = dfa_of("(a+b)*a(a+b)(a+b)(a+b)(a+b)(a+b)");
+        assert!(big.state_count() > ELIMINATION_LIMIT);
+
+        let e = elimination(&big, Order::default());
+        assert!(
+            e.refused.is_some(),
+            "a 65-state machine must not be attempted"
+        );
+        assert!(
+            e.regex.is_empty(),
+            "a refusal must not also carry an answer"
+        );
+        assert!(e.steps.is_empty());
+
+        // And it says what to do about it, because "minimize first" is real advice here — the
+        // minimal machine for this language is a fraction of the size.
+        let reason = e.refused.expect("checked");
+        assert!(reason.contains("Minimize"), "{reason}");
+    }
+
+    #[test]
+    fn a_machine_within_the_limit_is_never_refused() {
+        for input in ["(a|b)*abb", "a*b*", "(ab)*+b", "a"] {
+            let e = elimination(&dfa_of(input), Order::default());
+            assert_eq!(e.refused, None, "{input}");
+            assert!(!e.regex.is_empty(), "{input}");
         }
     }
 

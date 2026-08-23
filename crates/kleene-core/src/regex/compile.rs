@@ -44,10 +44,16 @@ pub struct Stage {
 }
 
 impl From<Traced<Automaton>> for Stage {
+    /// Capping happens here, at the boundary, and nowhere inside the algorithms.
+    ///
+    /// An algorithm that truncated its own trace would be an algorithm whose output depended
+    /// on how much of it anyone intended to read — and the CLI, the doctests and the property
+    /// tests all consume the full one. This is the only place a trace becomes a payload.
     fn from(traced: Traced<Automaton>) -> Self {
+        let (steps, _dropped) = crate::trace::cap(traced.steps);
         Self {
             automaton: traced.result,
-            steps: traced.steps,
+            steps,
         }
     }
 }

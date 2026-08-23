@@ -21,6 +21,13 @@ stages: Array<EliminationStep>,
  */
 steps: Array<Step>, 
 /**
- * The answer, rendered.
+ * The answer, rendered. Empty when `refused` is set.
  */
-regex: string, };
+regex: string, 
+/**
+ * Why elimination did not run, when it did not.
+ *
+ * Set only for machines past [`ELIMINATION_LIMIT`]. `None` means the answer above is
+ * real; anything else would be a wrong expression that looks like a right one.
+ */
+refused: string | null, };

@@ -76,6 +76,42 @@ impl<T> Traced<T> {
     }
 }
 
+/// The most steps any trace crossing the boundary may carry (decision D18).
+///
+/// A pathological regular expression forces exponential blow-up in subset construction, and
+/// the trace grows with it — measured at roughly 0.36 KB of JSON per step, so an uncapped run
+/// reaches megabytes and locks the tab.
+///
+/// The cap is on the **explanation**, never on the computation. The machine is still built in
+/// full and every answer stays correct; what is lost is the narration past step 500, which is
+/// the right thing to lose — nobody scrubs to step 4,000, and a reader who has got that far
+/// has long since understood the pattern.
+pub const STEP_CAP: usize = 500;
+
+/// Truncate a trace to [`STEP_CAP`], saying so if it truncated.
+///
+/// Returns the steps and how many were dropped, because several results carry an array that
+/// runs *parallel* to their steps — one frame, split or GNFA snapshot each — and every one of
+/// them has to be cut to the same length. A helper that silently returned only the steps would
+/// leave those arrays longer than the trace they index, which is the alignment bug every
+/// consumer of those types is written to rely on not happening.
+pub fn cap(mut steps: Vec<Step>) -> (Vec<Step>, usize) {
+    if steps.len() <= STEP_CAP {
+        return (steps, 0);
+    }
+
+    // One short, so the note that replaces the tail still fits inside the cap.
+    let dropped = steps.len() - (STEP_CAP - 1);
+    steps.truncate(STEP_CAP - 1);
+    steps.push(Step::note(format!(
+        "…and {dropped} further steps, not recorded. The machine above is complete and \
+         correct — only the explanation stops here, because a trace this long costs more to \
+         send than it can possibly teach."
+    )));
+
+    (steps, dropped)
+}
+
 /// One unit of reasoning: what happened, and why it happened.
 ///
 /// The `detail` field is what a UI renders as prose. It is generated *here*, in the core,
