@@ -271,18 +271,41 @@ Carried forward:
 
 - [ ] **G1.** Conversions run in wasm off the main thread if any takes >50ms.
       🔵 **LEFTOVER CANDIDATE** — only if measured.
-- [ ] **G2.** Trace payloads capped. A pathological regex can generate thousands of steps;
+- [x] **G2.** Trace payloads capped. A pathological regex can generate thousands of steps;
       the UI must degrade gracefully rather than freeze. 🔴 **D18**
-- [ ] **G3.** Every pane, scrubber and reasoning panel is screen-reader navigable. The
+- [x] **G3.** Every pane, scrubber and reasoning panel is screen-reader navigable. The
       reasoning text is already prose — it is the accessible representation of the diagram,
       which is a rare and genuinely valuable position to be in.
-- [ ] **G4.** `prefers-reduced-motion`: transitions become cuts, but **highlights persist**
+- [x] **G4.** `prefers-reduced-motion`: transitions become cuts, but **highlights persist**
       (design-system §5). Reduced motion must not mean reduced information.
+
+**G1 measured, and deliberately not done.** The task says to move conversions off the main
+thread *if any takes >50ms*. Measured on this machine, release build:
+
+| machine | subset construction | minimization |
+|---|---|---|
+| 5 states (`(a+b)*abb`) | <1 ms | 1 ms |
+| 65 states | 3 ms | 5 ms |
+| 257 states | 23 ms | 55 ms |
+
+The threshold is crossed only at 257 states, which comes from a deliberately pathological
+expression that also trips the trace cap. Moving the engine to a worker would make **every**
+call asynchronous — the compiler, the hover lookups, the marking table — to remove a 55ms
+stall on an input nobody types. Deferred with the numbers written down rather than left as an
+open box, and the line for revisiting is a *typed* expression crossing 50ms.
+
+**G2 grew a second half the decision did not anticipate.** D18 sizes a 500-step cap, and that
+is enforced at the boundary. But elimination emits one step per state, so a step cap never
+fires for it — its blow-up is in the *expression*, which roughly squares at each step: 17
+states gives 6 KB of output in 17 ms, 33 states gives 177 KB in 741 ms, and every doubling is
+~40× worse. Truncating an explanation leaves a correct machine; truncating an expression leaves
+a wrong answer that looks like a right one. So elimination **refuses** past 25 states and says
+to minimize first, which is advice rather than a brush-off.
 
 ### Track H — Validation
 
-- [ ] **H1.** Vitest over step-rendering logic.
-- [ ] **H2.** Playwright: type a regex, scrub to the last step, assert the minimal DFA's
+- [x] **H1.** Vitest over step-rendering logic.
+- [x] **H2.** Playwright: type a regex, scrub to the last step, assert the minimal DFA's
       state count.
 - [ ] **H3.** **Hand it to a classmate who has not covered subset construction. Do not
       explain anything. Watch where they get stuck.** Whatever confuses them is the phase's
