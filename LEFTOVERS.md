@@ -117,10 +117,19 @@ Carried forward:
 | **F5–F7 (Phase 2)** | Play/pause and animating the transition being taken during a run | Play/pause landed with the scrubber. Animating the *run* still has not: it needs the simulator to say which transition was taken, which is the same shape of change `Frame` was for. | Phase 3 Track G |
 | **I6 (Phase 2)** | Copy the transition table as TSV | An export, and exports are Phase 4. | Phase 4 Track A |
 
-### Tracks E–H — not started
+### Tracks E–H — closed, bar the exit criterion
 
-Minimization view, DFA → regex, cross-cutting concerns, and validation of the conversion
-surface.
+Minimization has both presentations; DFA → regex has state elimination with a selectable
+order; the trace is capped and the pages verified for reduced motion and screen readers.
+
+Carried forward:
+
+| # | What | Why it is not done | Where it goes |
+|---|---|---|---|
+| **E4** | Merging states animated in the *diagram* | The blocks view animates its chips merging, which is the half that carries meaning. Two states collapsing across two panes needs a shared layout between panes that lay out independently — a canvas change, not a minimization one. | Phase 4 |
+| **G1** | Conversions on a worker | Measured, and the threshold is crossed only by a 257-state machine from a pathological expression. Every engine call would become asynchronous to remove a 55ms stall on an input nobody types. Revisit when a *typed* expression crosses 50ms. | Deferred, with numbers |
+| **F-tool** | A `/tools/dfa-to-regex` page | The section renders inside `/convert`, so the tool pages reach it — collapsed, under a heading about a different conversion. A page for it wants the section open and first. | Phase 4 |
+| **H3** | Hand it to a classmate who has not covered subset construction | Not a checkbox. It is the exit criterion and it needs a person. | Blocking Phase 3 |
 
 ## The site — front-of-house
 
