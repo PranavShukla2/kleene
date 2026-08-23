@@ -89,6 +89,38 @@ export function Elimination({
 
   if (!run) return null;
 
+  /*
+    The engine refused, and the reason is the whole message. Rendered as prose rather than as
+    an error, because nothing has gone wrong: the machine is too big for an expression anyone
+    could read, and "minimize it first" is real advice with the button for it one pane away.
+  */
+  if (run.refused !== null) {
+    return (
+      <section className="mt-4 overflow-hidden rounded-2xl border border-k-border bg-k-surface">
+        <header className="flex items-center gap-3 border-b border-k-border px-4 py-2.5">
+          <h2 className="font-medium">
+            Regular expression
+            <span className="ml-2 text-sm font-normal text-k-text-faint">
+              state elimination
+            </span>
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+            }}
+            className="ml-auto font-mono text-[11px] text-k-text-faint hover:text-k-text"
+          >
+            close
+          </button>
+        </header>
+        <p className="max-w-prose px-4 py-4 text-sm leading-relaxed text-k-text-muted">
+          {run.refused}
+        </p>
+      </section>
+    );
+  }
+
   const key = `${order}:${String(dfa.states.length)}`;
   const step = clampStep(mark.of === key ? mark.at : 0, run.steps);
   const stage = run.stages[step];
