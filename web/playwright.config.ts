@@ -38,7 +38,19 @@ export default defineConfig({
   // The built app, not the dev server. This suite exists to check the thing that ships, and
   // a dev server differs from it in exactly the ways that break a build.
   webServer: {
-    command: `npm run build && npx vite preview --port ${String(PORT)} --strictPort`,
+    /*
+      In CI the WebAssembly is already built — the `wasm` job builds it, size-checks it and
+      uploads it, and this job downloads it. So the build here must *not* re-run wasm-pack,
+      which is not installed in this job at all.
+
+      That was a silent, total failure: `npm run build` runs `npm run wasm`, `wasm-pack` was
+      not found, the server never started, and all thirty tests timed out on every push. The
+      Web job already avoids this by calling `vite build` directly; the reasoning was written
+      down there and not carried across to here.
+
+      Locally the full build runs, because a fresh checkout has no `pkg` to reuse.
+    */
+    command: `${process.env.CI ? 'npm run build:web' : 'npm run build'} && npx vite preview --port ${String(PORT)} --strictPort`,
     url: `http://localhost:${String(PORT)}`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

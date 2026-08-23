@@ -94,7 +94,13 @@ export function Elimination({
     an error, because nothing has gone wrong: the machine is too big for an expression anyone
     could read, and "minimize it first" is real advice with the button for it one pane away.
   */
-  if (run.refused !== null) {
+  /*
+    Truthy, not `!== null`. ts-rs types an `Option<String>` as `string | null`, but
+    `serde_wasm_bindgen` sends `None` across as **undefined** — so a strict null check was
+    true on every successful run, and the refusal branch rendered its empty message instead of
+    the answer. Any `| null` field arriving through wasm has to be tested loosely.
+  */
+  if (run.refused) {
     return (
       <section className="mt-4 overflow-hidden rounded-2xl border border-k-border bg-k-surface">
         <header className="flex items-center gap-3 border-b border-k-border px-4 py-2.5">
