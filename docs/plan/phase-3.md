@@ -316,14 +316,25 @@ to minimize first, which is advice rather than a brush-off.
 
 ## Definition of done
 
-- [ ] Regex → ε-NFA → DFA → minimal DFA, all four visible and synchronised.
-- [ ] Every step is scrubbable, with reasoning from core, and animated between states.
-- [ ] Hovering a DFA state highlights its origin states in the NFA.
-- [ ] Every partition split names the string that caused it, in both presentations.
-- [ ] DFA → regex animates its elimination order.
-- [ ] Works on a 1366×768 screen without horizontal scrolling.
+- [x] Regex → ε-NFA → DFA → minimal DFA, all four visible and synchronised.
+- [x] Every step is scrubbable, with reasoning from core, and animated between states.
+- [x] Hovering a DFA state highlights its origin states in the NFA.
+- [x] Every partition split names the string that caused it, in both presentations.
+- [x] DFA → regex shows its elimination order, and lets you change it.
+- [x] Works on a 1366×768 screen without horizontal scrolling.
 - [ ] **H3 has actually been run on a real person**, and what they got stuck on is either
       fixed or written into [LEFTOVERS.md](../../LEFTOVERS.md).
+
+**Every box above is ticked except the one that matters.** H3 is not a checkbox and cannot be
+self-assessed — the phase's own risk table says so. Until someone who has not covered subset
+construction has been handed this with no explanation, Phase 3 is *built*, not *done*.
+
+**H1 and H2 are covered by two suites.** `refinement.test.ts` and `construction.test.ts` hold
+the step arithmetic; `minimize-and-eliminate.spec.ts` and `subset-construction.spec.ts` hold the
+wiring, through the page. The split is deliberate and was earned: unit tests on the router were
+right the whole time while two pages were silently broken, and unit tests on the step logic
+would have been right while a strict `!== null` against a value `serde_wasm_bindgen` sends as
+`undefined` made the elimination section render an empty refusal on every successful run.
 
 ## Known risks for this phase
 
