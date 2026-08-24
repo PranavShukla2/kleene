@@ -17,6 +17,12 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 indexmap = { workspace = true }
 
+# JFLAP `.jff` import. A read-only DOM rather than a pull parser: these files are a few
+# kilobytes and the mapping reads far more clearly against a tree than against a state
+# machine. `roxmltree` borrows from the input and pulls in nothing else, which matters on a
+# crate that also compiles to WebAssembly.
+roxmltree = "0.20"
+
 # Optional, and behind a feature on purpose. The TypeScript bindings are a build-time
 # artifact, and the wasm bundle is on a 400 KB budget — nothing that only produces a `.ts`
 # file at development time should be linked into what a student downloads.
