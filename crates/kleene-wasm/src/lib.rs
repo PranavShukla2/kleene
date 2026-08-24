@@ -47,13 +47,43 @@ pub fn version() -> String {
 /// the core model has drifted out of `Serialize`.
 #[wasm_bindgen]
 pub fn example_automaton(name: &str) -> Result<JsValue, JsError> {
-    let automaton: Automaton = match name {
-        "even_number_of_as" => examples::even_number_of_as(),
-        "ends_with_ab" => examples::ends_with_ab(),
-        other => return Err(JsError::new(&format!("unknown example: {other}"))),
-    };
+    let automaton: Automaton =
+        examples::by_key(name).ok_or_else(|| JsError::new(&format!("unknown example: {name}")))?;
 
     serde_wasm_bindgen::to_value(&automaton).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// The whole example catalogue, as the gallery shows it (Phase 5 Track C).
+///
+/// The list lives in the core rather than in the frontend, and that is what makes tasks C1 and
+/// C4 the same work: the twenty machines the gallery draws are the twenty CI runs a broken
+/// example fails. A copy of the list in TypeScript would be a second corpus, tested by nobody,
+/// and it would drift the first time one was added.
+///
+/// The machines themselves are not built here. A gallery asking "what examples are there"
+/// has no business constructing twenty automata to answer.
+///
+/// # Errors
+///
+/// Returns a JS error if the catalogue cannot be serialized.
+#[wasm_bindgen]
+pub fn example_catalogue() -> Result<JsValue, JsError> {
+    let entries: Vec<_> = examples::catalogue()
+        .into_iter()
+        .map(|e| {
+            serde_json::json!({
+                "key": e.key,
+                "title": e.title,
+                "language": e.language,
+                "teaches": e.teaches,
+                "tier": e.tier.name(),
+                "topics": e.topics.iter().map(|t| t.name()).collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+
+    js_sys::JSON::parse(&serde_json::Value::Array(entries).to_string())
+        .map_err(|_| JsError::new("The catalogue could not be returned."))
 }
 
 /// Everything wrong with an automaton, as a structured report.
