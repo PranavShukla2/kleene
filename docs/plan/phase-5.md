@@ -151,8 +151,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-              shorter feedback loop: writing it against gestures that are still moving means rewriting
-              it, and a tour that describes a gesture the editor no longer has is worse than none.
+                  shorter feedback loop: writing it against gestures that are still moving means rewriting
+                  it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching
@@ -181,7 +181,9 @@ here is not shipping something imperfect; it is not shipping.
 - [ ] **F3.** `cargo dist` or equivalent for installers.
 - [x] **F4.** Changelog, generated from the commit history — which is why commits have been
       written to read as a build log from the first one.
-- [ ] **F5.** Tag `v1.0.0`.
+- [ ] **F5.** Tag `v1.0.0`. **Bump the workspace version first** — `Cargo.toml` still says
+      `0.1.0`, and `release.yml`'s first job compares the tag against the manifest and fails
+      in seconds if they disagree. Then delete the stray `1.0` tag (see below).
 
 > **F1 and F4 are done; F2, F3 and F5 are Pranav's.**
 >
