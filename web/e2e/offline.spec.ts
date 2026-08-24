@@ -12,6 +12,8 @@
 
 import { expect, test } from '@playwright/test';
 
+import { drawn } from './canvas';
+
 test.describe.configure({ mode: 'serial' });
 
 test('the app works with the network switched off, including pages never visited', async ({
@@ -31,7 +33,7 @@ test('the app works with the network switched off, including pages never visited
 
   // A hard navigation, not a client-side one — this is the case that needs the worker.
   await page.goto('/editor');
-  await expect(page.locator('svg[role="img"] text').first()).toBeVisible();
+  await expect(drawn(page).first()).toBeVisible();
 
   // A route this session has never opened. Reaching it offline needs `navigateFallback`,
   // which is the setting most easily left out and least visibly missing.

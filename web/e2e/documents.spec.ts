@@ -11,12 +11,14 @@ import { readFile } from 'node:fs/promises';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { drawn } from './canvas';
+
 /** The editor's outermost element, which is the drop target. */
 const EDITOR = 'div.relative.flex.h-dvh';
 
 /** State labels currently on the canvas, which is how "did the document change" is answered. */
 async function labels(page: Page): Promise<string[]> {
-  return page.locator('svg[role="img"] text').allTextContents();
+  return drawn(page).allTextContents();
 }
 
 /**
@@ -27,7 +29,7 @@ async function labels(page: Page): Promise<string[]> {
  * pass or fail depending on how fast wasm came back.
  */
 async function drop(page: Page, name: string, contents: string): Promise<void> {
-  await page.locator('svg[role="img"] text').first().waitFor();
+  await drawn(page).first().waitFor();
 
   await page.evaluate(
     ({ selector, name: filename, text }) => {
@@ -72,7 +74,7 @@ test('dropping a file opens it', async ({ page }) => {
 
   await drop(page, 'renamed.kln', text.replace('"q0"', '"START"'));
 
-  await expect(page.locator('svg[role="img"] text').first()).toHaveText('START');
+  await expect(drawn(page).first()).toHaveText('START');
 });
 
 test('a file from a newer version is refused, and the open document survives', async ({
@@ -154,7 +156,7 @@ test('a JFLAP finite automaton opens, keeping its names', async ({ page }) => {
   await page.goto('/editor');
   await drop(page, 'parity.jff', PARITY);
 
-  await expect(page.locator('svg[role="img"] text').first()).toHaveText('even');
+  await expect(drawn(page).first()).toHaveText('even');
 });
 
 test('a structure Kleene does not model is named, not reported as corrupt', async ({

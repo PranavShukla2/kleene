@@ -9,6 +9,8 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { canvas, drawn } from './canvas';
+
 /** Copy a share link for whatever is currently open. */
 async function shareLink(page: Page): Promise<string> {
   await page.getByRole('button', { name: 'copy link' }).click();
@@ -17,7 +19,7 @@ async function shareLink(page: Page): Promise<string> {
 
 /** Put a state on the canvas, so the session has work worth not losing. */
 async function drawSomething(page: Page): Promise<void> {
-  const box = await page.locator('svg[role="img"]').first().boundingBox();
+  const box = await canvas(page).first().boundingBox();
   if (!box) throw new Error('no canvas');
   await page.mouse.dblclick(box.x + 760, box.y + 470);
 }
@@ -45,7 +47,7 @@ test('opening a link in a fresh session loads the machine', async ({ page }) => 
   const fresh = await page.context().newPage();
   await fresh.goto(link);
 
-  await expect(fresh.locator('svg[role="img"] text').first()).toHaveText('q0');
+  await expect(drawn(fresh).first()).toHaveText('q0');
 });
 
 test('a link never discards work without asking', async ({ page }) => {
@@ -59,12 +61,12 @@ test('a link never discards work without asking', async ({ page }) => {
   await drawSomething(page);
   // Past the autosave debounce, so the session counts as busy.
   await page.waitForTimeout(2500);
-  const before = await page.locator('svg[role="img"] text').allTextContents();
+  const before = await drawn(page).allTextContents();
 
   await page.goto(link);
 
   await expect(page.getByRole('button', { name: 'Keep mine' })).toBeVisible();
-  expect(await page.locator('svg[role="img"] text').allTextContents()).toEqual(before);
+  expect(await drawn(page).allTextContents()).toEqual(before);
 });
 
 test('the offered machine opens when it is accepted', async ({ page }) => {
@@ -74,12 +76,12 @@ test('the offered machine opens when it is accepted', async ({ page }) => {
   await page.goto('/editor');
   await drawSomething(page);
   await page.waitForTimeout(2500);
-  const before = await page.locator('svg[role="img"] text').allTextContents();
+  const before = await drawn(page).allTextContents();
 
   await page.goto(link);
   await page.getByRole('button', { name: 'Open it' }).click();
 
-  const after = await page.locator('svg[role="img"] text').allTextContents();
+  const after = await drawn(page).allTextContents();
   expect(after).not.toEqual(before);
   await expect(page.getByRole('button', { name: 'Keep mine' })).toHaveCount(0);
 });

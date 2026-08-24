@@ -13,12 +13,14 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { canvas } from './canvas';
+
 /** State radius, from `GEOM.radius`. Duplicated because e2e sees pixels, not modules. */
 const RADIUS = 24;
 
 /** Where the canvas sits, so gestures can be given in diagram coordinates. */
 async function canvasOrigin(page: Page): Promise<{ x: number; y: number }> {
-  const box = await page.locator('svg[role="img"]').boundingBox();
+  const box = await canvas(page).boundingBox();
   if (!box) throw new Error('canvas not on screen');
   return { x: box.x, y: box.y };
 }
@@ -78,7 +80,7 @@ async function verdictFor(page: Page, input: string): Promise<string> {
 test.describe('the even-number-of-a’s DFA, built by hand', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/editor');
-    await expect(page.locator('svg[role="img"]')).toBeVisible();
+    await expect(canvas(page)).toBeVisible();
     // The engine has to have loaded, or the panels are not there to assert against.
     await expect(page.getByText('kleene-core')).toBeVisible();
   });
