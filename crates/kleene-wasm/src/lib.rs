@@ -395,3 +395,37 @@ pub fn to_dot(automaton: JsValue) -> Result<String, JsError> {
 
     Ok(kleene_core::io::to_dot(&automaton))
 }
+
+/// Read a JFLAP `.jff` file (Phase 4 Track E).
+///
+/// Returns the machine, where its states sat in JFLAP, and anything the import had to drop —
+/// a dangling transition, a second start state. Those notes are not errors: the import
+/// succeeded, and a silent difference between what someone drew in JFLAP and what they now see
+/// is worse than a sentence saying what changed.
+///
+/// # Errors
+///
+/// Returns a JS error whose message is meant to be *shown*. A file holding a pushdown
+/// automaton is not corrupt, and the person opening it is exactly the user being courted — so
+/// the message names what the file contains and what Kleene does read.
+#[wasm_bindgen]
+pub fn from_jff(text: &str) -> Result<JsValue, JsError> {
+    let imported = kleene_core::io::from_jff(text).map_err(|e| JsError::new(&e.to_string()))?;
+
+    // Built by hand rather than derived, because `Imported` is a core type and giving it
+    // `Serialize` would be letting the boundary's convenience reach back into the engine.
+    let layout: std::collections::BTreeMap<String, kleene_core::io::tikz::Point> = imported
+        .layout
+        .iter()
+        .map(|&(id, x, y)| (id.to_string(), kleene_core::io::tikz::Point { x, y }))
+        .collect();
+
+    let payload = serde_json::json!({
+        "automaton": imported.automaton,
+        "layout": layout,
+        "notes": imported.notes,
+    });
+
+    js_sys::JSON::parse(&payload.to_string())
+        .map_err(|_| JsError::new("The imported machine could not be returned."))
+}

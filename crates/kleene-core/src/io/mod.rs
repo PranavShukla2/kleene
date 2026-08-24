@@ -19,6 +19,7 @@ pub mod tikz;
 pub mod wire;
 
 pub use dot::to_dot;
+pub use jff::{Imported, JffError, from_jff};
 pub use json::{Document, FormatError, Meta, Point};
 pub use tikz::to_tikz;
 pub use wire::{WireAutomaton, WireState};
