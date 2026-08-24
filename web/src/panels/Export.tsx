@@ -36,7 +36,7 @@ const COPIED_MS = 1600;
 const SCALES = [1, 2, 3] as const;
 
 /** What the panel can produce. TikZ first, because it is the one output nothing else makes. */
-type Format = 'tikz' | 'svg' | 'png';
+type Format = 'tikz' | 'svg' | 'png' | 'dot';
 
 export function ExportPanel({
   engine,
@@ -60,6 +60,15 @@ export function ExportPanel({
   const [dark, setDark] = useState(false);
   const [transparent, setTransparent] = useState(false);
   const [scale, setScale] = useState<number>(2);
+
+  const dot = useMemo(() => {
+    if (!engine || automaton.states.length === 0) return undefined;
+    try {
+      return engine.toDot(automaton);
+    } catch {
+      return undefined;
+    }
+  }, [engine, automaton]);
 
   const tikz = useMemo(() => {
     if (!engine || automaton.states.length === 0) return undefined;
@@ -166,6 +175,7 @@ export function ExportPanel({
             ['tikz', 'LaTeX'],
             ['svg', 'SVG'],
             ['png', 'PNG'],
+            ['dot', 'DOT'],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -186,8 +196,13 @@ export function ExportPanel({
         ))}
       </div>
 
-      {format === 'tikz' ? (
-        <Tikz source={tikz} copied={copied} onCopied={acknowledge} />
+      {format === 'tikz' || format === 'dot' ? (
+        <Source
+          format={format}
+          source={format === 'tikz' ? tikz : dot}
+          copied={copied}
+          onCopied={acknowledge}
+        />
       ) : (
         <Image
           format={format}
@@ -234,22 +249,42 @@ export function ExportPanel({
   );
 }
 
+/** What each text format is called, what it saves as, and the sentence under it. */
+const SOURCES = {
+  tikz: {
+    unit: 'lines of LaTeX',
+    extension: 'tex',
+    mime: 'text/x-tex',
+    note: 'latex',
+  },
+  dot: {
+    unit: 'lines of DOT',
+    extension: 'dot',
+    mime: 'text/vnd.graphviz',
+    note: 'dot',
+  },
+} as const;
+
 /**
- * The LaTeX snippet.
+ * A text format: LaTeX or DOT.
  *
- * Shown rather than only downloaded, because it is going into a `.tex` that is already open —
- * the useful gesture is copy. Downloadable as well, because a file is what people expect an
- * "export" to produce, and TikZ being *source* rather than an image surprises everyone once.
+ * Shown rather than only downloaded, because both are going into something that is already
+ * open — a `.tex`, or a shell pipeline. The useful gesture is copy. Downloadable as well,
+ * because a file is what people expect an "export" to produce, and both of these being
+ * *source* rather than an image surprises everyone once.
  */
-function Tikz({
+function Source({
+  format,
   source,
   copied,
   onCopied,
 }: {
+  format: 'tikz' | 'dot';
   source: string | undefined;
   copied: boolean;
   onCopied: () => void;
 }) {
+  const spec = SOURCES[format];
   if (!source) {
     return (
       <p className="mt-2 text-sm text-k-text-faint">This machine cannot be exported yet.</p>
@@ -260,7 +295,7 @@ function Tikz({
     <>
       <div className="mt-2 flex items-center gap-2">
         <span className="font-mono text-[10px] text-k-text-faint">
-          {source.split('\n').length} lines of LaTeX
+          {source.split('\n').length} {spec.unit}
         </span>
 
         <button
@@ -282,11 +317,11 @@ function Tikz({
         <button
           type="button"
           onClick={() => {
-            download(source, filenameFor('automaton', 'tex'), 'text/x-tex');
+            download(source, filenameFor('automaton', spec.extension), spec.mime);
           }}
           className="rounded-full border border-k-border px-2.5 py-0.5 font-mono text-[11px] text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text"
         >
-          .tex
+          .{spec.extension}
         </button>
       </div>
 
@@ -300,7 +335,7 @@ function Tikz({
         readOnly
         spellCheck={false}
         value={source}
-        aria-label="TikZ source"
+        aria-label={format === 'tikz' ? 'TikZ source' : 'DOT source'}
         className="mt-2 h-40 w-full resize-y rounded-lg border border-k-border bg-k-canvas p-2 font-mono text-[11px] leading-relaxed text-k-text-muted"
       />
 
