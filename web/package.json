@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "e2e": "playwright test",
     "og": "node scripts/og.mjs",
+    "shots": "node scripts/screenshots.mjs",
     "build:web": "tsc -b && vite build"
   },
   "dependencies": {
