@@ -24,10 +24,36 @@ test('the app works with the network switched off, including pages never visited
 
   // Online first, so the worker installs and precaches.
   await page.goto('/editor');
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  // The precache is written after `ready` resolves; without this the first offline navigation
-  // races a cache that is still filling.
-  await page.waitForTimeout(2500);
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+
+  /*
+    Wait for the cache to actually hold the WebAssembly module, rather than waiting a fixed
+    number of milliseconds and hoping.
+
+    This was `waitForTimeout(2500)`, which is a guess about how long a machine takes to write
+    ~500 KB of wasm plus the fonts and the shell. It was a good guess on the machine it was
+    written on and a bad one on a CI runner, where the suite went red while passing locally —
+    the exact failure mode a fixed sleep in a test is *for*.
+
+    Polling the real condition is both faster when the cache is quick and correct when it is
+    slow. The wasm is the right thing to poll for: it is the largest entry, so it finishes
+    last, and it is the one a default size cap would silently have dropped.
+  */
+  await page.waitForFunction(
+    async () => {
+      const names = await caches.keys();
+      for (const name of names) {
+        const cache = await caches.open(name);
+        const keys = await cache.keys();
+        if (keys.some((request) => request.url.endsWith('.wasm'))) return true;
+      }
+      return false;
+    },
+    undefined,
+    { timeout: 60_000 },
+  );
 
   await context.setOffline(true);
 
