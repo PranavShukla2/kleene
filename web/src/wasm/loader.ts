@@ -14,6 +14,7 @@ import init, {
   from_kln,
   minimization,
   example_automaton,
+  example_catalogue,
   formal_definition,
   simulate,
   to_dot,
@@ -143,6 +144,29 @@ export interface Engine {
    * corrupt, and the person opening it is exactly the user being courted.
    */
   fromJff: (text: string) => Imported;
+  /**
+   * Every example, as the gallery shows them (Phase 5 Track C).
+   *
+   * From the engine rather than from a list beside the gallery, because the twenty machines
+   * shown are the twenty a broken example fails CI on. A copy here would be a second corpus,
+   * tested by nobody.
+   */
+  catalogue: () => CatalogueEntry[];
+}
+
+/** One example, as the engine describes it. */
+export interface CatalogueEntry {
+  /** The key a URL uses, and what `example` takes. */
+  key: string;
+  title: string;
+  /** The language, in the notation a course writes on a board. */
+  language: string;
+  /** What someone learns by opening it. */
+  teaches: string;
+  /** `introductory`, `standard` or `pathological`. */
+  tier: string;
+  /** What it demonstrates, for the filter chips. */
+  topics: string[];
 }
 
 /** What a `.jff` file turned out to hold. */
@@ -194,6 +218,7 @@ export function loadEngine(): Promise<Engine> {
       toKln: (document: Document) => to_kln(document),
       fromKln: (text: string) => from_kln(text) as Document,
       fromJff: (text: string) => from_jff(text) as Imported,
+      catalogue: () => example_catalogue() as CatalogueEntry[],
       epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
         // A copy because the binding takes ownership of a `Uint32Array`, and the caller's
         // array is a slice of a step it does not own.
