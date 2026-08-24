@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { droppedFile, filenameFor, isFileDrag, KLN } from '@/store/files';
+import { droppedFile, filenameFor, isFileDrag, JFF, KLN } from '@/store/files';
 
 /** A `DragEvent`-shaped object, since jsdom has no real one. */
 function drag(items: { kind: string }[], files: { name: string }[] = []): DragEvent {
@@ -55,6 +55,17 @@ describe('droppedFile', () => {
 
   it('is not fooled by case', () => {
     expect(droppedFile(drag([], [{ name: 'MACHINE.KLN' }]))?.name).toBe('MACHINE.KLN');
+  });
+
+  it('accepts a JFLAP file too', () => {
+    // The migration path. Someone with three years of coursework in `.jff` will not retype it.
+    expect(droppedFile(drag([], [{ name: 'assignment3.jff' }]))?.name).toBe('assignment3.jff');
+    expect(droppedFile(drag([], [{ name: `x${JFF.toUpperCase()}` }]))).toBeDefined();
+  });
+
+  it('prefers whichever openable file comes first', () => {
+    const files = [{ name: 'a.jff' }, { name: 'b.kln' }];
+    expect(droppedFile(drag([], files))?.name).toBe('a.jff');
   });
 
   it('returns nothing when the drop carries no document', () => {

@@ -15,12 +15,28 @@
 import type { Document } from '@/model/automaton';
 import type { Engine } from '@/wasm/loader';
 
-/** The extension, and what the file picker offers. */
+/** Kleene's own format. */
 export const KLN = '.kln';
+
+/** JFLAP's, which this reads but never writes (Phase 4 Track E). */
+export const JFF = '.jff';
+
+/** What the file picker offers, and what a drop will accept. */
+export const OPENABLE = [KLN, JFF] as const;
 
 /** What opening a file produced. Never a thrown error — a bad file is an ordinary outcome. */
 export type Opened =
-  | { ok: true; document: Document }
+  | {
+      ok: true;
+      document: Document;
+      /**
+       * What an import had to drop, when it dropped anything.
+       *
+       * Only ever set for `.jff`: Kleene's own format round-trips exactly, and a note there
+       * would mean a bug rather than a difference between two tools' models.
+       */
+      notes?: string[];
+    }
   /** A sentence to show the reader, already written for them by the engine. */
   | { ok: false; message: string };
 
@@ -38,14 +54,41 @@ export async function openFile(engine: Engine, file: File): Promise<Opened> {
     return { ok: false, message: `${file.name} could not be read.` };
   }
 
+  /*
+    Chosen by extension rather than by sniffing the contents. Both formats announce themselves
+    clearly enough to guess from, and guessing would mean a `.kln` with a stray `<` producing a
+    JFLAP parse error — a message about the wrong tool entirely.
+  */
+  const jflap = file.name.toLowerCase().endsWith(JFF);
+
   try {
+    if (jflap) {
+      const imported = engine.fromJff(text);
+      return {
+        ok: true,
+        document: {
+          version: 1,
+          automaton: imported.automaton,
+          // JFLAP's axes run the same way a screen's do, so the arrangement carries across
+          // untouched. Re-laying it out would throw away exactly the part someone spent their
+          // time on — which is the whole reason for importing rather than redrawing.
+          layout: Object.fromEntries(
+            Object.entries(imported.layout).map(([id, at]) => [Number(id), at]),
+          ),
+        } as Document,
+        notes: imported.notes,
+      };
+    }
+
     return { ok: true, document: engine.fromKln(text) };
   } catch (error) {
-    // The engine's messages are written to be shown — "This file was written by a newer
-    // version of Kleene" — so they are passed through rather than replaced with a generic one.
+    // The engine's messages are written to be shown — "This file contains a pushdown
+    // automaton, which Kleene does not support yet" — so they are passed through rather than
+    // replaced with a generic one.
     return {
       ok: false,
-      message: error instanceof Error ? error.message : `${file.name} is not a Kleene file.`,
+      message:
+        error instanceof Error ? error.message : `${file.name} is not a file Kleene can open.`,
     };
   }
 }
@@ -55,7 +98,7 @@ export function pickFile(): Promise<File | undefined> {
   return new Promise((resolve) => {
     const input = window.document.createElement('input');
     input.type = 'file';
-    input.accept = KLN;
+    input.accept = OPENABLE.join(',');
 
     input.addEventListener('change', () => {
       resolve(input.files?.[0]);
@@ -109,9 +152,9 @@ export function isFileDrag(event: DragEvent): boolean {
   return Array.from(event.dataTransfer?.items ?? []).some((item) => item.kind === 'file');
 }
 
-/** The first `.kln` in a drop, if there is one. */
+/** The first openable file in a drop, if there is one. */
 export function droppedFile(event: DragEvent): File | undefined {
   return Array.from(event.dataTransfer?.files ?? []).find((file) =>
-    file.name.toLowerCase().endsWith(KLN),
+    OPENABLE.some((extension) => file.name.toLowerCase().endsWith(extension)),
   );
 }
