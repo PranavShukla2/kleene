@@ -60,7 +60,7 @@ export function Landing({
           onNavigate('examples');
         }}
       />
-      <Comparison />
+      <Comparison onNavigate={onNavigate} />
       <Questions />
       <Closing onNavigate={onNavigate} />
     </main>
@@ -409,7 +409,7 @@ function Examples({
 
 /* ── Comparison ────────────────────────────────────────────────────────────── */
 
-function Comparison() {
+function Comparison({ onNavigate }: { onNavigate: (to: Route) => void }) {
   return (
     <Section>
       <Heading
@@ -446,6 +446,24 @@ function Comparison() {
             </tbody>
           </table>
         </div>
+      </Reveal>
+
+      {/*
+        Five rows favourable to Kleene are an argument, not a comparison. The full page
+        concedes the ones JFLAP wins — Turing machines, grammars, twenty years of standing —
+        and a reader who suspects this table of being selective deserves to find that out
+        from us rather than from someone else.
+      */}
+      <Reveal delay={0.1}>
+        <button
+          type="button"
+          onClick={() => {
+            onNavigate('jflap');
+          }}
+          className="mt-6 font-mono text-sm text-k-primary underline decoration-k-primary/30 underline-offset-4 hover:decoration-k-primary"
+        >
+          The longer comparison, including what JFLAP does better →
+        </button>
       </Reveal>
     </Section>
   );
