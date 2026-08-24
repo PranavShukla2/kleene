@@ -286,3 +286,222 @@ fn child_text<'a>(node: roxmltree::Node<'a, 'a>, name: &str) -> Option<String> {
 fn number(node: roxmltree::Node<'_, '_>, name: &str) -> Option<f64> {
     child_text(node, name)?.parse().ok()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A finite automaton as JFLAP writes one, tabs and all.
+    const ENDS_WITH_AB: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--Created with JFLAP 7.1.-->
+<structure>
+	<type>fa</type>
+	<automaton>
+		<state id="0" name="q0">
+			<x>90.0</x>
+			<y>130.0</y>
+			<initial/>
+		</state>
+		<state id="1" name="q1">
+			<x>186.0</x>
+			<y>130.0</y>
+		</state>
+		<state id="2" name="q2">
+			<x>282.0</x>
+			<y>130.0</y>
+			<final/>
+		</state>
+		<transition><from>0</from><to>1</to><read>a</read></transition>
+		<transition><from>0</from><to>0</to><read>b</read></transition>
+		<transition><from>1</from><to>2</to><read>b</read></transition>
+		<transition><from>1</from><to>1</to><read>a</read></transition>
+	</automaton>
+</structure>"#;
+
+    #[test]
+    fn reads_a_finite_automaton() {
+        let imported = from_jff(ENDS_WITH_AB).expect("reads");
+
+        assert_eq!(imported.automaton.state_count(), 3);
+        assert_eq!(imported.automaton.start, 0);
+        assert!(imported.automaton.state(2).expect("exists").accepting);
+        assert!(!imported.automaton.state(1).expect("exists").accepting);
+        assert!(imported.notes.is_empty(), "{:?}", imported.notes);
+    }
+
+    #[test]
+    fn infers_the_alphabet_from_the_transitions() {
+        // JFLAP has no Σ. A machine over {a, b} that uses only `a` imports as a machine over
+        // {a}, and there is nothing in the file to recover the rest from.
+        let imported = from_jff(ENDS_WITH_AB).expect("reads");
+        assert_eq!(imported.automaton.alphabet, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn keeps_the_arrangement_the_person_made() {
+        // The point of importing rather than re-drawing. JFLAP's axes run the same way as a
+        // screen's, so the numbers carry across untouched.
+        let imported = from_jff(ENDS_WITH_AB).expect("reads");
+        assert_eq!(
+            imported.layout,
+            vec![(0, 90.0, 130.0), (1, 186.0, 130.0), (2, 282.0, 130.0)]
+        );
+    }
+
+    #[test]
+    fn an_empty_read_is_an_epsilon_transition() {
+        // The most important line in the module. Read as a symbol, it would produce a machine
+        // whose alphabet contains the empty string.
+        let file = r#"<structure><type>fa</type><automaton>
+            <state id="0" name="q0"><initial/></state>
+            <state id="1" name="q1"><final/></state>
+            <transition><from>0</from><to>1</to><read/></transition>
+        </automaton></structure>"#;
+
+        let imported = from_jff(file).expect("reads");
+        assert!(imported.automaton.alphabet.is_empty(), "ε is not a symbol");
+        assert!(imported.automaton.has_epsilon());
+    }
+
+    #[test]
+    fn a_missing_read_element_is_also_epsilon() {
+        let file = r#"<structure><type>fa</type><automaton>
+            <state id="0" name="q0"><initial/></state>
+            <state id="1" name="q1"><final/></state>
+            <transition><from>0</from><to>1</to></transition>
+        </automaton></structure>"#;
+
+        assert!(from_jff(file).expect("reads").automaton.has_epsilon());
+    }
+
+    #[test]
+    fn every_structure_kleene_does_not_model_is_named_precisely() {
+        // Task E3. The person opening one of these is exactly the user being courted, and the
+        // message is a first impression — so it says what the file *is*, not what the parser
+        // did not expect.
+        for (kind, expected) in [
+            ("pda", "a pushdown automaton"),
+            ("turing", "a Turing machine"),
+            ("grammar", "a grammar"),
+            ("re", "a regular expression"),
+            ("moore", "a Mealy or Moore machine"),
+        ] {
+            let file = format!("<structure><type>{kind}</type></structure>");
+            let error = from_jff(&file).expect_err("should refuse");
+
+            let message = error.to_string();
+            assert!(message.contains(expected), "{kind}: {message}");
+            // And it says what Kleene *does* read, because "no" without "but" sends someone
+            // away for good.
+            assert!(message.contains("finite automata"), "{kind}: {message}");
+        }
+    }
+
+    #[test]
+    fn an_unfamiliar_structure_is_still_refused_by_name() {
+        let file = "<structure><type>pumping-lemma</type></structure>";
+        let message = from_jff(file).expect_err("refuses").to_string();
+        assert!(message.contains("pumping-lemma"), "{message}");
+    }
+
+    #[test]
+    fn a_file_that_is_not_jflap_says_so() {
+        assert!(matches!(
+            from_jff("not xml at all"),
+            Err(JffError::NotJflap(_))
+        ));
+        assert!(matches!(
+            from_jff("<html><body>hello</body></html>"),
+            Err(JffError::NotJflap(_))
+        ));
+    }
+
+    #[test]
+    fn an_automaton_with_no_states_is_refused() {
+        let file = "<structure><type>fa</type><automaton></automaton></structure>";
+        assert!(matches!(from_jff(file), Err(JffError::Malformed(_))));
+    }
+
+    #[test]
+    fn a_dangling_transition_is_dropped_and_reported() {
+        // Not fatal. A file with one bad edge still holds a machine worth opening, and the
+        // note is what stops the difference being silent.
+        let file = r#"<structure><type>fa</type><automaton>
+            <state id="0" name="q0"><initial/></state>
+            <transition><from>0</from><to>99</to><read>a</read></transition>
+        </automaton></structure>"#;
+
+        let imported = from_jff(file).expect("still reads");
+        assert!(imported.automaton.transitions.is_empty());
+        assert_eq!(imported.notes.len(), 1);
+        assert!(
+            imported.notes[0].contains("does not exist"),
+            "{:?}",
+            imported.notes
+        );
+    }
+
+    #[test]
+    fn a_file_with_no_start_state_gets_one_and_is_told() {
+        let file = r#"<structure><type>fa</type><automaton>
+            <state id="7" name="only"><final/></state>
+        </automaton></structure>"#;
+
+        let imported = from_jff(file).expect("reads");
+        assert_eq!(imported.automaton.start, 7);
+        assert!(
+            imported.notes[0].contains("no start state"),
+            "{:?}",
+            imported.notes
+        );
+    }
+
+    #[test]
+    fn the_first_of_several_start_states_wins_and_is_reported() {
+        // JFLAP's editor allows only one, but a hand-edited file can carry several. The last
+        // one winning silently — because it was written last — is the trap avoided here.
+        let file = r#"<structure><type>fa</type><automaton>
+            <state id="0" name="a"><initial/></state>
+            <state id="1" name="b"><initial/></state>
+        </automaton></structure>"#;
+
+        let imported = from_jff(file).expect("reads");
+        assert_eq!(imported.automaton.start, 0);
+        assert!(imported.notes[0].contains("more than one start state"));
+    }
+
+    #[test]
+    fn state_ids_do_not_have_to_start_at_zero_or_be_contiguous() {
+        // JFLAP's ids are whatever survived the user's editing session.
+        let file = r#"<structure><type>fa</type><automaton>
+            <state id="4" name="q4"><initial/></state>
+            <state id="9" name="q9"><final/></state>
+            <transition><from>4</from><to>9</to><read>x</read></transition>
+        </automaton></structure>"#;
+
+        let imported = from_jff(file).expect("reads");
+        assert_eq!(imported.automaton.start, 4);
+        assert!(imported.automaton.state(9).expect("exists").accepting);
+    }
+
+    #[test]
+    fn an_unnamed_state_is_named_the_way_jflap_draws_it() {
+        let file = r#"<structure><type>fa</type><automaton>
+            <state id="3"><initial/></state>
+        </automaton></structure>"#;
+
+        let imported = from_jff(file).expect("reads");
+        assert_eq!(imported.automaton.state(3).expect("exists").label, "q3");
+    }
+
+    #[test]
+    fn an_imported_machine_is_one_the_rest_of_the_engine_accepts() {
+        // The real test of an importer: not that it parsed, but that what it produced can be
+        // used. An import that validates and then cannot be determinized is not an import.
+        let imported = from_jff(ENDS_WITH_AB).expect("reads");
+        assert!(!imported.automaton.validate().has_errors());
+
+        let dfa = crate::convert::determinize(&imported.automaton).result;
+        assert_eq!(dfa.determinism(), crate::automaton::Determinism::Dfa);
+    }
+}
