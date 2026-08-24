@@ -1,0 +1,174 @@
+name: Release
+
+# Tag-driven: `git tag v1.0.0 && git push --tags` builds and packages everything. No step of
+# the build needs a human, because a build with a manual step is a build that gets done
+# differently each time. The one deliberate human step is at the end — the release is created
+# as a draft, so the notes get read before anyone else does.
+on:
+  push:
+    tags: ['v*']
+  # Buildable without tagging, so a change to this file can be proved before it is the only
+  # thing standing between a tag and a release.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # The tag says what version this is; Cargo.toml says what version the code is. If they
+  # disagree, the artefacts are mislabelled and nothing downstream can tell. Cheap to check,
+  # and it runs before anything spends twenty minutes cross-compiling.
+  check:
+    name: The tag matches the manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          manifest="$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
+          if [ "$tag" != "$manifest" ]; then
+            echo "::error::Tag v$tag does not match the workspace version $manifest."
+            echo "Bump Cargo.toml, or retag."
+            exit 1
+          fi
+          echo "v$tag matches the manifest."
+
+  cli:
+    name: CLI · ${{ matrix.target }}
+    needs: check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One target failing should not deny the other two their artefacts — a release with two
+      # of three binaries is worth shipping while the third is fixed.
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add the target
+        run: rustup target add ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked -p kleene-cli --target ${{ matrix.target }}
+
+      # Archived per-platform convention: a tarball on Unix, a zip on Windows, each holding
+      # the binary and the licences. Named with the target triple so someone downloading three
+      # of them can tell which is which.
+      - name: Package (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          staging="kleene-${{ matrix.target }}"
+          mkdir "$staging"
+          cp "target/${{ matrix.target }}/release/kleene" "$staging/"
+          cp README.md LICENSE-MIT LICENSE-APACHE "$staging/"
+          tar czf "$staging.tar.gz" "$staging"
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $staging = "kleene-${{ matrix.target }}"
+          New-Item -ItemType Directory -Path $staging | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/kleene.exe" $staging
+          Copy-Item README.md, LICENSE-MIT, LICENSE-APACHE $staging
+          Compress-Archive -Path $staging -DestinationPath "$staging.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kleene-${{ matrix.target }}
+          path: |
+            kleene-*.tar.gz
+            kleene-*.zip
+          if-no-files-found: error
+
+  # The web app is deployed by deploy.yml on every push to main, so it is not re-deployed
+  # here. What this adds is a downloadable copy of exactly what a given tag served — the
+  # thing a department that cannot rely on a URL staying up actually needs.
+  web:
+    name: Web bundle
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          # The same pin as ci.yml and deploy.yml, and for the same reason: wasm-pack ships
+          # its own binaryen, and the wasm-opt flags in crates/kleene-wasm/Cargo.toml are
+          # only valid for the version it bundles. Three workflows building the same module
+          # with two different toolchains is a bug waiting for a release to expose it.
+          version: 'v0.15.0'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+
+      - name: Package
+        run: tar czf kleene-web.tar.gz -C web dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kleene-web
+          path: kleene-web.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish the release
+    needs: [cli, web]
+    # Only for a real tag. A workflow_dispatch run is a rehearsal: it proves the build and
+    # stops short of creating anything public.
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List what is being attached
+        run: ls -lh artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          # Written by hand rather than generated from commit subjects. The commits read as
+          # a build log, which is the right register for a contributor and the wrong one for
+          # someone deciding whether to download this.
+          #
+          # The whole file, which is right for v1.0.0 and wrong afterwards — trim it to the
+          # new section while the release is still a draft.
+          body_path: CHANGELOG.md
+          generate_release_notes: false
+          draft: true
