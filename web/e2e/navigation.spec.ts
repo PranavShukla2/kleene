@@ -114,3 +114,25 @@ for (const path of PAGES) {
     await expect(page.locator('h1')).toHaveCount(1);
   });
 }
+
+test('the editor exports the machine it is showing, as TikZ', async ({ page }) => {
+  // Phase 4 A/B. The promise is that what is on screen is what comes out, so this asserts on
+  // the *content* rather than on the panel existing — a snippet that renders a different
+  // machine is the failure worth catching, and it looks perfectly fine on screen.
+  await page.goto('/editor');
+
+  const source = page.getByLabel('TikZ source');
+  await expect(source).toBeVisible();
+  const tex = await source.inputValue();
+
+  expect(tex).toContain('\\begin{tikzpicture}');
+  // The preamble it needs, because the commonest failure is a correct picture that will not
+  // compile in the document it was pasted into.
+  expect(tex).toContain('\\usetikzlibrary{automata,positioning}');
+  // `ends_with_ab` is the default document: three states, one accepting, one initial.
+  expect(tex.match(/\\node/g)).toHaveLength(3);
+  expect(tex).toContain('state,initial');
+  expect(tex).toContain('state,accepting');
+  // Shifted to the origin rather than carrying the canvas's layout offset.
+  expect(tex).toContain('(0.00,0.00)');
+});

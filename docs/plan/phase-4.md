@@ -22,22 +22,22 @@ an assignment got submitted using it or it did not.
 Roadmap §2.7 calls it the single highest-value feature per line of code in the whole
 project, and that is correct — it is the one output nothing else in this space produces.
 
-- [ ] **A1.** `io/tikz.rs` in core, taking automaton + layout. The first core function that
+- [x] **A1.** `io/tikz.rs` in core, taking automaton + layout. The first core function that
       needs layout, so it takes it as a parameter rather than storing it — **`kleene-core`
       still does not know what a pixel is** (roadmap §2.3).
-- [ ] **A2.** Coordinate mapping: 96px → 2.4cm, per design-system §4.4. Chosen so what the
+- [x] **A2.** Coordinate mapping: 96px → 2.4cm, per design-system §4.4. Chosen so what the
       student arranged on screen is what comes out, with no fudge factor.
-- [ ] **A3.** Self-loops: `loop above/below/left/right`, direction chosen by free space —
+- [x] **A3.** Self-loops: `loop above/below/left/right`, direction chosen by free space —
       the same rule the renderer uses, so the export matches the screen.
-- [ ] **A4.** Bidirectional pairs → `bend left` / `bend right`.
-- [ ] **A5.** Multi-symbol edges collapsed to `a, b`.
-- [ ] **A6.** Label escaping: `_`, `^`, `{`, `}`, `\`, `$`, `#`, `&`, `%`, `~`. A label
+- [x] **A4.** Bidirectional pairs → `bend left` / `bend right`.
+- [x] **A5.** Multi-symbol edges collapsed to `a, b`.
+- [x] **A6.** Label escaping: `_`, `^`, `{`, `}`, `\`, `$`, `#`, `&`, `%`, `~`. A label
       containing `q_{0}` must not produce a LaTeX compile error, because a student who hits
       one will not debug it — they will go back to drawing by hand.
-- [ ] **A7.** Emit the required `\usepackage{tikz}` and `\usetikzlibrary{automata,positioning}`
+- [x] **A7.** Emit the required `\usepackage{tikz}` and `\usetikzlibrary{automata,positioning}`
       as a comment header. The most common failure is a correct picture that will not compile
       in the user's document.
-- [ ] **A8.** `insta` snapshot tests over all of the above (roadmap §2.7).
+- [x] **A8.** `insta` snapshot tests over all of the above (roadmap §2.7).
 - [ ] **A9.** **Compile the snapshot outputs with a real LaTeX pass in CI.** Snapshot tests
       prove the output did not change; they do not prove it ever compiled.
       🔵 **LEFTOVER CANDIDATE** — a TeX toolchain in CI is slow. If cut, compile them
@@ -45,13 +45,35 @@ project, and that is correct — it is the one output nothing else in this space
 
 ### Track B — TikZ UI
 
-- [ ] **B1.** Export panel with the TikZ source in a monospace pane, syntax-highlighted.
-- [ ] **B2.** Copy button with real feedback.
-- [ ] **B3.** Live preview that updates as the diagram is edited.
+- [x] **B1.** Export panel with the TikZ source in a monospace pane, syntax-highlighted.
+- [x] **B2.** Copy button with real feedback.
+- [x] **B3.** Live preview that updates as the diagram is edited.
       🔴 **DECISION D16** — a real preview needs a LaTeX renderer in the browser, which is
       a large dependency and fights the 400 KB wasm budget. The alternatives are a rendered
       SVG approximation (honest, cheap, slightly inaccurate) or no preview at all.
-- [ ] **B4.** A visible note on which packages the snippet requires.
+- [x] **B4.** A visible note on which packages the snippet requires.
+
+**Tracks A and B closed but for A9.**
+
+**A3 required writing one rule twice, and that is recorded rather than hidden.** The
+"which side is a self-loop free on" rule lives in TypeScript (`web/src/canvas/geometry.ts`)
+because the renderer needs it every frame of a drag, and now in Rust because the exporter needs
+it without a renderer. Routing the renderer through wasm to ask would put an FFI call in a drag
+loop. `matches_the_renderer` in `io/tikz.rs` restates the renderer's own cases against the Rust
+copy — it is what holds them together, and it is written to fail loudly rather than let them
+drift into a student's assignment not looking like their screen.
+
+**One thing the plan did not anticipate: the coordinates needed shifting.** The canvas lays a
+machine out from (90, 130), so an unshifted export carried coordinates like (2.25, -3.25) —
+arbitrary-looking because they were. Relative positions are the promise; the absolute origin is
+an editor detail. The export now puts the top-left at the origin, and a test translates a whole
+layout to assert the output is byte-identical.
+
+Carried forward:
+
+| # | What | Why it is not done | Where it goes |
+|---|---|---|---|
+| **A9** | Compile the snapshots with a real LaTeX pass in CI | Already flagged as a leftover candidate in the task itself: a TeX toolchain in CI is slow. No LaTeX on this machine either, so it has not been done manually yet. Snapshot tests prove the output did not *change*; they do not prove it ever compiled — that gap is real and open. | Before v1, manually if not in CI |
 
 ### Track C — Raster and vector export
 
