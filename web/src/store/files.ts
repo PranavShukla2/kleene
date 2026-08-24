@@ -1,0 +1,117 @@
+/**
+ * `.kln` files: saving one, opening one, and dropping one on the canvas (Phase 4 Track D).
+ *
+ * Everything here is *around* the format rather than in it. The format lives in Rust and is
+ * frozen (decision D8); this is the browser's half — a file picker, a download, and a drop
+ * target — none of which belongs in a crate that also compiles to WebAssembly.
+ *
+ * ## What a failed open has to do
+ *
+ * Say what went wrong, in a sentence, and **leave the open document alone**. Someone who drags
+ * the wrong file onto their work has made a small mistake; losing an hour of drawing to it
+ * would be the application's mistake, and a much larger one.
+ */
+
+import type { Document } from '@/model/automaton';
+import type { Engine } from '@/wasm/loader';
+
+/** The extension, and what the file picker offers. */
+export const KLN = '.kln';
+
+/** What opening a file produced. Never a thrown error — a bad file is an ordinary outcome. */
+export type Opened =
+  | { ok: true; document: Document }
+  /** A sentence to show the reader, already written for them by the engine. */
+  | { ok: false; message: string };
+
+/**
+ * Read a file as a document.
+ *
+ * The engine does the version check and the validation, so this is only the plumbing: read
+ * text, hand it over, turn a thrown error into a value the caller can render.
+ */
+export async function openFile(engine: Engine, file: File): Promise<Opened> {
+  let text: string;
+  try {
+    text = await file.text();
+  } catch {
+    return { ok: false, message: `${file.name} could not be read.` };
+  }
+
+  try {
+    return { ok: true, document: engine.fromKln(text) };
+  } catch (error) {
+    // The engine's messages are written to be shown — "This file was written by a newer
+    // version of Kleene" — so they are passed through rather than replaced with a generic one.
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : `${file.name} is not a Kleene file.`,
+    };
+  }
+}
+
+/** Ask for a file. Resolves to nothing if the picker is dismissed. */
+export function pickFile(): Promise<File | undefined> {
+  return new Promise((resolve) => {
+    const input = window.document.createElement('input');
+    input.type = 'file';
+    input.accept = KLN;
+
+    input.addEventListener('change', () => {
+      resolve(input.files?.[0]);
+    });
+    // `cancel` fires when the picker is dismissed. Without it the promise never settles, and
+    // a caller that disabled a button while waiting would leave it disabled forever.
+    input.addEventListener('cancel', () => {
+      resolve(undefined);
+    });
+
+    input.click();
+  });
+}
+
+/** Save a document, named after its title. */
+export function saveFile(engine: Engine, document: Document, title: string | undefined): void {
+  const text = engine.toKln(document);
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const link = window.document.createElement('a');
+  link.href = url;
+  link.download = filenameFor(title);
+  link.click();
+
+  requestAnimationFrame(() => {
+    URL.revokeObjectURL(url);
+  });
+}
+
+/** A filename from a title, or a sensible default. */
+export function filenameFor(title: string | undefined): string {
+  const slug = (title ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48);
+
+  return `${slug === '' ? 'automaton' : slug}${KLN}`;
+}
+
+/**
+ * Whether a drag is carrying something worth dropping.
+ *
+ * During a drag, browsers withhold file *names* for privacy — only types are visible, and a
+ * `.kln` has no registered MIME type so it arrives as `""` or `application/json`. So this
+ * cannot check the extension, and answers the weaker question it can: is this a file at all.
+ * The extension is checked on drop, where the name is finally readable.
+ */
+export function isFileDrag(event: DragEvent): boolean {
+  return Array.from(event.dataTransfer?.items ?? []).some((item) => item.kind === 'file');
+}
+
+/** The first `.kln` in a drop, if there is one. */
+export function droppedFile(event: DragEvent): File | undefined {
+  return Array.from(event.dataTransfer?.files ?? []).find((file) =>
+    file.name.toLowerCase().endsWith(KLN),
+  );
+}

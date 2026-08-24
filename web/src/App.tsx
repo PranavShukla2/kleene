@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { ExportPanel } from '@/panels/Export';
+import { droppedFile, isFileDrag, openFile, pickFile, saveFile } from '@/store/files';
 import { rowLayout } from '@/canvas/geometry';
 import { ShortcutSheet } from '@/canvas/ShortcutSheet';
 import { useShortcuts } from '@/canvas/useShortcuts';
@@ -58,6 +59,16 @@ type Load =
 export function Editor({ onHome }: { onHome: () => void }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [helpOpen, setHelpOpen] = useState(false);
+  /** A drag carrying a file is overhead, so the canvas says it will catch it (task D4). */
+  const [dragging, setDragging] = useState(false);
+  /**
+   * Why the last open failed.
+   *
+   * Held rather than thrown: someone who drags the wrong file onto their work has made a
+   * small mistake, and losing an hour of drawing to it would be a much larger one. The open
+   * document is never touched until a file has parsed.
+   */
+  const [openError, setOpenError] = useState<string | undefined>(undefined);
   const [input, setInput] = useState('');
   const [storedStep, setStep] = useState(0);
   const [laying, setLaying] = useState(false);
@@ -263,6 +274,20 @@ export function Editor({ onHome }: { onHome: () => void }) {
   // without anyone remembering to add it there (J6).
   useShortcuts({ undo, redo, togglePanel });
 
+  /** Open a file, replacing the document only once it has parsed. */
+  const open = (file: File | undefined) => {
+    if (!file || load.status !== 'ready') return;
+    const engine = load.engine;
+    void openFile(engine, file).then((result) => {
+      if (result.ok) {
+        loadDocument(normalize(result.document));
+        setOpenError(undefined);
+      } else {
+        setOpenError(result.message);
+      }
+    });
+  };
+
   return (
     /*
       A workbench, not a page with a tool on it (roadmap §2.8). `h-dvh` and `overflow-hidden`
@@ -270,7 +295,65 @@ export function Editor({ onHome }: { onHome: () => void }) {
       nothing scrolls the tool off screen. On the 1366×768 laptop design-system §1.5 names as
       the target machine, the previous centred column spent a third of the width on margins.
     */
-    <div className="flex h-dvh flex-col overflow-hidden bg-k-bg text-k-text">
+    <div
+      className="relative flex h-dvh flex-col overflow-hidden bg-k-bg text-k-text"
+      /*
+        The drop target is the whole editor, not the canvas alone. Someone dragging a file
+        aims at the window, and a drop landing two pixels outside the canvas that does nothing
+        reads as the feature being broken.
+
+        `dragover` must call `preventDefault` or the browser navigates to the file, replacing
+        the app with a JSON document — the default behaviour, and a spectacular way to lose
+        someone's work.
+      */
+      onDragOver={(event) => {
+        if (!isFileDrag(event.nativeEvent)) return;
+        event.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(event) => {
+        // Only once the pointer has left the editor entirely. `dragleave` also fires when it
+        // crosses between children, and reacting to that makes the overlay flicker.
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+        setDragging(false);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragging(false);
+        open(droppedFile(event.nativeEvent));
+      }}
+    >
+      {dragging && (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-k-bg/80 backdrop-blur-sm">
+          <p className="rounded-2xl border-2 border-dashed border-k-primary bg-k-surface px-6 py-4 text-sm font-medium text-k-primary">
+            Drop a .kln file to open it
+          </p>
+        </div>
+      )}
+
+      {openError !== undefined && (
+        /*
+          Beside the work rather than over it, and dismissible. The document is untouched — the
+          only thing that failed is the attempt to replace it — so this is information, not an
+          interruption.
+        */
+        <div
+          role="alert"
+          className="flex shrink-0 items-start gap-3 border-b border-k-error/40 bg-k-error/10 px-3 py-2 text-sm text-k-error"
+        >
+          <span className="flex-1">{openError}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setOpenError(undefined);
+            }}
+            className="font-mono text-xs opacity-70 hover:opacity-100"
+          >
+            dismiss
+          </button>
+        </div>
+      )}
+
       {/*
         The editor's heading, for readers who navigate by one.
         Visually hidden rather than shown, because the page is a workbench and a title bar
@@ -291,6 +374,12 @@ export function Editor({ onHome }: { onHome: () => void }) {
         canShake={!animating && hasOverlap(document.layout, ids)}
         panelOpen={preferences.panelOpen}
         onTogglePanel={togglePanel}
+        onOpen={() => {
+          void pickFile().then(open);
+        }}
+        onSave={() => {
+          if (load.status === 'ready') saveFile(load.engine, document, document.meta?.title);
+        }}
         onHelp={openHelp}
         onHome={onHome}
         themeLabel={themeLabel(choice)}
@@ -433,6 +522,8 @@ function CommandBar({
   canShake,
   panelOpen,
   onTogglePanel,
+  onOpen,
+  onSave,
   onHelp,
   onHome,
   themeLabel: theme,
@@ -449,6 +540,10 @@ function CommandBar({
   canShake: boolean;
   panelOpen: boolean;
   onTogglePanel: () => void;
+  /** Pick a `.kln` and open it. */
+  onOpen: () => void;
+  /** Write the current document to a file. */
+  onSave: () => void;
   onHelp: () => void;
   onHome: () => void;
   themeLabel: string;
@@ -497,6 +592,15 @@ function CommandBar({
       </ToolButton>
       <ToolButton onClick={onShake} disabled={!canShake} title="Push overlapping states apart">
         Shake
+      </ToolButton>
+
+      <Divider />
+
+      <ToolButton onClick={onOpen} title="Open a .kln file">
+        Open
+      </ToolButton>
+      <ToolButton onClick={onSave} title="Save this machine as a .kln file">
+        Save
       </ToolButton>
 
       <Divider />

@@ -14,6 +14,10 @@ authors.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+# For `JSON.stringify`/`JSON.parse` at the document boundary. See `document_from_js` — map
+# keys are the one thing `serde_wasm_bindgen` and JavaScript disagree about.
+js-sys = "0.3"
+serde_json = "1"
 kleene-core = { workspace = true }
 wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"

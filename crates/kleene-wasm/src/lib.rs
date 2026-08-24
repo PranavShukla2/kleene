@@ -313,3 +313,65 @@ pub fn to_tikz(automaton: JsValue, layout: JsValue) -> Result<String, JsError> {
         kleene_core::Notation::default(),
     ))
 }
+
+/// Serialize a document as `.kln` (Phase 4 D1).
+///
+/// Takes the whole document — machine, layout and metadata — because that is what a person
+/// saved, and dropping their arrangement on every save would be unforgivable.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not a document.
+#[wasm_bindgen]
+pub fn to_kln(document: JsValue) -> Result<String, JsError> {
+    let document = document_from_js(document)?;
+    Ok(document.to_json())
+}
+
+/// Read a `Document` out of a JS value, through JSON.
+///
+/// **The one place in this crate that does not use `serde_wasm_bindgen` directly**, and the
+/// reason is `layout`: it is a map keyed by state id, and JavaScript object keys are always
+/// *strings*. `serde_wasm_bindgen` hands those over as strings and the derive rejects them —
+/// `invalid type: string "0", expected u32` — while `serde_json` coerces them, because JSON
+/// has the same constraint and serde's JSON support has always had to deal with it.
+///
+/// The same asymmetry runs the other way: `serde_wasm_bindgen` writes a Rust map as a JS
+/// `Map`, and every consumer of `Document` on the frontend expects a plain object.
+///
+/// Going through a JSON string costs a parse. The module header rejects that for *traces*,
+/// which cross in bulk and are the payload this boundary was designed around; a document
+/// crosses when someone presses Save.
+fn document_from_js(value: JsValue) -> Result<kleene_core::io::Document, JsError> {
+    let text = js_sys::JSON::stringify(&value)
+        .map_err(|_| JsError::new("That is not a document."))?
+        .as_string()
+        .ok_or_else(|| JsError::new("That is not a document."))?;
+
+    serde_json::from_str(&text).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Read a `.kln` file (Phase 4 D1, D3).
+///
+/// The version is checked before anything else, so a file from a newer build produces a
+/// sentence about updating rather than a parser complaint about an unexpected field several
+/// levels down. That early check is the entire reason the field exists.
+///
+/// A malformed *machine* is refused — a transition to a state that is not there, a symbol
+/// outside the alphabet. A merely **odd** one is not: an unreachable state or a missing
+/// transition is normal in something someone is still drawing, and refusing to open a work in
+/// progress would make the format useless as a working file.
+///
+/// # Errors
+///
+/// Returns a JS error carrying a sentence meant to be shown to the reader, not logged.
+#[wasm_bindgen]
+pub fn from_kln(text: &str) -> Result<JsValue, JsError> {
+    let document =
+        kleene_core::io::Document::from_json(text).map_err(|e| JsError::new(&e.to_string()))?;
+
+    // Back through JSON for the same reason: `layout` must arrive as a plain object with
+    // string keys, and `serde_wasm_bindgen` would make it a `Map`.
+    let json = serde_json::to_string(&document).map_err(|e| JsError::new(&e.to_string()))?;
+    js_sys::JSON::parse(&json).map_err(|_| JsError::new("The document could not be returned."))
+}

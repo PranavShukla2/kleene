@@ -10,10 +10,12 @@ import init, {
   determinism,
   elimination,
   epsilon_closure,
+  from_kln,
   minimization,
   example_automaton,
   formal_definition,
   simulate,
+  to_kln,
   to_tikz,
   transition_table,
   validate,
@@ -24,6 +26,7 @@ import type {
   Automaton,
   Compilation,
   Determinism,
+  Document,
   Elimination,
   FormalDefinition,
   Minimization,
@@ -115,6 +118,15 @@ export interface Engine {
    * a `.kln` file by a tool that has never rendered it.
    */
   toTikz: (automaton: Automaton, layout: Record<number, Point>) => string;
+  /** Serialize a document as `.kln` (Phase 4 D1). */
+  toKln: (document: Document) => string;
+  /**
+   * Read a `.kln` file (Phase 4 D1, D3).
+   *
+   * Throws with a sentence meant to be *shown* — "This file was written by a newer version of
+   * Kleene" rather than a parser complaint about an unexpected field several levels down.
+   */
+  fromKln: (text: string) => Document;
 }
 
 /**
@@ -148,6 +160,8 @@ export function loadEngine(): Promise<Engine> {
         elimination(automaton, order) as Elimination,
       toTikz: (automaton: Automaton, layout: Record<number, Point>) =>
         to_tikz(automaton, layout),
+      toKln: (document: Document) => to_kln(document),
+      fromKln: (text: string) => from_kln(text) as Document,
       epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
         // A copy because the binding takes ownership of a `Uint32Array`, and the caller's
         // array is a slice of a step it does not own.
