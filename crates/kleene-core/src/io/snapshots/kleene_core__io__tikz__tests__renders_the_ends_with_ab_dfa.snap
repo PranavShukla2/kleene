@@ -1,0 +1,20 @@
+---
+source: crates/kleene-core/src/io/tikz.rs
+expression: "to_tikz(&machine, &row(&machine), Notation::default())"
+---
+% Requires, in your preamble:
+%   \usepackage{tikz}
+%   \usetikzlibrary{automata,positioning}
+\begin{tikzpicture}[shorten >=1pt,node distance=2.4cm,on grid,auto,>=stealth]
+  \node[state,initial] (s0) at (0.00,0.00) {$q0$};
+  \node[state] (s1) at (2.40,0.00) {$q1$};
+  \node[state,accepting] (s2) at (4.80,0.00) {$q2$};
+  \path[->]
+    (s0) edge[loop above] node{$b$} (s0)
+    (s0) edge node{$a$} (s1)
+    (s1) edge[loop above] node{$a$} (s1)
+    (s1) edge[bend left=20] node{$b$} (s2)
+    (s2) edge node{$b$} (s0)
+    (s2) edge[bend left=20] node{$a$} (s1)
+  ;
+\end{tikzpicture}

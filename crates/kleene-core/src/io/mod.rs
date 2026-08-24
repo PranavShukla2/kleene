@@ -14,8 +14,10 @@
 
 pub mod dot;
 pub mod json;
+pub mod tikz;
 pub mod wire;
 
 pub use dot::to_dot;
 pub use json::{Document, FormatError, Meta, Point};
+pub use tikz::to_tikz;
 pub use wire::{WireAutomaton, WireState};
