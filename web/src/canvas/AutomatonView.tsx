@@ -45,6 +45,8 @@ interface Props {
   selection?: readonly StateId[];
   /** Which states a run is currently in. Forwarded, so a static view can show a simulation. */
   active?: readonly StateId[];
+  /** Draw the dot grid. Off for export — a grid is furniture, not part of the machine. */
+  grid?: boolean;
   /**
    * The pointer entered or left a state.
    *
@@ -69,6 +71,7 @@ export function AutomatonView({
   className,
   selection,
   active,
+  grid = true,
   onHoverState,
 }: Props) {
   // Memoised so the fallback layout keeps its identity between renders. It feeds
@@ -92,7 +95,7 @@ export function AutomatonView({
       <AutomatonGraphics
         automaton={automaton}
         layout={positions}
-        grid
+        grid={grid}
         selection={selection}
         active={active}
         onHoverState={onHoverState}
@@ -331,6 +334,7 @@ function StateNode({
           r={GEOM.radius + GEOM.selectionGap}
           fill="none"
           strokeWidth={GEOM.selectionStroke}
+          data-ui="decoration"
           // `forwards` so the ring ends where the keyframe leaves it — invisible. Without it
           // the animation would run and then snap back to a solid ring that never goes away.
           //
@@ -356,6 +360,9 @@ function StateNode({
           cx={at.x}
           cy={at.y}
           r={GEOM.radius + GEOM.activeGlow}
+          // Marked as chrome: it says where a *simulation* is, which is a fact about this
+          // moment rather than about the machine. Export strips anything carrying this.
+          data-ui="decoration"
           className="fill-k-active/15"
         />
       )}
@@ -373,6 +380,7 @@ function StateNode({
           r={GEOM.radius + GEOM.selectionGap}
           fill="none"
           strokeWidth={GEOM.selectionStroke}
+          data-ui="decoration"
           // Faded in rather than cut. Scrubbing moves this ring from one set of states to
           // another, and design-system §1.3 asks motion to explain causality — a ring that
           // appears instantly says a state is marked; one that fades says *this* step marked

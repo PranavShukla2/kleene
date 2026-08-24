@@ -10,6 +10,8 @@
  * whole time. It needs a real history stack and a real render, which is what this file is.
  */
 
+import { readFile } from 'node:fs/promises';
+
 import { expect, test } from '@playwright/test';
 
 test('moving between two tool pages actually changes the page', async ({ page }) => {
@@ -135,4 +137,39 @@ test('the editor exports the machine it is showing, as TikZ', async ({ page }) =
   expect(tex).toContain('state,accepting');
   // Shifted to the origin rather than carrying the canvas's layout offset.
   expect(tex).toContain('(0.00,0.00)');
+});
+
+test('the editor exports a picture, cropped and free of interface state', async ({ page }) => {
+  // Phase 4 Track C. The failures worth catching here are all invisible in the panel: an
+  // export that carries the whole canvas viewport, or the simulator's highlight, or no labels
+  // because the font had not loaded when the raster was taken.
+  await page.goto('/editor');
+  await page.getByRole('button', { name: 'SVG', exact: true }).click();
+
+  const started = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Download \.svg/ }).click();
+  const file = await started;
+  expect(file.suggestedFilename()).toBe('automaton.svg');
+
+  const svg = await file.path().then((at) => readFile(at, 'utf8'));
+
+  // Cropped: the canvas is ~1150px wide and the machine is a fraction of that.
+  const width = Number(/width="(\d+)"/.exec(svg)?.[1] ?? 0);
+  expect(width).toBeGreaterThan(100);
+  expect(width).toBeLessThan(700);
+
+  // Standalone: styles resolved to literals, no Tailwind classes, the font carried along.
+  expect(svg).toContain('@font-face');
+  expect(svg).not.toContain('class=');
+  expect(svg).toMatch(/fill="rgb\(/);
+
+  // Every label present — the bug where a raster was taken before the font arrived.
+  for (const label of ['q0', 'q1', 'q2']) expect(svg).toContain(`>${label}<`);
+
+  // And none of the interface: no selection ring, no simulator highlight, no dot grid.
+  //
+  // The grid check is on the *paint*, not on the word: the pattern stays in `<defs>` unused,
+  // and asserting on its name would fail for a definition nothing references.
+  expect(svg).not.toContain('data-ui');
+  expect(svg).not.toMatch(/fill="url\(#k-grid/);
 });
