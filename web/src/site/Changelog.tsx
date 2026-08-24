@@ -25,9 +25,30 @@ interface Entry {
 
 const ENTRIES: readonly Entry[] = [
   {
+    version: 'Phase 5',
+    title: 'Ready for other people',
+    current: true,
+    changes: [
+      'Twenty worked examples, from a two-state DFA to Thompson’s construction of (a|b)*abb — each stating the language it recognises in words, and each a fixture the test suite runs against.',
+      'Installable, and genuinely offline: the WebAssembly module and the fonts are precached, and a test switches the network off and opens a route the session has never visited.',
+      'A prompt when a new version has been fetched, instead of a silent swap or a tab that never notices.',
+      'A first-run tour in the editor, three cards long and dismissed for good. It exists for one gesture: a transition is drawn from a state’s rim, not its centre.',
+    ],
+  },
+  {
+    version: 'Phase 4',
+    title: 'Getting work out of the tool',
+    changes: [
+      'TikZ export — LaTeX source, not a picture, matching the on-screen layout exactly. One test renders both and compares the geometry.',
+      'SVG and PNG, rendered from a clean copy rather than scraped off the live canvas, so the grid and the selection glow stay out of your assignment.',
+      'Graphviz DOT, including the invisible node the start arrow needs.',
+      'Share links: the whole machine in the URL fragment, compressed, and never sent to a server by any browser.',
+      'Save and open .kln files, drop one anywhere on the editor, and import JFLAP .jff directly — saying what it had to change rather than changing it quietly.',
+    ],
+  },
+  {
     version: 'Phase 3 · Track D',
     title: 'The DFA builds itself while you watch',
-    current: true,
     changes: [
       'Subset construction is drawn as it happens: states appear, edges draw from their source, and a subset that has been seen before is struck rather than duplicated.',
       'The worklist is shown as a queue you can watch drain — done, expanding, waiting.',
