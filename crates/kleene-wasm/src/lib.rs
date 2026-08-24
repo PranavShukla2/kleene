@@ -275,3 +275,41 @@ pub fn elimination(automaton: JsValue, order: &str) -> Result<JsValue, JsError> 
 
     serde_wasm_bindgen::to_value(&result).map_err(|e| JsError::new(&e.to_string()))
 }
+
+/// TikZ source for an automaton, positioned as the caller has it on screen.
+///
+/// The layout crosses as a map from state id to `{x, y}` rather than being read from the
+/// automaton, because `kleene-core` does not store positions — a machine is a machine wherever
+/// it is drawn. It is also why this is the one export that cannot be produced from a `.kln`
+/// file alone by a tool that has never rendered it.
+///
+/// A state missing from the layout is skipped rather than placed at the origin. Stacking
+/// everything unplaced at (0,0) produces a picture that looks like a bug in TikZ.
+///
+/// # Errors
+///
+/// Returns a JS error if either argument is not the shape it should be.
+#[wasm_bindgen]
+pub fn to_tikz(automaton: JsValue, layout: JsValue) -> Result<String, JsError> {
+    use std::collections::BTreeMap;
+
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    // Keys arrive as strings — JavaScript object keys always do — so the ids are parsed back
+    // rather than assumed. An unparseable key is dropped, which degrades to a missing node
+    // instead of a failed export.
+    let raw: BTreeMap<String, kleene_core::io::tikz::Point> =
+        serde_wasm_bindgen::from_value(layout).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let layout: BTreeMap<u32, kleene_core::io::tikz::Point> = raw
+        .into_iter()
+        .filter_map(|(id, at)| id.parse().ok().map(|id| (id, at)))
+        .collect();
+
+    Ok(kleene_core::io::to_tikz(
+        &automaton,
+        &layout,
+        kleene_core::Notation::default(),
+    ))
+}

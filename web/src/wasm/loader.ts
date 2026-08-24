@@ -14,6 +14,7 @@ import init, {
   example_automaton,
   formal_definition,
   simulate,
+  to_tikz,
   transition_table,
   validate,
   version,
@@ -26,6 +27,7 @@ import type {
   Elimination,
   FormalDefinition,
   Minimization,
+  Point,
   Report,
   Simulation,
   StateId,
@@ -105,6 +107,14 @@ export interface Engine {
    * rather than failing.
    */
   elimination: (automaton: Automaton, order: string) => Elimination;
+  /**
+   * TikZ source for a machine, positioned as it is on screen (Phase 4 Track A).
+   *
+   * Takes the layout because `kleene-core` does not store positions — a machine is a machine
+   * wherever it is drawn. It is also why this is the one export that cannot be produced from
+   * a `.kln` file by a tool that has never rendered it.
+   */
+  toTikz: (automaton: Automaton, layout: Record<number, Point>) => string;
 }
 
 /**
@@ -136,6 +146,8 @@ export function loadEngine(): Promise<Engine> {
       minimization: (automaton: Automaton) => minimization(automaton) as Minimization,
       elimination: (automaton: Automaton, order: string) =>
         elimination(automaton, order) as Elimination,
+      toTikz: (automaton: Automaton, layout: Record<number, Point>) =>
+        to_tikz(automaton, layout),
       epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
         // A copy because the binding takes ownership of a `Uint32Array`, and the caller's
         // array is a slice of a step it does not own.

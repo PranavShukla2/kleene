@@ -47,7 +47,12 @@ const LOOP_CLEARANCE: f64 = 40.0;
 const LOOP_REACH: f64 = 24.0 + 16.0;
 
 /// A position in the caller's layout units.
-#[derive(Clone, Copy, Debug, PartialEq)]
+///
+/// Deliberately not `crate::automaton::Point`: that one is part of the *document* and is
+/// serialized into `.kln` files, and this one is an argument to a function. Sharing them would
+/// tie the export's signature to the file format, and neither should be able to force a change
+/// in the other.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Point {
     /// Rightwards.
     pub x: f64,
@@ -194,6 +199,29 @@ pub fn to_tikz(
 ) -> String {
     let mut out = String::new();
 
+    // Shifted so the top-left of the machine sits at the origin.
+    //
+    // Relative positions are the promise — "what the student arranged is what comes out" — and
+    // the *absolute* origin is an editor implementation detail: the canvas happens to lay a
+    // machine out from (90, 130), so an unshifted export produced coordinates like (2.25,
+    // -3.25) that look arbitrary because they are. TikZ computes a picture's bounding box from
+    // its content, so this changes the numbers and nothing about the rendering.
+    let origin = layout.values().fold(
+        Point {
+            x: f64::INFINITY,
+            y: f64::INFINITY,
+        },
+        |acc, at| Point {
+            x: acc.x.min(at.x),
+            y: acc.y.min(at.y),
+        },
+    );
+    let origin = if origin.x.is_finite() {
+        origin
+    } else {
+        Point { x: 0.0, y: 0.0 }
+    };
+
     // Task A7. A snippet that compiles only in a preamble the reader has to guess at is a
     // snippet that gets abandoned, so the requirement is stated in the output itself.
     out.push_str("% Requires, in your preamble:\n");
@@ -224,8 +252,8 @@ pub fn to_tikz(
             "  \\node[{}] ({}) at ({:.2},{:.2}) {{${}$}};\n",
             options.join(","),
             node_name(id),
-            at.x * TIKZ_SCALE,
-            0.0 - at.y * TIKZ_SCALE,
+            (at.x - origin.x) * TIKZ_SCALE,
+            0.0 - (at.y - origin.y) * TIKZ_SCALE,
             escape(&state.label),
         ));
     }
@@ -342,6 +370,49 @@ mod tests {
         // reason a machine spread out on screen is spread out on the page.
         assert!((96.0 * TIKZ_SCALE - 2.4).abs() < 1e-12);
         assert!((192.0 * TIKZ_SCALE - 4.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn the_machine_is_shifted_to_the_origin() {
+        // The canvas lays a machine out from (90, 130), which is an implementation detail of
+        // the editor and not something the student arranged. Unshifted, every export carried
+        // coordinates like (2.25, -3.25) that look arbitrary because they are.
+        let machine = AutomatonBuilder::new(["a"]).edge("q0", "q1", "a").build();
+        let ids: Vec<StateId> = machine.states.keys().copied().collect();
+        let layout: BTreeMap<StateId, Point> = [
+            (ids[0], Point { x: 90.0, y: 130.0 }),
+            (ids[1], Point { x: 186.0, y: 130.0 }),
+        ]
+        .into_iter()
+        .collect();
+
+        let tex = to_tikz(&machine, &layout, Notation::default());
+        assert!(tex.contains("(0.00,0.00)"), "{tex}");
+        assert!(tex.contains("(2.40,0.00)"), "{tex}");
+    }
+
+    #[test]
+    fn shifting_preserves_every_relative_position() {
+        // The actual promise. Translating the whole layout must not change the output at all.
+        let machine = crate::examples::ends_with_ab();
+        let base = row(&machine);
+        let moved: BTreeMap<StateId, Point> = base
+            .iter()
+            .map(|(&id, at)| {
+                (
+                    id,
+                    Point {
+                        x: at.x + 500.0,
+                        y: at.y - 37.0,
+                    },
+                )
+            })
+            .collect();
+
+        assert_eq!(
+            to_tikz(&machine, &base, Notation::default()),
+            to_tikz(&machine, &moved, Notation::default()),
+        );
     }
 
     #[test]

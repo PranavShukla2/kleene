@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
+import { ExportPanel } from '@/panels/Export';
 import { rowLayout } from '@/canvas/geometry';
 import { ShortcutSheet } from '@/canvas/ShortcutSheet';
 import { useShortcuts } from '@/canvas/useShortcuts';
@@ -365,6 +366,7 @@ export function Editor({ onHome }: { onHome: () => void }) {
                 select([id]);
               }}
             />
+            <ExportPanel engine={load.engine} automaton={document.automaton} layout={layout} />
             <InputTester
               simulation={simulation}
               input={input}
