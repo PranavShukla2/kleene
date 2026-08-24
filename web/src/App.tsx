@@ -72,6 +72,14 @@ export function Editor({ onHome }: { onHome: () => void }) {
    */
   const [openError, setOpenError] = useState<string | undefined>(undefined);
   /**
+   * What the last import had to change (Phase 4 Track E).
+   *
+   * Only ever produced by `.jff`, where JFLAP's model and Kleene's genuinely differ. Shown
+   * because the alternative is a machine that quietly is not the one someone drew — and they
+   * would find out at the worst possible moment, which is while being marked on it.
+   */
+  const [importNotes, setImportNotes] = useState<string[]>([]);
+  /**
    * A machine that arrived in the URL and has not been accepted yet (task F7).
    *
    * Held rather than loaded, because **a link must never silently discard open work.** The
@@ -359,6 +367,7 @@ export function Editor({ onHome }: { onHome: () => void }) {
       if (result.ok) {
         loadDocument(normalize(result.document));
         setOpenError(undefined);
+        setImportNotes(result.notes ?? []);
       } else {
         setOpenError(result.message);
       }
@@ -442,6 +451,32 @@ export function Editor({ onHome }: { onHome: () => void }) {
             className="rounded-full border border-k-border px-3 py-1 text-xs text-k-text-muted hover:border-k-border-strong hover:text-k-text"
           >
             Keep mine
+          </button>
+        </div>
+      )}
+
+      {importNotes.length > 0 && (
+        /*
+          Not an error — the file opened. This is the difference between two tools' models,
+          stated once, and dismissible.
+        */
+        <div className="flex items-start gap-3 border-b border-k-warning/40 bg-k-warning/10 px-3 py-2 text-sm text-k-warning">
+          <div className="flex-1">
+            <p className="font-medium">Imported, with changes:</p>
+            <ul className="mt-1 list-disc pl-5">
+              {importNotes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setImportNotes([]);
+            }}
+            className="font-mono text-xs opacity-70 hover:opacity-100"
+          >
+            dismiss
           </button>
         </div>
       )}
@@ -717,7 +752,7 @@ function CommandBar({
 
       <Divider />
 
-      <ToolButton onClick={onOpen} title="Open a .kln file">
+      <ToolButton onClick={onOpen} title="Open a .kln file, or import a JFLAP .jff">
         Open
       </ToolButton>
       <ToolButton onClick={onSave} title="Save this machine as a .kln file">
