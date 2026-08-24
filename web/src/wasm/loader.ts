@@ -15,6 +15,7 @@ import init, {
   example_automaton,
   formal_definition,
   simulate,
+  to_dot,
   to_kln,
   to_tikz,
   transition_table,
@@ -118,6 +119,13 @@ export interface Engine {
    * a `.kln` file by a tool that has never rendered it.
    */
   toTikz: (automaton: Automaton, layout: Record<number, Point>) => string;
+  /**
+   * Graphviz DOT for a machine (Phase 4 Track G).
+   *
+   * No layout, unlike `toTikz`: Graphviz is a layout engine, and handing it positions would
+   * be telling it not to do the one thing it is for.
+   */
+  toDot: (automaton: Automaton) => string;
   /** Serialize a document as `.kln` (Phase 4 D1). */
   toKln: (document: Document) => string;
   /**
@@ -160,6 +168,7 @@ export function loadEngine(): Promise<Engine> {
         elimination(automaton, order) as Elimination,
       toTikz: (automaton: Automaton, layout: Record<number, Point>) =>
         to_tikz(automaton, layout),
+      toDot: (automaton: Automaton) => to_dot(automaton),
       toKln: (document: Document) => to_kln(document),
       fromKln: (text: string) => from_kln(text) as Document,
       epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
