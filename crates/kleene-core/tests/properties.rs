@@ -286,19 +286,47 @@ proptest! {
         }
     }
 
-    /// A document survives being written and read back.
+    /// A document survives being written and read back — everything except `origin`.
+    ///
+    /// This used to assert plain equality, and decision D8 made that false on purpose:
+    /// `origin` points at states of a machine the file does not contain, so it is no longer
+    /// written. The property is still worth having, and it is worth *stating precisely* —
+    /// "round-trips apart from one field" is a weaker claim than the old one, and writing it
+    /// loosely would hide the day something else starts going missing too.
     #[test]
-    fn documents_round_trip(regex in arb_regex()) {
+    fn documents_round_trip_apart_from_origin(regex in arb_regex()) {
         let (_, dfa, _) = pipeline(&regex);
         let document = kleene_core::io::Document::new(dfa);
 
+        // What survives is the document with origins cleared — nothing more, nothing less.
+        let mut expected = document.clone();
+        for state in expected.automaton.states.values_mut() {
+            state.origin = None;
+        }
+
         let reloaded = kleene_core::io::Document::from_json(&document.to_json())
             .map_err(|e| TestCaseError::fail(format!("{e}")))?;
-        prop_assert_eq!(reloaded, document.clone());
+        prop_assert_eq!(reloaded, expected.clone());
 
         let compact = kleene_core::io::Document::from_json(&document.to_json_compact())
             .map_err(|e| TestCaseError::fail(format!("{e}")))?;
-        prop_assert_eq!(compact, document);
+        prop_assert_eq!(compact, expected);
+    }
+
+    /// Reading a document and writing it again changes nothing.
+    ///
+    /// The property that actually matters for a file format, and the one D8 did not weaken:
+    /// opening a file and saving it must not alter it. Otherwise every round trip through the
+    /// editor produces a diff, and a document in version control becomes unreadable.
+    #[test]
+    fn saving_a_loaded_document_is_a_no_op(regex in arb_regex()) {
+        let (_, dfa, _) = pipeline(&regex);
+        let once = kleene_core::io::Document::new(dfa).to_json();
+
+        let reloaded = kleene_core::io::Document::from_json(&once)
+            .map_err(|e| TestCaseError::fail(format!("{e}")))?;
+
+        prop_assert_eq!(reloaded.to_json(), once);
     }
 
     /// Simulation never disagrees with itself about the same machine and string.

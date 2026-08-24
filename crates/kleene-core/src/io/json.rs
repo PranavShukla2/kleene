@@ -176,7 +176,8 @@ impl Document {
 
     /// Serialize, formatted for a human to read and for version control to diff.
     pub fn to_json(&self) -> String {
-        serde_json::to_string_pretty(self).expect("a Document is always serializable")
+        serde_json::to_string_pretty(&self.for_storage())
+            .expect("a Document is always serializable")
     }
 
     /// Serialize as compactly as possible.
@@ -184,7 +185,34 @@ impl Document {
     /// What URL sharing compresses (roadmap §2.6) — whitespace that helps a reader is pure
     /// cost inside a link.
     pub fn to_json_compact(&self) -> String {
-        serde_json::to_string(self).expect("a Document is always serializable")
+        serde_json::to_string(&self.for_storage()).expect("a Document is always serializable")
+    }
+
+    /// A copy of this document with `origin` cleared (decision D8).
+    ///
+    /// `origin` records which states of the *source* machine produced each state, and it is
+    /// only meaningful alongside that machine. A saved DFA carries `origin: [0, 2, 4, 5]`
+    /// pointing at an NFA that is not in the file — unverifiable, and unfalsifiable.
+    ///
+    /// It is also expensive in the one place size matters. Measured on real machines, it is
+    /// 22% of a five-state document, 28% of eleven, and 34% of seventeen — a growing share,
+    /// because subsets get bigger as machines do. Share links carry this format through a URL
+    /// fragment with a budget of a few kilobytes, so a third of that budget would go to data
+    /// pointing at a machine the link does not contain.
+    ///
+    /// **Stripped here rather than on `WireState`, and that distinction is the whole design.**
+    /// The same wire type crosses the WebAssembly boundary, where `origin` is exactly what
+    /// makes "hover a DFA state to see which NFA states it stands for" possible — the source
+    /// machine *is* present there. It is a document concern, not a wire one.
+    ///
+    /// Reading a file that has `origin` still keeps it. Old files and hand-written ones stay
+    /// valid; this only stops Kleene writing a claim it cannot support.
+    fn for_storage(&self) -> Self {
+        let mut copy = self.clone();
+        for state in copy.automaton.states.values_mut() {
+            state.origin = None;
+        }
+        copy
     }
 
     /// Read a document.
@@ -218,6 +246,111 @@ impl Document {
         }
 
         Ok(document)
+    }
+}
+
+#[cfg(test)]
+mod origin_tests {
+    use super::*;
+    use crate::convert::determinize;
+    use crate::regex::{parse, thompson::thompson};
+
+    fn dfa_of(source: &str) -> Automaton {
+        determinize(&thompson(&parse(source).expect("parses")).result).result
+    }
+
+    #[test]
+    fn a_saved_document_makes_no_claim_about_a_machine_it_does_not_contain() {
+        // Decision D8. `origin` points at states of the *source* machine, which is not in the
+        // file — so it is unverifiable, and it is a third of a large document.
+        let dfa = dfa_of("(a+b)*abb");
+        assert!(
+            dfa.states.values().all(|s| s.origin.is_some()),
+            "the fixture should have origins to strip"
+        );
+
+        let json = Document::new(dfa).to_json();
+        assert!(!json.contains("origin"), "{json}");
+    }
+
+    #[test]
+    fn stripping_origin_does_not_touch_the_document_it_was_asked_about() {
+        // `to_json` works on a copy. A save that quietly mutated the open document would lose
+        // the hover-highlight for the rest of the session.
+        let document = Document::new(dfa_of("(a+b)*abb"));
+        let _ = document.to_json();
+
+        assert!(
+            document
+                .automaton
+                .states
+                .values()
+                .all(|s| s.origin.is_some())
+        );
+    }
+
+    #[test]
+    fn a_file_that_carries_origin_is_still_read() {
+        // Old files and hand-written ones stay valid. This only stops Kleene *writing* a claim
+        // it cannot support.
+        let text = r#"{
+            "version": 1,
+            "automaton": {
+                "alphabet": ["a"],
+                "states": [
+                    { "id": 0, "label": "A", "origin": [1, 2] },
+                    { "id": 1, "label": "B" }
+                ],
+                "start": 0,
+                "transitions": [{ "from": 0, "to": 1, "on": "a" }]
+            }
+        }"#;
+
+        let document = Document::from_json(text).expect("reads");
+        assert_eq!(
+            document.automaton.state(0).expect("exists").origin,
+            Some([1, 2].into_iter().collect())
+        );
+    }
+
+    #[test]
+    fn origin_still_crosses_the_wire() {
+        // The distinction the whole change rests on. Stripping it on `WireState` would have
+        // killed "hover a DFA state to see which NFA states it stands for" — on the boundary,
+        // the source machine *is* present.
+        let dfa = dfa_of("(a+b)*abb");
+        let wire = serde_json::to_string(&dfa).expect("serializes");
+
+        assert!(wire.contains("origin"), "{wire}");
+    }
+
+    #[test]
+    fn dropping_origin_is_worth_the_bytes() {
+        // The measurement the decision was made on, pinned so it cannot quietly stop being
+        // true. A third of a share link is not a rounding error.
+        let dfa = dfa_of("(a+b)*a(a+b)(a+b)(a+b)");
+        let saved = Document::new(dfa.clone()).to_json_compact();
+
+        let mut kept = dfa;
+        let with = {
+            for state in kept.states.values_mut() {
+                let _ = state.origin.as_ref();
+            }
+            serde_json::to_string(&Document {
+                version: VERSION,
+                automaton: kept,
+                layout: BTreeMap::new(),
+                meta: Meta::default(),
+            })
+            .expect("serializes")
+        };
+
+        assert!(
+            saved.len() * 10 < with.len() * 8,
+            "expected a real saving: {} vs {}",
+            saved.len(),
+            with.len()
+        );
     }
 }
 

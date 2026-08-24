@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 25b294af82791eb892af6592f9cd8008c5e6d1cf65cf6861acab5b97a98ce866 # shrinks to regex = Symbol("a")
