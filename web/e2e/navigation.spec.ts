@@ -173,3 +173,20 @@ test('the editor exports a picture, cropped and free of interface state', async 
   expect(svg).not.toContain('data-ui');
   expect(svg).not.toMatch(/fill="url\(#k-grid/);
 });
+
+test('the editor exports Graphviz DOT', async ({ page }) => {
+  // Phase 4 Track G. The exporter was written in Phase 1; this is the wiring, and the thing
+  // worth asserting is that the tab reaches the *same* engine rather than a second one.
+  await page.goto('/editor');
+  await page.getByRole('button', { name: 'DOT', exact: true }).click();
+
+  const dot = await page.getByLabel('DOT source').inputValue();
+
+  expect(dot).toContain('digraph automaton');
+  // Automata read left to right; the default top-down layout looks wrong for one.
+  expect(dot).toContain('rankdir=LR');
+  // Accepting states are drawn the way the subject draws them.
+  expect(dot).toContain('doublecircle');
+  // DOT has no notion of a start state, so one is faked from an invisible point.
+  expect(dot).toContain('__start');
+});
