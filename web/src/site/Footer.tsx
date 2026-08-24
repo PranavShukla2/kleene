@@ -64,6 +64,7 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
     heading: 'Project',
     items: [
       { label: 'About', route: 'about' },
+      { label: 'Compared to JFLAP', route: 'jflap' },
       { label: 'Source', href: 'https://github.com/PranavShukla2/kleene' },
       { label: 'Report an issue', href: 'https://github.com/PranavShukla2/kleene/issues' },
       { label: 'Licence', route: 'about' },

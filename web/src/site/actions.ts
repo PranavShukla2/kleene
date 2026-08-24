@@ -46,6 +46,14 @@ export function siteActions(themeLabel: string): Action[] {
     { id: 'go:roadmap', label: 'Roadmap', group: 'Go to', keywords: ['plan', 'phases'] },
     { id: 'go:changelog', label: 'Changelog', group: 'Go to', keywords: ['releases', 'new'] },
     { id: 'go:about', label: 'About', group: 'Go to', keywords: ['who', 'why', 'author'] },
+    {
+      id: 'go:jflap',
+      label: 'Compared to JFLAP',
+      group: 'Go to',
+      // "jflap" is the search that brings people here in the first place, and `.jff` is what
+      // they have in a folder. Both have to reach this row.
+      keywords: ['jflap', 'jff', 'alternative', 'comparison', 'import'],
+    },
 
     ...TOOLS.map((tool): Action => ({
       id: `tool:${tool.slug}`,
