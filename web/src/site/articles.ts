@@ -22,6 +22,15 @@ export interface Article {
   status: Status;
   /** Where it goes, when it goes anywhere. */
   route?: Route;
+  /**
+   * A document that lives in the repository rather than on this site.
+   *
+   * The reference material — the file format, the CLI — is written in Markdown beside the
+   * code it describes, which is the only arrangement where it gets updated in the same commit
+   * as the thing it documents. Linking out is honest about where it lives; copying it here
+   * would create a second version to keep in step, and the second version always loses.
+   */
+  href?: string;
 }
 
 export const SECTIONS: readonly {
@@ -54,7 +63,8 @@ export const SECTIONS: readonly {
       {
         title: 'Reading the trace',
         detail: 'What a step is, what the worklist means, and how to scrub one.',
-        status: planned(4),
+        status: READY,
+        route: 'convert',
       },
     ],
   },
@@ -78,12 +88,16 @@ export const SECTIONS: readonly {
       {
         title: 'DFA, NFA and ε-NFA',
         detail: 'What the badge on your machine is telling you, and why it changes.',
-        status: planned(4),
+        status: READY,
+        route: 'learn',
       },
       {
         title: 'Notation settings',
         detail: 'Choosing between + and |, between ε and λ, and between δ styles.',
-        status: planned(3),
+        // The engine has carried `notation.rs` since Phase 1; what is missing is the control
+        // that lets you change it. Deferred rather than dropped — courses genuinely disagree
+        // about these, and a tool that picks one has picked a side.
+        status: planned(6),
       },
     ],
   },
@@ -106,12 +120,14 @@ export const SECTIONS: readonly {
       {
         title: 'Minimization',
         detail: 'Partition refinement, and why two states end up in the same block.',
-        status: planned(3),
+        status: READY,
+        route: 'convert',
       },
       {
         title: 'State elimination',
         detail: 'DFA back to a regular expression, and why the order matters.',
-        status: planned(3),
+        status: READY,
+        route: 'convert',
       },
     ],
   },
@@ -122,22 +138,26 @@ export const SECTIONS: readonly {
       {
         title: 'The .kln file format',
         detail: 'A documented JSON schema with a version field, so old files keep opening.',
-        status: planned(4),
+        status: READY,
+        href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/formats/kln.md',
+      },
+      {
+        title: 'The command line',
+        detail: 'Converting, exporting and grading a directory of submissions from a script.',
+        status: READY,
+        href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/cli.md',
       },
       {
         title: 'Exporting to TikZ',
         detail: 'The diagram, as LaTeX, with your layout kept.',
-        status: planned(4),
+        status: READY,
+        route: 'editor',
       },
       {
         title: 'Sharing as a URL',
         detail: 'How a machine is encoded into a link.',
-        status: planned(4),
-      },
-      {
-        title: 'The command line',
-        detail: 'Converting and checking equivalence in a script.',
-        status: planned(4),
+        status: READY,
+        route: 'editor',
       },
     ],
   },

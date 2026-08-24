@@ -125,6 +125,21 @@ function Entry({ article, onNavigate }: { article: Article; onNavigate: (to: Rou
     );
   }
 
+  if (article.href) {
+    const href = article.href;
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="k-card block rounded-2xl border border-k-border bg-k-surface p-5 hover:border-k-primary/40"
+      >
+        {body}
+        <span className="mt-3 block font-mono text-xs text-k-primary">read it ↗</span>
+      </a>
+    );
+  }
+
   // Not a link. A docs card that opens an empty page is worse than one that says it is empty.
   return (
     <div className="rounded-2xl border border-dashed border-k-border p-5 opacity-80">
