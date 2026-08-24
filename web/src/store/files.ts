@@ -75,7 +75,7 @@ export async function openFile(engine: Engine, file: File): Promise<Opened> {
           layout: Object.fromEntries(
             Object.entries(imported.layout).map(([id, at]) => [Number(id), at]),
           ),
-        } as Document,
+        },
         notes: imported.notes,
       };
     }
