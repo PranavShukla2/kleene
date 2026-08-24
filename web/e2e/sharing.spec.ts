@@ -39,27 +39,33 @@ test('a machine fits in a link, and the link is a fragment', async ({ page }) =>
   expect(link.length).toBeLessThan(2000);
 });
 
-test('opening a link in a fresh session loads the machine', async ({ page }) => {
+test('opening a link in a fresh session loads the machine', async ({ page, browser }) => {
   await page.goto('/editor');
   const link = await shareLink(page);
 
-  await page.context().clearCookies();
-  const fresh = await page.context().newPage();
-  await fresh.goto(link);
-
   /*
-    `goto` resolves when the document has loaded, and the machine is not on screen then: the
-    WebAssembly module still has to arrive and instantiate before the link can be decoded into
-    a diagram. On a warm local run that gap is a few hundred milliseconds and the default 5s
-    assertion timeout hides it; on a cold CI runner it is longer than 5s, and this was the one
-    test in the suite that went red there while passing here.
+    A genuinely separate context, not another page in this one.
 
-    Waiting for the first label to exist separates "the engine has not loaded yet" from "the
-    engine loaded and produced the wrong machine" — only the second is a bug in sharing, and
-    the assertion below is the one that says so.
+    This used to be `page.context().newPage()` after `clearCookies()`, which is not a fresh
+    session and does not become one: the app keeps recovered work in IndexedDB, which every
+    page of a context shares, and it has never used a cookie. So the second page could see the
+    first page's autosave — and when it does, the link is correctly *offered* rather than
+    loaded, because that is task F7's entire point. The canvas then stays as it was and no
+    label ever appears.
+
+    Whether it saw it was a race between one page's 400ms autosave and another page's read.
+    Locally the read won and the test passed; in CI the write won and the machine was never
+    meant to load. The test name said "fresh session" while the setup did not build one, and
+    the fix is to build one — a new context has its own IndexedDB, so there is no work to
+    weigh the link against and no offer to make.
   */
-  await drawn(fresh).first().waitFor({ timeout: 30_000 });
-  await expect(drawn(fresh).first()).toHaveText('q0');
+  const fresh = await browser.newContext();
+  const visitor = await fresh.newPage();
+  await visitor.goto(link);
+
+  await expect(drawn(visitor).first()).toHaveText('q0');
+
+  await fresh.close();
 });
 
 test('a link never discards work without asking', async ({ page }) => {
