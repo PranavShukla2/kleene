@@ -5,9 +5,10 @@ body:
   - type: markdown
     attributes:
       value: |
-        Pushdown automata, Turing machines and context-free grammars are already tracked and
-        deliberately out of scope for v1 — please add to those issues rather than opening a
-        new one. Everything else is open.
+        Pushdown automata, Turing machines and context-free grammars are deliberately out of
+        scope for v1. There is a tracking issue open for each — please add to those rather
+        than opening a new one, since what goes in v2 is decided by which one fills up.
+        Everything else is fair game.
 
   - type: textarea
     id: problem
