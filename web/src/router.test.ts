@@ -74,6 +74,7 @@ describe('routeOf', () => {
       'docs',
       'changelog',
       'about',
+      'jflap',
     ] as const) {
       expect(routeOf(pathOf(route))).toBe(route);
     }

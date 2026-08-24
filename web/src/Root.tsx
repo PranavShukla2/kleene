@@ -32,6 +32,7 @@ import { Pricing } from '@/site/Pricing';
 import { Roadmap } from '@/overview/Roadmap';
 import { CommandPalette } from '@/site/CommandPalette';
 import { Footer } from '@/site/Footer';
+import { Jflap } from '@/site/Jflap';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
 import { useUpdatePrompt, type UpdateState } from '@/store/updates';
@@ -227,6 +228,8 @@ function Page({
       return <Changelog onNavigate={go} />;
     case 'about':
       return <About onNavigate={go} />;
+    case 'jflap':
+      return <Jflap onNavigate={go} onOpenPath={goPath} />;
     case 'learn':
       return (
         <Learn

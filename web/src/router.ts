@@ -28,6 +28,7 @@ export type Route =
   | 'docs'
   | 'changelog'
   | 'about'
+  | 'jflap'
   /** A `/tools/<slug>` landing page. The slug is read separately, from the path. */
   | 'tool'
   /** No such page. Not a path anyone navigates *to* — only where an unknown one lands. */
@@ -45,6 +46,10 @@ const PATHS: Record<Route, string> = {
   docs: '/docs',
   changelog: '/changelog',
   about: '/about',
+  // Named for the search someone actually types. Not `/vs-jflap`: the page answers a
+  // question rather than picking a fight, and roadmap §7 rules out trading on the name
+  // anywhere it would look like an association.
+  jflap: '/jflap-alternative',
   // The prefix only. `pathOf` never builds a real tool URL — `toolPath` does, because a route
   // with a parameter cannot round-trip through a table of constants.
   tool: '/tools',
