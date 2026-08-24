@@ -114,13 +114,39 @@ back to a slightly different epsilon, which is a different kind of wrong from a 
 
 ### Track D — Documents
 
-- [ ] **D1.** `.kln` save and load, round-tripping layout and metadata.
-- [ ] **D2.** Format frozen and documented at `docs/formats/kln.md`. 🔴 **DECISION D8** —
+- [x] **D1.** `.kln` save and load, round-tripping layout and metadata.
+- [x] **D2.** Format frozen and documented at `docs/formats/kln.md`. 🔴 **DECISION D8** —
       this is the last moment it can change freely. After the first shared link exists, every
       change needs a migration path.
-- [ ] **D3.** Version field respected on load, with a clear error for a future version rather
+- [x] **D3.** Version field respected on load, with a clear error for a future version rather
       than a silent misparse.
-- [ ] **D4.** Drag-and-drop a file onto the canvas to open it.
+- [x] **D4.** Drag-and-drop a file onto the canvas to open it.
+
+**Track D closed. D8 is answered — the format is frozen at version 1, with `origin` no longer
+written.**
+
+The freeze turned out cheap, because the versioning rule already said that *adding an optional
+field never bumps the version*. So it narrowed to one question — is anything in the format
+wrong enough that it would later have to come out? — and `origin` was the only candidate: it
+names states of a machine the file does not contain, and measured 22–34% of a document, growing
+with size, against a URL-fragment budget of a few kilobytes.
+
+It is stripped on the **document**, not on the wire type. The same shape crosses the
+WebAssembly boundary, where the source machine *is* present and `origin` is exactly what makes
+the hover-highlight work. Reading a file that has it still keeps it.
+
+**The load path is tested by trying to break it.** A file that fails to open must leave the
+open document alone — someone who drags the wrong file onto their work has made a small
+mistake, and losing an hour of drawing to it would be a much larger one. Four e2e tests throw
+a future version, a dangling transition and plain text at it and assert the canvas is
+unchanged each time.
+
+One thing the plan did not anticipate: **documents cross the boundary through a JSON string**,
+unlike everything else here. `layout` is keyed by state id and JavaScript object keys are
+always strings, so `serde_wasm_bindgen` produced `invalid type: string "0", expected u32` — and
+going the other way would have written a JS `Map` where the frontend expects a plain object.
+The wasm crate's header argues against JSON strings for *traces*, which cross in bulk; a
+document crosses when someone presses Save.
 
 ### Track E — `.jff` import (the migration path)
 
