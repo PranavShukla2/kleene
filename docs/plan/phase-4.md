@@ -168,18 +168,37 @@ Roadmap §1.3: *"this is how you take users from an incumbent — you make switc
 
 ### Track F — URL sharing
 
-- [ ] **F1.** `document → JSON → deflate (CompressionStream) → base64url → location.hash`
+- [x] **F1.** `document → JSON → deflate (CompressionStream) → base64url → location.hash`
       (roadmap §2.6).
-- [ ] **F2.** **Fragment, never a query parameter.** It never reaches a server, so there is
+- [x] **F2.** **Fragment, never a query parameter.** It never reaches a server, so there is
       no privacy story to explain and no infrastructure to run.
-- [ ] **F3.** Size check with a `.kln` download fallback above ~8 KB (roadmap §2.6).
-- [ ] **F4.** Copy-link button with a visible character count, so the limit is never a
+- [x] **F3.** Size check with a `.kln` download fallback above ~8 KB (roadmap §2.6).
+- [x] **F4.** Copy-link button with a visible character count, so the limit is never a
       surprise.
-- [ ] **F5.** Round-trip property test: any document survives encode → decode unchanged.
-- [ ] **F6.** `CompressionStream` fallback for browsers lacking it.
+- [x] **F5.** Round-trip property test: any document survives encode → decode unchanged.
+- [x] **F6.** `CompressionStream` fallback for browsers lacking it.
       🟡 **ASSUMPTION** — baseline is Safari 16.4+ / Chrome 80+ / Firefox 113+. Below that,
       an uncompressed base64 fragment, which is larger but works.
-- [ ] **F7.** Restoring from a link must never silently discard the current document.
+- [x] **F7.** Restoring from a link must never silently discard the current document.
+
+**Track F closed. F7 turned out to be a bug rather than a policy.**
+
+The task reads as a rule to follow — "restoring from a link must never silently discard the
+current document" — and implementing it surfaced something worse. **A link differing from the
+current page only by its fragment does not reload the page.** So clicking a share link while
+already in the editor did nothing at all, for exactly the person most likely to click one.
+
+Handled on `hashchange` as well as on mount, and *always* as an offer there: by definition
+there is a document on screen someone has been looking at.
+
+**F6's fallback was being taken silently, and the marker is what caught it.** The payload
+carries one character saying whether it was compressed. Under jsdom `CompressionStream` exists
+while the Blob plumbing beneath it does not, so the unit suite was taking the uncompressed path
+while asserting nothing about which path ran. A browser check confirmed real compression: 284
+characters for the default machine, against 356 of raw JSON.
+
+**The `origin` decision paid for itself here.** Dropping it from documents (D8) took roughly a
+third off every link, against a budget where a third matters.
 
 ### Track G — Graphviz DOT
 
