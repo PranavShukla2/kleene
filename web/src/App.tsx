@@ -879,7 +879,21 @@ function StatusBar({
       <span>{states} states</span>
       <span>{transitions} transitions</span>
       {selected > 0 && <span className="text-k-primary">{selected} selected</span>}
-      <span className="ml-auto">{autosave}</span>
+      {/*
+        Phase 5 E7. "saved" on its own is a claim someone will read as "saved somewhere" —
+        a server, an account, a thing that survives clearing site data. It does not. The
+        account-free path has to say what it lacks, plainly and once, and the honest place
+        for it is beside the word that would otherwise mislead.
+
+        A title rather than a banner: the fact matters at the moment someone wonders about
+        it, and a permanent notice about storage in an editor is a nag.
+      */}
+      <span
+        className="ml-auto"
+        title="Saved in this browser only — IndexedDB, no account, no server, not synced between devices. Use Save to keep a .kln file, or Share to put the machine in a link."
+      >
+        {autosave}
+      </span>
       <span>{theme}</span>
       {engine && <span>kleene-core {engine}</span>}
     </footer>
