@@ -2,9 +2,13 @@
 
 Kleene's document format. A saved automaton, its layout, and its metadata, as JSON.
 
-**Status: version 1, not yet frozen.** The freeze happens in Phase 4 (decision
-[D8](../plan/DECISIONS.md)), which is the last point it can change without a migration path —
-after the first shared link exists in the wild, every change has to keep old links working.
+**Status: version 1, frozen 2026-08-24** (decision [D8](../plan/DECISIONS.md)).
+
+From here, a change that removes a field or repurposes one bumps the version and needs a
+migration path. **Adding an optional field does not** — old readers ignore it, new readers
+default it — which is why the freeze is a much smaller commitment than it sounds. Provenance,
+an author, a course code, a notation preference: all of those can still arrive without
+breaking a single link.
 
 ---
 
@@ -72,12 +76,22 @@ after the first shared link exists in the wild, every change has to keep old lin
 | `accepting` | boolean | no | Defaults to `false`. |
 | `origin` | array of integer | no | Which states of the *source* machine produced this one. |
 
-`origin` is written by subset construction and by minimization. It is what lets the UI answer
+`origin` is produced by subset construction and by minimization. It is what lets the UI answer
 "where did this state come from?" — hovering a DFA state highlights the NFA states it stands
-for. It refers to ids in whichever machine this one was derived from, so it is only meaningful
-alongside that machine; a document read on its own may safely ignore it.
+for.
 
-An `origin` of `[]` is not the same as an absent one: the empty subset is the trap state.
+**Kleene reads `origin` and does not write it**, decided at the freeze. It refers to ids in
+whichever machine this one was derived from, and that machine is not in the file — so a saved
+`origin` is a claim nothing can check. It was also expensive in the one place size matters:
+22% of a five-state document, 28% of eleven, 34% of seventeen, and share links carry this
+format through a URL fragment.
+
+It still crosses the WebAssembly boundary, where the source machine *is* present. This is a
+rule about documents, not about the shape of a machine.
+
+Files that carry it — older ones, hand-written ones, ones from other tools — stay valid and
+their `origin` is read. An `origin` of `[]` is not the same as an absent one: the empty subset
+is the trap state.
 
 ### A transition
 

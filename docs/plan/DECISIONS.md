@@ -50,12 +50,28 @@ student's hand-worked answer and the tool's agree line for line.
 
 ### D8 — Freeze the `.kln` format
 
-**Status:** ⏳ **Hard deadline: Phase 4 D2** · **Blocks:** Phase 4 D2, teaching layer A4
+**Status:** ✅ **Decided 2026-08-24 — frozen at version 1, with `origin` no longer written**
 
 Not a design question so much as a commitment point. The moment one shared link exists in
-the wild, every change needs a migration path. Phase 4 is the last week it can change freely.
+the wild, every change needs a migration path.
 
-**What is needed:** a read-through of `docs/formats/kln.md` and a yes.
+**The freeze turned out to be cheap**, because the versioning rule already says that *adding
+an optional field does not bump the version*. Only removing a field or repurposing one does.
+So the decision narrowed to a single question: is anything in the format wrong enough that it
+would later have to be removed?
+
+One thing was. **`origin`** records which states of the source machine produced each state, and
+that machine is not in the file — so a saved `origin` is a claim nothing can check. Measured,
+it was also 22–34% of a document, growing with size, against a URL-fragment budget of a few
+kilobytes.
+
+So `origin` is read and no longer written. Everything else stands. The stripping happens on the
+*document* rather than on the wire type, because the same shape crosses the WebAssembly
+boundary — where the source machine is present and `origin` is what makes the hover-highlight
+work.
+
+Deliberately **not** blocked on: provenance (`meta.source`, the expression a machine came
+from) and a `$schema` field. Both are optional additions and cost nothing later.
 
 ### D9 — Which two panes are the default on a small screen?
 
