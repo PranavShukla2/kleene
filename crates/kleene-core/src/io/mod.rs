@@ -13,6 +13,7 @@
 //! arrives in Phase 4 alongside the rest of the export surface.
 
 pub mod dot;
+pub mod jff;
 pub mod json;
 pub mod tikz;
 pub mod wire;
