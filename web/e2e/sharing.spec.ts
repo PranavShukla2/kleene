@@ -47,6 +47,18 @@ test('opening a link in a fresh session loads the machine', async ({ page }) => 
   const fresh = await page.context().newPage();
   await fresh.goto(link);
 
+  /*
+    `goto` resolves when the document has loaded, and the machine is not on screen then: the
+    WebAssembly module still has to arrive and instantiate before the link can be decoded into
+    a diagram. On a warm local run that gap is a few hundred milliseconds and the default 5s
+    assertion timeout hides it; on a cold CI runner it is longer than 5s, and this was the one
+    test in the suite that went red there while passing here.
+
+    Waiting for the first label to exist separates "the engine has not loaded yet" from "the
+    engine loaded and produced the wrong machine" — only the second is a bug in sharing, and
+    the assertion below is the one that says so.
+  */
+  await drawn(fresh).first().waitFor({ timeout: 30_000 });
   await expect(drawn(fresh).first()).toHaveText('q0');
 });
 
@@ -59,8 +71,10 @@ test('a link never discards work without asking', async ({ page }) => {
 
   await page.goto('/editor');
   await drawSomething(page);
-  // Past the autosave debounce, so the session counts as busy.
-  await page.waitForTimeout(2500);
+  // Past the autosave debounce, so the session counts as busy. Waiting for the status bar to
+  // say so beats sleeping for a number chosen to be comfortably longer than a 400ms timer:
+  // it is quicker when the save is quick, and it is still correct when the machine is not.
+  await expect(page.getByText('saved', { exact: true })).toBeVisible();
   const before = await drawn(page).allTextContents();
 
   await page.goto(link);
@@ -75,7 +89,7 @@ test('the offered machine opens when it is accepted', async ({ page }) => {
 
   await page.goto('/editor');
   await drawSomething(page);
-  await page.waitForTimeout(2500);
+  await expect(page.getByText('saved', { exact: true })).toBeVisible();
   const before = await drawn(page).allTextContents();
 
   await page.goto(link);
