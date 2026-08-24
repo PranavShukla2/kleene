@@ -10,7 +10,7 @@ use std::io::Read;
 use std::path::Path;
 
 use kleene_core::io::Document;
-use kleene_core::{Automaton, convert, parse, thompson};
+use kleene_core::{Automaton, convert, examples, parse, thompson};
 
 /// Where an automaton came from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
@@ -90,7 +90,20 @@ impl Input {
             From::Auto if Path::new(argument).is_file() => {
                 Self::interpret(&read(argument)?, argument, From::Kln)
             }
-            From::Auto | From::Regex => Self::interpret(argument, argument, From::Regex),
+            // A key from `kleene examples`. Without this the command lists twenty
+            // identifiers that no other command will accept — a catalogue you can read and
+            // cannot use.
+            //
+            // It cannot shadow an expression: keys are snake_case, and `_` is not a symbol
+            // the regex lexer accepts, so no example key is also a valid expression.
+            From::Auto => match examples::by_key(argument) {
+                Some(automaton) => Ok(Self {
+                    automaton,
+                    document: None,
+                }),
+                None => Self::interpret(argument, argument, From::Regex),
+            },
+            From::Regex => Self::interpret(argument, argument, From::Regex),
             From::Kln => Self::interpret(&read(argument)?, argument, From::Kln),
         }
     }
@@ -211,6 +224,35 @@ mod tests {
         // `echo` adds a newline, and a trailing newline is not a symbol.
         let input = Input::interpret("a+b\n", "standard input", From::Regex).expect("parses");
         assert_eq!(input.automaton.determinism(), Determinism::EpsilonNfa);
+    }
+
+    #[test]
+    fn an_example_key_resolves_to_its_machine() {
+        let input = Input::resolve("even_number_of_as", From::Auto).expect("a known key");
+        assert_eq!(input.automaton.determinism(), Determinism::Dfa);
+        assert_eq!(input.automaton.state_count(), 2);
+    }
+
+    #[test]
+    fn no_example_key_is_also_a_valid_expression() {
+        // What makes the lookup safe rather than a precedence gamble. Keys are snake_case and
+        // `_` is not a symbol the lexer accepts, so the two namespaces cannot overlap. If a
+        // key without an underscore is ever added, this fails and the ambiguity is a decision
+        // someone makes on purpose.
+        for example in kleene_core::examples::catalogue() {
+            assert!(
+                kleene_core::parse(example.key).is_err(),
+                "`{}` parses as a regular expression, so it is ambiguous",
+                example.key
+            );
+        }
+    }
+
+    #[test]
+    fn an_unknown_key_is_still_read_as_an_expression() {
+        // The fallback has to stay: `ab` is not a key and must not become "no such example".
+        let input = Input::resolve("ab", From::Auto).expect("parses");
+        assert!(input.document.is_none());
     }
 
     #[test]
