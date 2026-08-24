@@ -23,11 +23,14 @@
 
 mod input;
 
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use kleene_core::io::{Document, to_dot};
-use kleene_core::{Automaton, Traced, convert, counterexample, examples, simulate};
+use kleene_core::io::tikz::Point as TikzPoint;
+use kleene_core::io::{Document, to_dot, to_tikz};
+use kleene_core::notation::Notation;
+use kleene_core::{Automaton, StateId, Traced, convert, counterexample, examples, simulate};
 
 use crate::input::{From as InputKind, Input};
 
@@ -131,6 +134,8 @@ enum Format {
     Kln,
     /// Graphviz.
     Dot,
+    /// A TikZ picture, for LaTeX.
+    Tikz,
 }
 
 fn main() -> ExitCode {
@@ -331,11 +336,99 @@ fn equiv_command(
     }
 }
 
+/// A left-to-right row, for a machine nobody has arranged.
+///
+/// `to_tikz` needs coordinates and a regular expression does not come with any. A row is the
+/// one automatic arrangement that is never actively wrong: TikZ computes the bounding box
+/// from its content, so a wide picture scales rather than overflowing, and anyone who wants
+/// better has the editor.
+///
+/// Ordered by breadth-first search from the start state, not by creation order. Thompson's
+/// construction numbers states in the order the *parser* met the operators, which for
+/// `(a|b)*abb` puts the start state seventh — a figure whose first node is somewhere in the
+/// middle reads as a mistake even though every edge in it is right. Walking the machine
+/// instead puts the start on the left and each state near the one that reaches it.
+///
+/// The spacing matches the canvas's own, so a row from here and a row from the editor produce
+/// the same figure.
+fn row(automaton: &Automaton) -> BTreeMap<StateId, TikzPoint> {
+    /// One canvas grid step, in the units `to_tikz` scales from.
+    const SPACING: f64 = 96.0;
+
+    let mut order: Vec<StateId> = Vec::with_capacity(automaton.states.len());
+    let mut seen: BTreeSet<StateId> = BTreeSet::new();
+    let mut queue: VecDeque<StateId> = VecDeque::new();
+
+    if automaton.states.contains_key(&automaton.start) {
+        queue.push_back(automaton.start);
+        seen.insert(automaton.start);
+    }
+
+    while let Some(id) = queue.pop_front() {
+        order.push(id);
+        // Transition order, not sorted: it is the order the machine was written in, which is
+        // the closest thing to an author's intent available here.
+        for next in automaton
+            .transitions
+            .iter()
+            .filter(|t| t.from == id)
+            .map(|t| t.to)
+        {
+            if seen.insert(next) {
+                queue.push_back(next);
+            }
+        }
+    }
+
+    // Anything the start state cannot reach still needs a position — an unreachable state is
+    // a thing this tool exists to point out, and dropping it from the figure would hide it.
+    order.extend(automaton.states.keys().filter(|id| !seen.contains(id)));
+
+    order
+        .into_iter()
+        .enumerate()
+        .map(|(index, id)| {
+            (
+                id,
+                TikzPoint {
+                    #[expect(
+                        clippy::cast_precision_loss,
+                        reason = "a machine with 2^53 states has other problems"
+                    )]
+                    x: index as f64 * SPACING,
+                    y: 0.0,
+                },
+            )
+        })
+        .collect()
+}
+
 fn export_command(cli: &Cli, argument: &str, format: Format) -> Result<ExitCode, String> {
     let input = load(cli, argument)?;
 
     match format {
         Format::Dot => println!("{}", to_dot(&input.automaton)),
+        Format::Tikz => {
+            // A saved document carries the arrangement someone made, and that is the whole
+            // promise of this export: the figure looks like the diagram they were reading.
+            // A machine built from a regular expression has never been arranged, so it gets
+            // a row — predictable, and honest about being automatic.
+            // `io::Point` and `tikz::Point` are deliberately different types — one is part
+            // of the file format, the other an argument to a function — so a document's
+            // layout is converted rather than passed through.
+            let layout = match &input.document {
+                Some(document) if !document.layout.is_empty() => document
+                    .layout
+                    .iter()
+                    .map(|(&id, at)| (id, TikzPoint { x: at.x, y: at.y }))
+                    .collect(),
+                _ => row(&input.automaton),
+            };
+            println!(
+                "{}",
+                to_tikz(&input.automaton, &layout, Notation::default())
+            );
+        }
         Format::Kln => {
             // Round-tripping a document preserves its layout and title; a machine built
             // from a regex has neither.
@@ -376,5 +469,91 @@ fn print_automaton(cli: &Cli, automaton: &Automaton) {
         println!("{}", Document::new(automaton.clone()).to_json());
     } else {
         println!("{}", to_dot(automaton));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kleene_core::builder::AutomatonBuilder;
+
+    /// A chain whose creation order is deliberately not its reading order: `c` is built first,
+    /// and the start state `a` is built last.
+    fn out_of_order() -> Automaton {
+        AutomatonBuilder::new(["x"])
+            .state("c")
+            .state("b")
+            .accepting("a")
+            .start("a")
+            .edge("a", "b", "x")
+            .edge("b", "c", "x")
+            .build()
+    }
+
+    #[test]
+    fn the_start_state_is_leftmost() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        // The whole reason this is a walk rather than an enumeration. A figure whose first
+        // node is in the middle reads as a mistake even when every edge in it is correct.
+        assert_eq!(laid_out[&machine.start].x, 0.0);
+    }
+
+    #[test]
+    fn states_follow_the_ones_that_reach_them() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        let at = |label: &str| {
+            let id = machine
+                .states
+                .iter()
+                .find(|(_, state)| state.label == label)
+                .map(|(id, _)| *id)
+                .expect("the state exists");
+            laid_out[&id].x
+        };
+
+        assert!(at("a") < at("b"), "a reaches b");
+        assert!(at("b") < at("c"), "b reaches c");
+    }
+
+    #[test]
+    fn a_row_is_flat_and_evenly_spaced() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        let mut xs: Vec<f64> = laid_out.values().map(|at| at.x).collect();
+        xs.sort_by(f64::total_cmp);
+
+        assert_eq!(xs, vec![0.0, 96.0, 192.0]);
+        assert!(laid_out.values().all(|at| at.y == 0.0));
+    }
+
+    #[test]
+    fn a_state_nothing_reaches_still_gets_a_position() {
+        // An unreachable state is something this tool exists to point out. Dropping it from
+        // the export would hide the very thing the validator flags.
+        let machine = AutomatonBuilder::new(["x"])
+            .accepting("start")
+            .state("orphan")
+            .start("start")
+            .build();
+
+        let laid_out = row(&machine);
+        assert_eq!(laid_out.len(), machine.states.len());
+    }
+
+    #[test]
+    fn every_state_is_placed_exactly_once() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        let mut xs: Vec<f64> = laid_out.values().map(|at| at.x).collect();
+        xs.sort_by(f64::total_cmp);
+        xs.dedup();
+
+        assert_eq!(xs.len(), machine.states.len(), "no two states share a slot");
     }
 }
