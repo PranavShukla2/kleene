@@ -31,8 +31,26 @@ test('moving between two tool pages actually changes the page', async ({ page })
 
 test('the back button returns to the previous tool page', async ({ page }) => {
   await page.goto('/tools/nfa-to-dfa');
+
+  /*
+    Assert each page has rendered before acting on it.
+
+    This test went red once in three CI runs while passing locally on every one, and the
+    difference between it and the sibling above — which has never flaked — is that the sibling
+    waits for each page before touching it and this one did not. So the waits are here now.
+
+    That is a precondition fix, not a diagnosis: the mechanism is not confirmed. What is known
+    is that after `goBack` the URL was right and the heading was absent for five seconds, which
+    means the app was rendering something other than the tool page — most likely the loading
+    state, since a tool route is gated behind the WebAssembly module. Locally that state clears
+    in 12ms after a back-navigation and 177ms from cold, so a plain timeout does not explain
+    it. If this flakes again, that gap is where to look.
+  */
+  await expect(page.getByRole('heading', { name: 'NFA to DFA converter' })).toBeVisible();
+
   await page.getByRole('link', { name: 'DFA minimizer The smallest' }).click();
   await expect(page).toHaveURL(/minimize-dfa$/);
+  await expect(page.getByRole('heading', { name: 'DFA minimizer' })).toBeVisible();
 
   await page.goBack();
 
