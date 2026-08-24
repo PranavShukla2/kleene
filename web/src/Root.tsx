@@ -34,6 +34,7 @@ import { CommandPalette } from '@/site/CommandPalette';
 import { Footer } from '@/site/Footer';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
+import { useUpdatePrompt, type UpdateState } from '@/store/updates';
 import { handOff } from '@/store/handoff';
 import { toolSlug, useRoute, type Location as LocationOf, type Route } from '@/router';
 import { useTheme } from '@/theme';
@@ -44,6 +45,7 @@ export function Root() {
   const { choice, cycle } = useTheme();
   const still = useReducedMotion();
   const [palette, setPalette] = useState(false);
+  const update = useUpdatePrompt();
 
   const openPalette = useCallback(() => {
     setPalette(true);
@@ -52,18 +54,31 @@ export function Root() {
   // keyboard, and the editor has its own shortcut sheet behind `?`.
   usePaletteShortcut(openPalette, route !== 'editor');
 
+  /*
+    Shown above everything, on every route including the editor.
+
+    The editor is where it matters most — that is where the unsaved work is — and it is also
+    the one page that does not share this shell, so the prompt is rendered outside the branch
+    rather than inside both halves of it.
+  */
+  const prompt = update.ready ? <UpdateBanner update={update} /> : null;
+
   if (route === 'editor') {
     return (
-      <Editor
-        onHome={() => {
-          go('overview');
-        }}
-      />
+      <>
+        {prompt}
+        <Editor
+          onHome={() => {
+            go('overview');
+          }}
+        />
+      </>
     );
   }
 
   return (
     <div className="flex min-h-dvh flex-col bg-k-bg text-k-text">
+      {prompt}
       <Nav
         current={route}
         onNavigate={go}
@@ -257,4 +272,42 @@ function useEngine(wanted: boolean): Engine | undefined {
   }, [wanted]);
 
   return engine;
+}
+
+/**
+ * "A new version is ready."
+ *
+ * A strip rather than a dialog, because nothing is wrong and nothing is urgent — the app the
+ * reader is using still works. It sits at the very top, above the nav, because it is about the
+ * application rather than about the page.
+ *
+ * "Later" is a real answer and is offered first in tab order for a reason: reloading discards
+ * anything unsaved, and the person best placed to know whether that matters is the one holding
+ * the mouse.
+ */
+function UpdateBanner({ update }: { update: UpdateState }) {
+  return (
+    <div
+      role="status"
+      className="flex items-center gap-3 border-b border-k-primary/40 bg-k-primary/10 px-4 py-2 text-sm"
+    >
+      <span className="flex-1 text-k-text">
+        A new version of Kleene is ready. Reloading discards anything you have not saved.
+      </span>
+      <button
+        type="button"
+        onClick={update.dismiss}
+        className="rounded-full border border-k-border px-3 py-1 text-xs text-k-text-muted transition-colors duration-(--duration-k-hover) hover:border-k-border-strong hover:text-k-text"
+      >
+        Later
+      </button>
+      <button
+        type="button"
+        onClick={update.apply}
+        className="rounded-full bg-k-primary px-3 py-1 text-xs font-medium text-white"
+      >
+        Reload
+      </button>
+    </div>
+  );
 }
