@@ -108,6 +108,7 @@ const PAGES = [
   '/roadmap',
   '/changelog',
   '/about',
+  '/jflap-alternative',
   '/tools/nfa-to-dfa',
 ];
 
@@ -216,4 +217,22 @@ test('the first-run tour appears once and stays dismissed', async ({ page }) => 
   await page.reload();
   await expect(drawn(page).first()).toBeVisible();
   await expect(tour).toHaveCount(0);
+});
+
+test('the JFLAP comparison names what JFLAP does better', async ({ page }) => {
+  // Phase 5 D6. The page is worth having only if it is honest — a comparison table where one
+  // column sweeps every row is an advertisement, and a reader spots that immediately. This
+  // asserts the concessions are actually on the page, so a later edit cannot quietly turn it
+  // into marketing copy.
+  await page.goto('/jflap-alternative');
+
+  await expect(page.getByRole('heading', { name: 'Kleene and JFLAP', level: 1 })).toBeVisible();
+
+  const main = page.getByRole('main');
+  await expect(main).toContainText('Turing machines');
+  await expect(main).toContainText('Pushdown automata');
+  await expect(main).toContainText('Use JFLAP if');
+
+  // The rows Kleene loses are labelled as such.
+  await expect(main.getByText('JFLAP', { exact: true })).not.toHaveCount(0);
 });
