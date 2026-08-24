@@ -14,6 +14,8 @@ import { readFile } from 'node:fs/promises';
 
 import { expect, test } from '@playwright/test';
 
+import { drawn } from './canvas';
+
 test('moving between two tool pages actually changes the page', async ({ page }) => {
   await page.goto('/tools/nfa-to-dfa');
   await expect(page.getByRole('heading', { name: 'NFA to DFA converter' })).toBeVisible();
@@ -189,4 +191,29 @@ test('the editor exports Graphviz DOT', async ({ page }) => {
   expect(dot).toContain('doublecircle');
   // DOT has no notion of a start state, so one is faked from an invisible point.
   expect(dot).toContain('__start');
+});
+
+test('the first-run tour appears once and stays dismissed', async ({ page }) => {
+  // Phase 5 E6. The gesture it exists for is unguessable — a transition is drawn from a
+  // state's *rim*, and dragging the centre moves the state — so someone who never sees this
+  // concludes the tool cannot draw transitions, which is most of what it is for.
+  await page.goto('/editor');
+
+  const tour = page.getByRole('dialog', { name: 'Getting started' });
+  await expect(tour).toBeVisible();
+  await expect(tour).toContainText('Double-click');
+
+  // The card that carries the unguessable part. It is the second one, so reaching it is part
+  // of what this test checks: a tour whose middle card never renders teaches nothing.
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(tour).toContainText('rim');
+
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Start drawing' }).click();
+  await expect(tour).toHaveCount(0);
+
+  // Being shown it twice is being told you did not learn.
+  await page.reload();
+  await expect(drawn(page).first()).toBeVisible();
+  await expect(tour).toHaveCount(0);
 });
