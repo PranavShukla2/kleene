@@ -152,19 +152,51 @@ document crosses when someone presses Save.
 
 Roadmap §1.3: *"this is how you take users from an incumbent — you make switching free."*
 
-- [ ] **E1.** `io/jff.rs` — parse JFLAP's XML.
-- [ ] **E2.** Map JFLAP's model onto Kleene's, including its coordinate system and its state
+- [x] **E1.** `io/jff.rs` — parse JFLAP's XML.
+- [x] **E2.** Map JFLAP's model onto Kleene's, including its coordinate system and its state
       id conventions.
-- [ ] **E3.** Handle the constructs v1 does not support (PDA, TM, grammars) with a **clear,
+- [x] **E3.** Handle the constructs v1 does not support (PDA, TM, grammars) with a **clear,
       specific message** — "this file contains a pushdown automaton, which Kleene does not
       support yet" — not a parse failure. The person hitting this is exactly the user being
       courted; the error is a first impression.
 - [ ] **E4.** Fixture tests against every `.jff` file findable in public course repos
       (roadmap §3.2). 🔴 **DECISION D14** — the corpus needs real files.
-- [ ] **E5.** Import from the file picker, drag-and-drop, and the CLI.
+- [x] **E5.** Import from the file picker, drag-and-drop, and the CLI.
 - [ ] **E6.** 🔵 **LEFTOVER CANDIDATE** — `.jff` *export*. Not needed for migration in the
       direction that matters, but it removes lock-in as an objection, which is worth
       something when pitching a professor.
+
+**Track E closed but for E4, which needs real files.**
+
+**E3 turned out to be the whole track.** The parsing is a hundred lines against a simple XML
+tree; the work was in the messages. JFLAP does far more than Kleene — pushdown automata,
+Turing machines, grammars, transducers — and a file holding one of those is *not corrupt*.
+Reporting it as corrupt would be reporting a mistake the reader has not made, and they are
+precisely the person being courted. So each structure is named ("this file contains a pushdown
+automaton"), and every message also says what Kleene *does* read, because "no" without "but"
+sends someone away for good.
+
+**The type is read before anything else**, which is not an ordering detail: a Turing machine
+parsed as a finite automaton would produce a plausible and wrong machine rather than an error,
+and that is the worst outcome available here.
+
+**Two things JFLAP does not write down.** It has no Σ, so the alphabet is inferred from the
+transitions exactly as JFLAP itself does — a machine over `{a, b}` using only `a` imports as a
+machine over `{a}`, and there is nothing in the file to recover the rest from. And an absent or
+empty `<read>` is ε; reading it as a symbol would produce a machine whose alphabet contains the
+empty string, which is not a thing.
+
+**Anything dropped is reported rather than swallowed.** A dangling transition, a second start
+state, a missing initial marker: the import still succeeds, and the difference between what
+someone drew in JFLAP and what they now see is stated once, dismissibly. A silent difference
+would be found out while being marked on it.
+
+Carried forward:
+
+| # | What | Why it is not done | Where it goes |
+|---|---|---|---|
+| **E4** | Fixtures from real course repositories | 🔴 **D14** — needs real files, which cannot be invented. Fifteen hand-written tests cover every quirk *found* so far; what they cannot cover is the quirk nobody has thought of, which is the entire point of a real corpus. | Blocked on D14 |
+| **E6** | `.jff` *export* | Already a leftover candidate. Not needed for migration in the direction that matters, though it removes lock-in as an objection when pitching a professor. | Phase 5 |
 
 ### Track F — URL sharing
 
