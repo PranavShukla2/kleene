@@ -1,0 +1,47 @@
+name: Wrong answer
+description: An algorithm produced a result you believe is incorrect
+labels: ['bug', 'correctness']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These are the most valuable reports this project gets, and they get looked at first.
+        Every conversion here is property-tested against the language it should preserve, so
+        a genuine wrong answer means an invariant is broken — that is worth knowing about
+        immediately.
+
+  - type: input
+    id: link
+    attributes:
+      label: Share link to the machine
+      description: From the editor's Share button.
+      placeholder: https://kleene.pranavmshukla.in/editor#kln=...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: which
+    attributes:
+      label: Which operation
+      options:
+        - Regular expression to NFA
+        - NFA to DFA (subset construction)
+        - DFA minimization
+        - DFA to regular expression (state elimination)
+        - Simulation / accepting a string
+        - Equivalence or counterexample
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: disagreement
+    attributes:
+      label: What it produced, and what it should have produced
+      description: If you know a specific string the two disagree on, that alone is usually
+        enough to find the bug.
+      placeholder: |
+        It rejects "abab". By hand, the DFA is in state q2 after "aba", and q2 --b--> q3
+        which is accepting.
+    validations:
+      required: true

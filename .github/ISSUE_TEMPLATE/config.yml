@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/PranavShukla2/kleene/security/advisories/new
+    about: Please report these privately rather than as a public issue.
+  - name: Question about automata theory
+    url: https://github.com/PranavShukla2/kleene/discussions
+    about: Happy to help, but Discussions is a better place than the issue tracker.

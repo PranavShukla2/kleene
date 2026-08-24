@@ -1,0 +1,59 @@
+name: Bug report
+description: Something behaves differently from how it should
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **The fastest possible bug report is a share link.** The button is in the editor —
+        it puts the whole machine in the URL, so I can open exactly what you were looking at.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, and what the tool did instead of what you expected.
+      placeholder: |
+        I converted this NFA to a DFA and the trap state came out accepting.
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Share link
+      description: From the editor's Share button. Skip it if the bug isn't about a machine.
+      placeholder: https://kleene.pranavmshukla.in/editor#kln=...
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+      description: If it's a maths question rather than a UI one, say which textbook result
+        you're comparing against — that's often the whole answer.
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - The web app
+        - The CLI (kleene)
+        - The Rust library (kleene-core)
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      description: Only if it's the web app, and only if you think it matters.
+      placeholder: Firefox 141, Windows 11
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I'm on the current version of the site (a hard reload picks up an update)
+          required: false
