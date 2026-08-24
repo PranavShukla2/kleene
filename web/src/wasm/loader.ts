@@ -10,6 +10,7 @@ import init, {
   determinism,
   elimination,
   epsilon_closure,
+  from_jff,
   from_kln,
   minimization,
   example_automaton,
@@ -135,6 +136,27 @@ export interface Engine {
    * Kleene" rather than a parser complaint about an unexpected field several levels down.
    */
   fromKln: (text: string) => Document;
+  /**
+   * Read a JFLAP `.jff` file (Phase 4 Track E).
+   *
+   * Throws with a message meant to be *shown*. A file holding a pushdown automaton is not
+   * corrupt, and the person opening it is exactly the user being courted.
+   */
+  fromJff: (text: string) => Imported;
+}
+
+/** What a `.jff` file turned out to hold. */
+export interface Imported {
+  automaton: Automaton;
+  /** Where each state sat in JFLAP, whose axes run the same way a screen's do. */
+  layout: Record<string, Point>;
+  /**
+   * What the import had to drop.
+   *
+   * Not errors — it succeeded. These exist so a difference between what someone drew in JFLAP
+   * and what they now see is never silent.
+   */
+  notes: string[];
 }
 
 /**
@@ -171,6 +193,7 @@ export function loadEngine(): Promise<Engine> {
       toDot: (automaton: Automaton) => to_dot(automaton),
       toKln: (document: Document) => to_kln(document),
       fromKln: (text: string) => from_kln(text) as Document,
+      fromJff: (text: string) => from_jff(text) as Imported,
       epsilonClosure: (automaton: Automaton, seeds: readonly StateId[]) =>
         // A copy because the binding takes ownership of a `Uint32Array`, and the caller's
         // array is a slice of a step it does not own.
