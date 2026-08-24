@@ -202,8 +202,19 @@ third off every link, against a budget where a third matters.
 
 ### Track G — Graphviz DOT
 
-- [ ] **G1.** `io/dot.rs` export (already built in Phase 1 F3 — wire up the UI).
-- [ ] **G2.** Snapshot tests.
+- [x] **G1.** `io/dot.rs` export (already built in Phase 1 F3 — wire up the UI).
+- [x] **G2.** Snapshot tests. Two, written in Phase 1 alongside the exporter — this track
+      added nothing to them because the exporter did not change.
+
+**Track G closed, and it really was the hour the estimate said.** The exporter existed; this
+was a binding, a line in the engine surface, and a tab. The only design decision was that DOT
+shares the LaTeX panel rather than getting its own: both are *source* rather than a picture,
+both go into something already open, and both want copy before download. A near-copy of the
+component would have been two places to fix the next time either changed.
+
+The note under it says Graphviz lays the machine out itself, because that is the one
+surprising thing here — the positions in the file are not the ones on the canvas, and TikZ
+directly above it promises the opposite.
 
 ---
 
