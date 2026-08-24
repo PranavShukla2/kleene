@@ -77,16 +77,40 @@ Carried forward:
 
 ### Track C — Raster and vector export
 
-- [ ] **C1.** SVG export. Nearly free — the renderer already produces the DOM to export
+- [x] **C1.** SVG export. Nearly free — the renderer already produces the DOM to export
       (roadmap §2.5), which is why SVG was chosen over Canvas in the first place.
-- [ ] **C2.** Inline the computed styles and embed the font subset, so the exported file
+- [x] **C2.** Inline the computed styles and embed the font subset, so the exported file
       renders identically outside the app. An SVG that only looks right inside Kleene is not
       an export.
-- [ ] **C3.** PNG export at 1×/2×/3×, with a transparent-background option.
-- [ ] **C4.** Export honours the current theme, but **defaults to the light palette** —
+- [x] **C3.** PNG export at 1×/2×/3×, with a transparent-background option.
+- [x] **C4.** Export honours the current theme, but **defaults to the light palette** —
       exports go into white documents, and a dark-mode user will otherwise paste a black
       rectangle into their assignment without noticing.
-- [ ] **C5.** Copy-image-to-clipboard as well as download.
+- [x] **C5.** Copy-image-to-clipboard as well as download.
+
+**Track C closed, and C1's "nearly free" was optimistic.**
+
+The DOM being SVG is what made it *possible* — Canvas would have meant a second renderer — but
+three things stood between "serialize the element" and an export worth having, and all three
+were invisible in the panel:
+
+1. **The whole canvas came out.** The editor's SVG is a viewport, far larger than the machine
+   in it, so the file was a small drawing marooned in white.
+2. **The session came out with the machine** — pan, zoom, and the input tester's highlight on
+   whichever state it was sitting on.
+3. **The PNG had no labels.** `decode()` resolves before an SVG's embedded `@font-face` has
+   loaded, so the raster was taken too early. The SVG opened directly looked perfect, which is
+   exactly what made it hard to see.
+
+**The fix for the first two was to stop scraping the live canvas.** The panel renders a second,
+clean copy off-screen — no selection, no active states, no grid — and exports that. Stripping
+chrome from a serialized clone meant *guessing* which attributes were interface, and the crop
+comes free because `AutomatonView` already fits its viewBox to the layout.
+
+**C2's font embedding costs ~28KB per SVG and is worth it.** A monospace fallback has different
+advance widths, so labels stop being centred in their circles — a diagram that is subtly and
+unfixably wrong in someone else's document. Only the Latin subset travels; a Greek label falls
+back to a slightly different epsilon, which is a different kind of wrong from a broken layout.
 
 ### Track D — Documents
 
