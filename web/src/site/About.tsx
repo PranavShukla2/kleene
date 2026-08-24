@@ -192,6 +192,38 @@ export function About({ onNavigate }: { onNavigate: (to: Route) => void }) {
               </Lift>
             </div>
           </div>
+
+          {/*
+            The footer offers a "Licence" link and points it here, so the licence has to be
+            on this page. It is also the answer to the question an instructor asks before
+            putting a tool in front of a class, and burying it in a repository file assumes
+            they will go looking.
+          */}
+          <p
+            id="licence"
+            className="relative mt-8 border-t border-k-border pt-6 text-sm leading-relaxed text-k-text-muted"
+          >
+            Dual-licensed under{' '}
+            <a
+              href="https://github.com/PranavShukla2/kleene/blob/main/LICENSE-MIT"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-k-text underline decoration-k-border-strong underline-offset-4 hover:decoration-k-primary"
+            >
+              MIT
+            </a>{' '}
+            or{' '}
+            <a
+              href="https://github.com/PranavShukla2/kleene/blob/main/LICENSE-APACHE"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-k-text underline decoration-k-border-strong underline-offset-4 hover:decoration-k-primary"
+            >
+              Apache 2.0
+            </a>
+            , at your option — the Rust ecosystem's convention. Use it in a course, fork it, put
+            the diagrams in a textbook. No attribution required, though it is welcome.
+          </p>
         </div>
       </Band>
     </main>
