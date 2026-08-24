@@ -6,9 +6,10 @@
  * filesystem here is case-insensitive, CI's is not, so the two would resolve differently on the
  * machine that matters. Phase 5 C5 calls this a gallery anyway.
  *
- * L2 and L3, and the shape Phase 5 Track C fills in. Two machines today; the page says so
- * rather than padding the grid out, because a gallery that pretends to be bigger than it is
- * gets found out on the second click.
+ * **The list comes from the engine** (Phase 5 C1/C4). The machines shown here are the machines
+ * CI runs every example test against, so a card that opens a broken machine fails a build
+ * rather than a student's afternoon. A list maintained beside the gallery would be a second
+ * corpus, tested by nobody, drifting the first time an example was added.
  *
  * Filtering is by **topic, not tier** (Phase 5 C7). Someone arrives here stuck on ε-transitions
  * or wondering why their DFA grew a trap state — they are looking for the thing they are stuck
@@ -16,18 +17,12 @@
  * whether you *want* to.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { AutomatonView } from '@/canvas/AutomatonView';
 import { rowLayout } from '@/canvas/geometry';
 import type { Automaton } from '@/model/automaton';
-import {
-  availableTopics,
-  EXAMPLES,
-  filterByTopic,
-  type Example,
-  type Topic,
-} from '@/overview/examples';
+import type { CatalogueEntry } from '@/wasm/loader';
 import { Reveal } from '@/site/motion';
 import { Band, Masthead } from '@/site/page';
 import type { Engine } from '@/wasm/loader';
@@ -40,8 +35,25 @@ export function Gallery({
   engine: Engine | undefined;
   onOpen: (key: string) => void;
 }) {
-  const [topic, setTopic] = useState<Topic | undefined>(undefined);
-  const shown = filterByTopic(topic);
+  const [topic, setTopic] = useState<string | undefined>(undefined);
+
+  /*
+    Straight from the engine (Phase 5 C1/C4). The twenty machines shown here are the twenty a
+    broken example fails CI on — a list maintained beside the gallery would be a second corpus,
+    tested by nobody, and it would drift the first time one was added.
+  */
+  const examples = useMemo(() => engine?.catalogue() ?? [], [engine]);
+  const topics = useMemo(
+    () => [...new Set(examples.flatMap((example) => example.topics))],
+    [examples],
+  );
+  const shown = useMemo(
+    () =>
+      topic === undefined
+        ? examples
+        : examples.filter((example) => example.topics.includes(topic)),
+    [examples, topic],
+  );
 
   return (
     <main>
@@ -60,7 +72,7 @@ export function Gallery({
               setTopic(undefined);
             }}
           />
-          {availableTopics().map((option) => (
+          {topics.map((option) => (
             <TopicChip
               key={option}
               label={option}
@@ -71,7 +83,7 @@ export function Gallery({
             />
           ))}
           <span className="ml-auto font-mono text-xs text-k-text-faint">
-            {shown.length} of {EXAMPLES.length} · more in phase 5
+            {shown.length} of {examples.length}
           </span>
         </div>
 
@@ -124,7 +136,7 @@ function ExampleCard({
   engine,
   onOpen,
 }: {
-  example: Example;
+  example: CatalogueEntry;
   engine: Engine | undefined;
   onOpen: (key: string) => void;
 }) {

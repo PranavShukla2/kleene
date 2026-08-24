@@ -1,13 +1,16 @@
 /**
- * The examples the engine ships with, described.
+ * The two examples the landing page can show *before* WebAssembly arrives.
  *
- * Two, today. Phase 5 Track C grows this to ~20 and turns the strip into a real gallery with
- * tiers and filters — so this file is deliberately shaped like the thing it becomes rather
- * than like the thing it is, and the overview says out loud that it is short.
+ * **This is a deliberate second list, and the reason is a rule.** Phase 5 E4 says the landing
+ * page must paint without waiting for the engine, and the full catalogue lives *in* the engine
+ * (`engine.catalogue()`) so that the machines a gallery draws are the machines CI runs. A page
+ * that must not block on wasm therefore cannot read it.
  *
- * The descriptions live here rather than in Rust because they are *copy*: what a machine
- * teaches is an editorial judgement about an audience, not a property of the automaton. The
- * engine owns the machines; this owns how they are introduced.
+ * So this holds two entries — enough for a strip that says "browse the gallery" — and nothing
+ * else should use it. `/examples` and the editor read the engine.
+ *
+ * The keys must exist in the engine's catalogue; `landing-examples.test.ts` is what says so,
+ * because a card here that opens nothing is worse than one card fewer.
  */
 
 /** How hard an example is, per Phase 5 C6 — three tiers a student can self-select into. */
