@@ -12,6 +12,8 @@ import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { ExportPanel } from '@/panels/Export';
 import { droppedFile, isFileDrag, openFile, pickFile, saveFile } from '@/store/files';
+import { SharePanel } from '@/panels/Share';
+import { decode, payloadIn } from '@/store/share';
 import { rowLayout } from '@/canvas/geometry';
 import { ShortcutSheet } from '@/canvas/ShortcutSheet';
 import { useShortcuts } from '@/canvas/useShortcuts';
@@ -69,6 +71,15 @@ export function Editor({ onHome }: { onHome: () => void }) {
    * document is never touched until a file has parsed.
    */
   const [openError, setOpenError] = useState<string | undefined>(undefined);
+  /**
+   * A machine that arrived in the URL and has not been accepted yet (task F7).
+   *
+   * Held rather than loaded, because **a link must never silently discard open work.** The
+   * common case is someone with a half-drawn machine clicking a classmate's link; opening it
+   * on top would be indistinguishable from losing their work, and they would have no way back.
+   * So it waits, named, with both answers offered.
+   */
+  const [offered, setOffered] = useState<ReturnType<typeof normalize> | undefined>(undefined);
   const [input, setInput] = useState('');
   const [storedStep, setStep] = useState(0);
   const [laying, setLaying] = useState(false);
@@ -91,6 +102,52 @@ export function Editor({ onHome }: { onHome: () => void }) {
   // Both are awaited together deliberately: recovery is asynchronous, and seeding before it
   // resolves would overwrite the work the user is coming back to — the one thing autosave
   // exists to prevent.
+  /**
+   * Take in a machine that arrived in the URL.
+   *
+   * Shared by the initial load and by `hashchange`, which is not a nicety: clicking a share
+   * link while already in the editor changes *only the fragment*, and a browser does not
+   * reload for that. Handling it on mount alone meant the link did nothing at all for the one
+   * person most likely to click it — someone already using the tool.
+   */
+  const receiveShared = useCallback(
+    async (payload: string, busy: boolean, stillLive: () => boolean = () => true) => {
+      const document = await decode(payload);
+      if (!stillLive()) return;
+
+      if (!document) {
+        setOpenError(
+          'That link does not contain a machine. It may have been cut short — links are often ' +
+            'wrapped by mail clients.',
+        );
+        return;
+      }
+
+      if (busy) setOffered(normalize(document));
+      else loadDocument(normalize(document));
+    },
+    [loadDocument],
+  );
+
+  /*
+    A share link arriving while the editor is already open.
+
+    Always an *offer* here, never a straight load: by definition there is a document on screen
+    that someone has been looking at, and replacing it without asking is the failure task F7
+    exists to prevent.
+  */
+  useEffect(() => {
+    const onHash = () => {
+      const payload = payloadIn(window.location.hash);
+      if (payload !== undefined) void receiveShared(payload, true);
+    };
+
+    window.addEventListener('hashchange', onHash);
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+    };
+  }, [receiveShared]);
+
   useEffect(() => {
     let live = true;
 
@@ -107,6 +164,18 @@ export function Editor({ onHome }: { onHome: () => void }) {
         // 3. Whatever autosave recovered. The ordinary return visit, and what autosave is for.
         const handed = takeHandOff();
         const wanted = requestedExample(window.location.search);
+        const shared = payloadIn(window.location.hash);
+
+        /*
+          A shared machine is decoded and *offered* rather than loaded, so that the decision
+          below can still run. Whether it opens straight away depends on whether there is work
+          to lose: with nothing but a default example on screen, opening it is obviously what
+          the click meant; with a recovered session, it is not (task F7).
+        */
+        if (shared !== undefined) {
+          const busy = recovered !== undefined && recovered.automaton.states.length > 0;
+          void receiveShared(shared, busy, () => live);
+        }
 
         if (handed) {
           loadDocument(
@@ -115,6 +184,9 @@ export function Editor({ onHome }: { onHome: () => void }) {
               layout: rowLayout(handed.states.map((state) => state.id)),
             }),
           );
+        } else if (shared !== undefined) {
+          // Left alone: the decode above owns what happens next, and loading an example here
+          // would flash a different machine on screen before the link's arrived.
         } else if (wanted === undefined && recovered && recovered.automaton.states.length > 0) {
           loadDocument(recovered);
         } else {
@@ -147,6 +219,11 @@ export function Editor({ onHome }: { onHome: () => void }) {
     return () => {
       live = false;
     };
+    // `receiveShared` deliberately omitted. This effect is the *first* load and must run once;
+    // including it would re-run the whole engine-and-recovery sequence whenever the callback's
+    // identity changed, which would flash a second machine on screen. The hashchange listener
+    // above is what keeps up with later links.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadDocument]);
 
   const engine = load.status === 'ready' ? load.engine : undefined;
@@ -331,6 +408,44 @@ export function Editor({ onHome }: { onHome: () => void }) {
         </div>
       )}
 
+      {offered !== undefined && (
+        /*
+          Task F7. Two answers, both named, neither destructive by default — and the machine
+          stays in the URL either way, so "keep mine" is not a decision anyone has to get right
+          the first time.
+        */
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 border-b border-k-primary/40 bg-k-primary/10 px-3 py-2 text-sm"
+        >
+          <span className="flex-1 text-k-text">
+            This link contains a machine
+            {offered.automaton.states.length > 0 &&
+              ` (${String(offered.automaton.states.length)} states)`}
+            . Your current work is still open.
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              loadDocument(offered);
+              setOffered(undefined);
+            }}
+            className="rounded-full bg-k-primary px-3 py-1 text-xs font-medium text-white"
+          >
+            Open it
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOffered(undefined);
+            }}
+            className="rounded-full border border-k-border px-3 py-1 text-xs text-k-text-muted hover:border-k-border-strong hover:text-k-text"
+          >
+            Keep mine
+          </button>
+        </div>
+      )}
+
       {openError !== undefined && (
         /*
           Beside the work rather than over it, and dismissible. The document is untouched — the
@@ -453,6 +568,12 @@ export function Editor({ onHome }: { onHome: () => void }) {
               }}
               onRename={(id) => {
                 select([id]);
+              }}
+            />
+            <SharePanel
+              document={document}
+              onSaveInstead={() => {
+                saveFile(load.engine, document, document.meta?.title);
               }}
             />
             <ExportPanel engine={load.engine} automaton={document.automaton} layout={layout} />
