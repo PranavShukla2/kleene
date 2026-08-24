@@ -75,25 +75,40 @@ impl Input {
     /// Fails if the file cannot be read, the document is invalid, or the regular expression
     /// does not parse.
     pub fn resolve(argument: &str, from: From) -> Result<Self, InputError> {
-        let kind = match from {
-            From::Auto if argument == "-" || Path::new(argument).is_file() => From::Kln,
-            From::Auto => From::Regex,
-            explicit => explicit,
-        };
+        // Standard input is read once, before anything is decided about it, because it cannot
+        // be read twice. Everything else can be classified from the argument alone.
+        if argument == "-" {
+            let text = read(argument)?;
+            let kind = match from {
+                From::Auto => sniff(&text),
+                explicit => explicit,
+            };
+            return Self::interpret(&text, "standard input", kind);
+        }
 
+        match from {
+            From::Auto if Path::new(argument).is_file() => {
+                Self::interpret(&read(argument)?, argument, From::Kln)
+            }
+            From::Auto | From::Regex => Self::interpret(argument, argument, From::Regex),
+            From::Kln => Self::interpret(&read(argument)?, argument, From::Kln),
+        }
+    }
+
+    /// Build an automaton from text already in hand.
+    fn interpret(text: &str, what: &str, kind: From) -> Result<Self, InputError> {
         match kind {
-            From::Regex => {
-                let ast =
-                    parse(argument).map_err(|e| InputError::Regex(argument.to_string(), e))?;
+            From::Regex | From::Auto => {
+                let source = text.trim();
+                let ast = parse(source).map_err(|e| InputError::Regex(source.to_string(), e))?;
                 Ok(Self {
                     automaton: thompson(&ast).result,
                     document: None,
                 })
             }
-            From::Kln | From::Auto => {
-                let text = read(argument)?;
-                let document = Document::from_json(&text)
-                    .map_err(|e| InputError::Format(argument.to_string(), e))?;
+            From::Kln => {
+                let document = Document::from_json(text)
+                    .map_err(|e| InputError::Format(what.to_string(), e))?;
                 Ok(Self {
                     automaton: document.automaton.clone(),
                     document: Some(document),
@@ -109,6 +124,20 @@ impl Input {
         } else {
             convert::determinize(&self.automaton).result
         }
+    }
+}
+
+/// Which of the two things a piece of piped text is.
+///
+/// A `.kln` document is JSON and therefore opens with `{`; `{` is reserved in Kleene's regular
+/// expression syntax and rejected by the lexer, so no valid expression can start with one.
+/// The two languages cannot collide on their first character, which makes this a decision
+/// rather than a guess.
+fn sniff(text: &str) -> From {
+    if text.trim_start().starts_with('{') {
+        From::Kln
+    } else {
+        From::Regex
     }
 }
 
@@ -154,6 +183,34 @@ mod tests {
         // error about a slash.
         let error = Input::resolve("/nonexistent/x.kln", From::Kln).expect_err("missing");
         assert!(matches!(error, InputError::Io(..)), "{error:?}");
+    }
+
+    #[test]
+    fn piped_text_is_classified_by_its_first_character() {
+        // The bug this fixes: `-` was hardcoded to `.kln`, so `echo "a*" | kleene convert -`
+        // failed with "this does not look like a Kleene file" — for input that was never
+        // claiming to be one, and against help text promising it would be detected.
+        assert_eq!(sniff("a*b"), From::Regex);
+        assert_eq!(sniff("  (a + b)*abb\n"), From::Regex);
+        assert_eq!(sniff(r#"{"version":1}"#), From::Kln);
+        assert_eq!(sniff("\n  {\"version\": 1}"), From::Kln);
+    }
+
+    #[test]
+    fn the_two_languages_cannot_collide_on_their_first_character() {
+        // Why sniffing is sound rather than lucky: `{` is reserved by the lexer, so no valid
+        // expression can begin with the character every .kln file begins with. If that ever
+        // stops being true — counted repetition, say — this test fails and the sniff has to
+        // become something cleverer.
+        let error = kleene_core::parse("{2}").expect_err("`{` is reserved");
+        assert!(error.to_string().contains("reserved"), "{error}");
+    }
+
+    #[test]
+    fn a_regex_from_a_pipe_is_trimmed() {
+        // `echo` adds a newline, and a trailing newline is not a symbol.
+        let input = Input::interpret("a+b\n", "standard input", From::Regex).expect("parses");
+        assert_eq!(input.automaton.determinism(), Determinism::EpsilonNfa);
     }
 
     #[test]
