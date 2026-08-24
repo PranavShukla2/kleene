@@ -10,6 +10,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
+import { Tour } from '@/canvas/Tour';
+import { tourSeen } from '@/canvas/tourSeen';
 import { ExportPanel } from '@/panels/Export';
 import { droppedFile, isFileDrag, openFile, pickFile, saveFile } from '@/store/files';
 import { SharePanel } from '@/panels/Share';
@@ -61,6 +63,14 @@ type Load =
 export function Editor({ onHome }: { onHome: () => void }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [helpOpen, setHelpOpen] = useState(false);
+  /**
+   * The first-run tour (Phase 5 E6).
+   *
+   * Read synchronously on the first render rather than in an effect: a tour that appears a
+   * frame after the editor has drawn is a thing that *arrives*, which is exactly how an
+   * interruption feels. Read once, so dismissing it cannot be undone by a re-render.
+   */
+  const [tour, setTour] = useState(() => !tourSeen());
   /** A drag carrying a file is overhead, so the canvas says it will catch it (task D4). */
   const [dragging, setDragging] = useState(false);
   /**
@@ -571,6 +581,14 @@ export function Editor({ onHome }: { onHome: () => void }) {
               className="min-h-0 flex-1"
               onHelp={openHelp}
             />
+
+            {tour && (
+              <Tour
+                onDone={() => {
+                  setTour(false);
+                }}
+              />
+            )}
 
             {document.automaton.states.length === 0 && (
               <EmptyCanvas
