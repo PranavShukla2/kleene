@@ -375,3 +375,23 @@ pub fn from_kln(text: &str) -> Result<JsValue, JsError> {
     let json = serde_json::to_string(&document).map_err(|e| JsError::new(&e.to_string()))?;
     js_sys::JSON::parse(&json).map_err(|_| JsError::new("The document could not be returned."))
 }
+
+/// Graphviz DOT for a machine (Phase 4 Track G).
+///
+/// The lingua franca for graphs: `dot -Tpng`, `dot -Tsvg`, and every tool that reads a graph
+/// reads this. Cheap to produce, and it makes Kleene composable with pipelines it will never
+/// know about.
+///
+/// Takes no layout, unlike TikZ. Graphviz *is* a layout engine — handing it positions would be
+/// telling it not to do the one thing it is for.
+///
+/// # Errors
+///
+/// Returns a JS error if the argument is not an automaton.
+#[wasm_bindgen]
+pub fn to_dot(automaton: JsValue) -> Result<String, JsError> {
+    let automaton: Automaton =
+        serde_wasm_bindgen::from_value(automaton).map_err(|e| JsError::new(&e.to_string()))?;
+
+    Ok(kleene_core::io::to_dot(&automaton))
+}
