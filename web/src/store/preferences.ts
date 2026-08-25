@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { isPanelId, type PanelId } from '@/editor/dock';
+import { isPanelId, type PanelId } from '@/editor/panels';
 
 const STORAGE_KEY = 'kleene.preferences';
 
