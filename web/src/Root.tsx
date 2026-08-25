@@ -34,6 +34,8 @@ import { CommandPalette } from '@/site/CommandPalette';
 import { Footer } from '@/site/Footer';
 import { Download } from '@/site/Download';
 import { Start } from '@/site/Start';
+import { Solve } from '@/teach/Solve';
+import { useProblem } from '@/teach/useProblem';
 import { Jflap } from '@/site/Jflap';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
@@ -143,7 +145,7 @@ export function Root() {
 }
 
 /** The routes that cannot render anything real until WebAssembly has arrived. */
-const NEEDS_ENGINE = new Set<Route>(['convert', 'examples', 'tool', 'start']);
+const NEEDS_ENGINE = new Set<Route>(['convert', 'examples', 'tool', 'start', 'solve']);
 
 /** What each of them is waiting for, in words the visitor can do something with. */
 const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
@@ -154,6 +156,8 @@ const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
   tool: 'The conversion runs in your browser, on the same engine the rest of the site uses. Nothing you type is sent anywhere.',
   start:
     'The machine on this page is drawn by the same engine the editor uses, so it has to arrive before the page can show you one.',
+  solve:
+    'Checking an answer runs the same conversions the rest of the site does, in your browser. Nothing is uploaded, and nothing is checked anywhere else.',
 };
 
 function Page({
@@ -236,6 +240,8 @@ function Page({
       return <Jflap onNavigate={go} onOpenPath={goPath} />;
     case 'download':
       return <Download onNavigate={go} />;
+    case 'solve':
+      return <SolveRoute engine={engine} go={go} />;
     case 'start':
       return (
         <Start
@@ -329,5 +335,31 @@ function UpdateBanner({ update }: { update: UpdateState }) {
         Reload
       </button>
     </div>
+  );
+}
+
+/**
+ * The solve page, with its problem read out of the fragment.
+ *
+ * A separate component because decoding is asynchronous — the payload is inflated with
+ * `DecompressionStream` — and a `case` in a switch cannot hold a hook.
+ */
+function SolveRoute({
+  engine,
+  go,
+}: {
+  engine: Engine | undefined;
+  go: (to: Route, search?: string) => void;
+}) {
+  const spec = useProblem();
+  return (
+    <Solve
+      engine={engine}
+      spec={spec}
+      onNavigate={go}
+      onEdit={() => {
+        go('editor');
+      }}
+    />
   );
 }
