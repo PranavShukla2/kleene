@@ -189,6 +189,28 @@ export function deleteStates(ids: readonly StateId[]): Command {
 }
 
 /**
+ * Empty the canvas.
+ *
+ * `Mod+A` then `Backspace` already did this, which is two keystrokes and no evidence that
+ * either of them exists. Starting over is a thing people want to do early and often — usually
+ * within a minute of opening an example to see how it works — and a tool where the way to do
+ * it is "know a shortcut" is a tool that people restart the browser tab to escape.
+ *
+ * One command, so it is one undo press back. That is what makes it safe to offer without a
+ * confirmation dialog: the cost of a mis-click is a keystroke, and a modal asking "are you
+ * sure" every time is a worse tax on the people who meant it than an undo is on the people
+ * who did not.
+ *
+ * **Σ is deliberately left alone.** The alphabet is part of the machine's definition, not
+ * something on the canvas — someone clearing the diagram to draw a different automaton over
+ * the same symbols would have to retype them, and clearing Σ as well is the one part of this
+ * that undo makes tedious rather than trivial.
+ */
+export function clearCanvas(ids: readonly StateId[]): Command {
+  return batch('delete-state', 'clear the canvas', ids.map(deleteState));
+}
+
+/**
  * Replace the whole layout at once — auto-layout, or shaking states apart.
  *
  * One command, so an entire rearrangement is one undo press. Roadmap §7 is explicit that
