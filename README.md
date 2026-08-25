@@ -35,7 +35,7 @@ underneath says what the round just did and why. Every one of those sentences wa
 Rust, beside the line of the algorithm that produced it.
 
 <p align="center">
-  <img src="docs/media/editor.png" alt="The Kleene editor: a four-state DFA on a canvas, with the share and TikZ export panels open beside it" width="720">
+  <img src="docs/media/editor.png" alt="The Kleene editor: a four-state DFA on a full-width canvas, with the transition table open along the bottom edge" width="720">
 </p>
 
 See the [phase plans](docs/plan/README.md) for what is being built and in what order,

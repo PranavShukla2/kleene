@@ -64,7 +64,14 @@ await page.goto(`${base}/examples`);
 // transitions — busy enough to read as real work, small enough to still be legible.
 await page.getByRole('button', { name: /Odd a.s and even b.s/ }).click();
 await page.locator('svg[aria-label="The automaton being edited"] text').first().waitFor();
-await page.waitForTimeout(600);
+
+// With the table open. The editor's argument is that the canvas keeps the room and the
+// panels arrive when asked for, which a screenshot of an empty canvas cannot make.
+await page
+  .getByRole('navigation', { name: 'Panels' })
+  .getByRole('button', { name: 'Table' })
+  .click();
+await page.waitForTimeout(900);
 await page.screenshot({ path: resolve(out, 'editor.png') });
 
 await browser.close();
