@@ -38,6 +38,11 @@ export type { StepKind } from '@/model/generated/StepKind';
 export type { Frame } from '@/model/generated/Frame';
 export type { Traced } from '@/model/generated/Traced';
 export type { Minimization } from '@/model/generated/Minimization';
+
+/* The teaching layer (roadmap §9): a problem, and the feedback on an answer to it. */
+export type { ProblemSpec } from '@/model/generated/ProblemSpec';
+export type { Feedback } from '@/model/generated/Feedback';
+export type { Failure } from '@/model/generated/Failure';
 export type { MarkingTable } from '@/model/generated/MarkingTable';
 export type { Cell } from '@/model/generated/Cell';
 export type { Mark } from '@/model/generated/Mark';

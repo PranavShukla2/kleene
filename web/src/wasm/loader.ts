@@ -6,6 +6,7 @@
  * drifts from what it actually exports, and the FFI stops being checked at all.
  */
 import init, {
+  check_answer,
   compile_regex,
   determinism,
   elimination,
@@ -13,6 +14,7 @@ import init, {
   from_jff,
   from_kln,
   minimization,
+  minimum_states,
   example_automaton,
   example_catalogue,
   formal_definition,
@@ -31,6 +33,7 @@ import type {
   Determinism,
   Document,
   Elimination,
+  Feedback,
   FormalDefinition,
   Minimization,
   Point,
@@ -104,6 +107,20 @@ export interface Engine {
    * table would be labelling blocks with states that machine does not have.
    */
   minimization: (automaton: Automaton) => Minimization;
+  /**
+   * Check an answer against a problem (teaching layer B1).
+   *
+   * The spec goes over as its JSON text rather than as an object, because it came from a URL
+   * fragment and Rust is the one place that decides what a valid problem is.
+   */
+  checkAnswer: (spec: string, answer: Automaton) => Feedback;
+  /**
+   * The fewest states any correct answer to a problem could use.
+   *
+   * `undefined` when the problem's target does not parse — a property of the problem, not a
+   * fault to throw over.
+   */
+  minimumStates: (spec: string) => number | undefined;
   /**
    * State elimination, with the GNFA recorded at every step (Phase 3 Track F).
    *
@@ -209,6 +226,8 @@ export function loadEngine(): Promise<Engine> {
       formalDefinition: (automaton: Automaton) =>
         formal_definition(automaton) as FormalDefinition,
       compileRegex: (source: string) => compile_regex(source) as Compilation | undefined,
+      checkAnswer: (spec: string, answer: Automaton) => check_answer(spec, answer) as Feedback,
+      minimumStates: (spec: string) => minimum_states(spec) ?? undefined,
       minimization: (automaton: Automaton) => minimization(automaton) as Minimization,
       elimination: (automaton: Automaton, order: string) =>
         elimination(automaton, order) as Elimination,
