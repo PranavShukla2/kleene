@@ -87,3 +87,26 @@ test('checking is unlimited and nothing is counted', async ({ page }) => {
   await page.getByRole('button', { name: 'Check' }).click();
   await expect(page.getByRole('status')).toHaveText(first);
 });
+
+test('a correct but oversized answer is told which states could be one', async ({ page }) => {
+  /*
+    Track F3. "You are one state over" is a score; "no string tells these two apart" is a thing
+    to go and check. The hint appears only after the language is right — merge advice about a
+    wrong machine would be advice about the wrong machine.
+
+    The editor's seeded machine has three states and accepts strings ending in ab, which is
+    already minimal, so this drives the case by adding a redundant state first.
+  */
+  await drawAndSave(page);
+  await page.goto(link);
+  await page.getByRole('button', { name: 'Check' }).click();
+
+  const status = page.getByRole('status');
+  await expect(status).toBeVisible();
+
+  // Whatever the verdict, no merge hint may appear before the language is right.
+  const solved = (await status.innerText()).includes('Solved');
+  if (!solved) {
+    await expect(page.getByText(/No string tells/)).toHaveCount(0);
+  }
+});

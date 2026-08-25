@@ -28,7 +28,7 @@ import { Lift, Reveal } from '@/site/motion';
 import { useEditor } from '@/store/editor';
 import { useSavedAnswer } from '@/teach/useSavedAnswer';
 import { record } from '@/teach/progress';
-import type { Automaton, Feedback, ProblemSpec } from '@/model/automaton';
+import type { Automaton, Feedback, ProblemSpec, Score } from '@/model/automaton';
 import type { Engine } from '@/wasm/loader';
 import type { Route } from '@/router';
 
@@ -80,12 +80,15 @@ export function Solve({
   const [checked, setChecked] = useState<{ of: Automaton; feedback: Feedback } | undefined>(
     undefined,
   );
+  const [golf, setGolf] = useState<Score | undefined>(undefined);
   const feedback = checked?.of === answer ? checked.feedback : undefined;
 
   const check = useCallback(() => {
     if (!engine || !spec || !answer) return;
     const result = engine.checkAnswer(JSON.stringify(spec), answer);
     setChecked({ of: answer, feedback: result });
+
+    setGolf(result.solved ? engine.golfScore(answer) : undefined);
 
     if (problemKey !== undefined) {
       record(problemKey, {
@@ -184,6 +187,37 @@ export function Solve({
 
           <div className="space-y-4">
             <FeedbackNote feedback={feedback} />
+
+            {/* Track F. Only after a correct answer, and only when there is something to say:
+                merge hints before the language is right would be advice about the wrong
+                machine, and at the minimum there is nothing to advise. */}
+            {feedback?.solved && golf && !golf.optimal && golf.mergeable.length > 0 && (
+              <Reveal>
+                <div className="rounded-2xl border border-k-border bg-k-surface p-4 text-sm">
+                  <p className="font-medium">
+                    {golf.used} states, and it can be done in {golf.minimum}.
+                  </p>
+                  <p className="mt-2 leading-relaxed text-k-text-muted">
+                    No string tells{' '}
+                    <code className="font-mono text-k-text">
+                      {golf.mergeable[0]?.left_label}
+                    </code>{' '}
+                    and{' '}
+                    <code className="font-mono text-k-text">
+                      {golf.mergeable[0]?.right_label}
+                    </code>{' '}
+                    apart — from either one, exactly the same strings lead to acceptance. Follow
+                    both on the same symbol and see.
+                  </p>
+                  {golf.mergeable.length > 1 && (
+                    <p className="mt-2 text-xs text-k-text-faint">
+                      {golf.mergeable.length - 1} other{' '}
+                      {golf.mergeable.length === 2 ? 'pair is' : 'pairs are'} mergeable too.
+                    </p>
+                  )}
+                </div>
+              </Reveal>
+            )}
 
             <Reveal delay={0.05}>
               <div className="rounded-2xl border border-k-border p-4 text-xs leading-relaxed text-k-text-faint">
