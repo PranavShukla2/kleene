@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PANELS, isPanelId, panelSpec } from '@/editor/dock';
+import { PANELS, isPanelId, panelSpec } from '@/editor/panels';
 
 describe('the panel registry', () => {
   it('gives every panel a distinct id', () => {

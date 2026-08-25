@@ -1,6 +1,13 @@
 /**
  * The editor's panels, declared once.
  *
+ * Named `panels.ts`, not `dock.ts`, and that is not a preference. `Dock.tsx` and `dock.ts` in
+ * one directory differ only in case, which macOS resolves and CI does not — and TypeScript
+ * reports the collision as an unrelated "already included file name" error while silently
+ * dropping one of them from the program. This project has hit it three times before
+ * (`Examples`, `Roadmap`, `Docs`); the rule is that a data file never shares a name with its
+ * component.
+ *
  * The editor used to show seven panels at the same time, stacked in one 288px column that was
  * always on screen. Everything in it was worth having and none of it was worth having *at
  * once*: the canvas — the thing the page is for — got whatever width was left, and a
@@ -50,7 +57,7 @@ export const PANELS: readonly PanelSpec[] = [
   {
     id: 'selection',
     label: 'Selection',
-    hint: 'What is selected, and what can be done to it',
+    hint: 'What is selected, and what to do with it',
     edge: 'side',
     glyph: '◎',
   },
@@ -78,7 +85,7 @@ export const PANELS: readonly PanelSpec[] = [
   {
     id: 'export',
     label: 'Export',
-    hint: 'LaTeX, pictures, Graphviz, and a share link',
+    hint: 'LaTeX, pictures, and a share link',
     edge: 'side',
     glyph: '↗',
   },
