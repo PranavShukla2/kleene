@@ -30,6 +30,18 @@
 //! lives in a GitHub secret. That is the whole point of the scheme — a bundle that did not
 //! come from this project cannot be offered as an update to it.
 //!
+//! ## Why `dragDropEnabled` is off
+//!
+//! With it on, the webview hands drags to the operating system before the page sees them —
+//! which is what you want if the shell is going to handle dropped files itself, and fatal if
+//! the page has its own drag-and-drop. Kleene's does: a state is created by dragging a chip
+//! onto the canvas, and `.kln` files are opened by dropping them on the editor. Both were
+//! dead in the desktop build and working in a browser, which is exactly the shape of bug a
+//! shell introduces by taking over something the app already did.
+//!
+//! Off, the page gets ordinary HTML5 drag events and both work again. Nothing is lost: files
+//! still open through the associations below and through the native dialogs.
+//!
 //! ## Opening a file by double-clicking it
 //!
 //! Three platforms, three mechanisms, and none of them is a command-line argument alone:

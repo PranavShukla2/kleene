@@ -18,7 +18,7 @@
         "minHeight": 560,
         "resizable": true,
         "fullscreen": false,
-        "dragDropEnabled": true,
+        "dragDropEnabled": false,
         "label": "main"
       }
     ],
