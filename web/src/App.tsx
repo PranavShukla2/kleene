@@ -13,7 +13,6 @@ import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { Tour } from '@/canvas/Tour';
 import { DockPanel, DockRail } from '@/editor/Dock';
 import { InstallButton } from '@/editor/InstallButton';
-import { StatePalette } from '@/editor/StatePalette';
 import { tourSeen } from '@/canvas/tourSeen';
 import { ExportPanel } from '@/panels/Export';
 import { droppedFile, isFileDrag, openFile, pickFile, saveFile } from '@/store/files';
@@ -614,11 +613,6 @@ export function Editor({ onHome }: { onHome: () => void }) {
               />
             )}
 
-            {/* Not gated on the canvas being empty. The chip is how someone learns states can
-                be placed, and hiding it the moment they succeed once takes the affordance away
-                at exactly the point they have started using it. */}
-            <StatePalette />
-
             {/* Above the problem strip, not over it: a bottom panel takes its height from
                 the column. See the note in Dock.tsx — hiding "3 states are unreachable" is
                 worst at the moment someone opened the table to work out why. */}
@@ -771,7 +765,18 @@ function CommandBar({
       corner radius and the focus ring to differ from the rest of the site, and a visitor
       clicking the biggest button on the front page should not feel they left the product.
     */
-    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-k-border bg-k-surface/85 px-3 backdrop-blur">
+    /*
+      `overflow-x-auto`, and every child `shrink-0`.
+
+      This bar is 840px of controls. On a laptop that fits and nothing here matters; on a
+      360px phone it did not fit and there was no way to reach the rest — Open, Save, Undo,
+      Redo, the theme and the help key were all simply off the right edge, unreachable by any
+      gesture. Not a small-screen inconvenience: half the editor's commands did not exist.
+
+      Scrolling rather than wrapping, because a bar that wraps to three rows on a phone takes
+      the canvas's height, and height is the scarcer of the two on that shape of screen.
+    */
+    <header className="flex h-11 shrink-0 items-center gap-2 overflow-x-auto border-b border-k-border bg-k-surface/85 px-3 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/*
         L5: the wordmark goes home from here too. The editor is the one page someone can arrive
         at directly — a shared link, a bookmark — and a page you can reach but not leave is the
@@ -879,10 +884,10 @@ function StatusBar({
   autosave: string;
 }) {
   return (
-    <footer className="flex h-7 shrink-0 items-center gap-4 border-t border-k-border bg-k-surface/70 px-3 font-mono text-[11px] text-k-text-faint backdrop-blur">
-      <span>{states} states</span>
-      <span>{transitions} transitions</span>
-      {selected > 0 && <span className="text-k-primary">{selected} selected</span>}
+    <footer className="flex h-7 shrink-0 items-center gap-4 overflow-x-auto border-t border-k-border bg-k-surface/70 px-3 font-mono text-[11px] whitespace-nowrap text-k-text-faint backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <span className="shrink-0">{states} states</span>
+      <span className="shrink-0">{transitions} transitions</span>
+      {selected > 0 && <span className="shrink-0 text-k-primary">{selected} selected</span>}
       {/*
         Phase 5 E7. "saved" on its own is a claim someone will read as "saved somewhere" —
         a server, an account, a thing that survives clearing site data. It does not. The
@@ -893,13 +898,15 @@ function StatusBar({
         it, and a permanent notice about storage in an editor is a nag.
       */}
       <span
-        className="ml-auto"
+        className="ml-auto shrink-0"
         title="Saved in this browser only — IndexedDB, no account, no server, not synced between devices. Use Save to keep a .kln file, or Share to put the machine in a link."
       >
         {autosave}
       </span>
-      <span>{theme}</span>
-      {engine && <span>kleene-core {engine}</span>}
+      {/* The two least useful facts on the row, hidden on a phone. Neither was worth the line
+          of wrapped text they were costing inside a 28px strip. */}
+      <span className="hidden shrink-0 sm:inline">{theme}</span>
+      {engine && <span className="hidden shrink-0 sm:inline">kleene-core {engine}</span>}
     </footer>
   );
 }
