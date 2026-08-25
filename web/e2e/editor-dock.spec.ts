@@ -142,3 +142,54 @@ test('a state can be dragged onto the canvas', async ({ page }) => {
 
   await expect(page.getByText('4 states')).toBeVisible();
 });
+
+test('the canvas can be cleared, and undo brings it back', async ({ page }) => {
+  // `Mod+A` then `Backspace` always did this. The point of the button is that nothing on
+  // screen said so.
+  await expect(page.getByText('3 states')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(page.getByText('0 states')).toBeVisible();
+
+  // One press, not one per state — which is what makes offering it without a confirmation
+  // dialog reasonable in the first place.
+  await page.getByRole('button', { name: /^Undo/ }).click();
+  await expect(page.getByText('3 states')).toBeVisible();
+});
+
+test('Clear is disabled when there is nothing to clear', async ({ page }) => {
+  // `exact`, because undo names the command it will reverse — so after clearing there is also
+  // an "Undo clear the canvas" button, and a substring match finds two.
+  const clear = page.getByRole('button', { name: 'Clear', exact: true });
+  await clear.click();
+  await expect(page.getByText('0 states')).toBeVisible();
+  await expect(clear).toBeDisabled();
+});
+
+test('Install answers the question even where the browser will not help', async ({ page }) => {
+  /*
+    Chromium in a test never fires `beforeinstallprompt`, so this exercises the branch that
+    matters most anyway: the one Safari and Firefox users are permanently in. A button that
+    quietly disappeared there would leave "where is the download" unanswered, which is the
+    complaint that produced this.
+  */
+  await page.getByRole('button', { name: 'Install' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Installing Kleene' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('no separate application to download');
+  await expect(dialog).toContainText('Safari');
+  await expect(dialog).toContainText('Firefox');
+
+  // Rendered through a portal, because the command bar's backdrop-blur would otherwise make
+  // `position: fixed` resolve against a 44px header. Checking it is centred catches that
+  // returning — it looked like a clipped dialog and the CSS on it was correct.
+  const box = await dialog.boundingBox();
+  const view = page.viewportSize();
+  if (!box || !view) throw new Error('no layout');
+  expect(box.y).toBeGreaterThan(40);
+  expect(box.y + box.height).toBeLessThanOrEqual(view.height);
+
+  await page.getByRole('button', { name: 'Got it' }).click();
+  await expect(dialog).toHaveCount(0);
+});
