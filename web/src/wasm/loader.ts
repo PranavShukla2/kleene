@@ -15,6 +15,7 @@ import init, {
   from_kln,
   minimization,
   minimum_states,
+  problem_set,
   example_automaton,
   example_catalogue,
   formal_definition,
@@ -38,6 +39,7 @@ import type {
   Minimization,
   Point,
   Report,
+  SetProblem,
   Simulation,
   StateId,
   Traced,
@@ -121,6 +123,8 @@ export interface Engine {
    * fault to throw over.
    */
   minimumStates: (spec: string) => number | undefined;
+  /** The ordered problem set. Parsed here, because it crosses as JSON text. */
+  problemSet: () => SetProblem[];
   /**
    * State elimination, with the GNFA recorded at every step (Phase 3 Track F).
    *
@@ -228,6 +232,7 @@ export function loadEngine(): Promise<Engine> {
       compileRegex: (source: string) => compile_regex(source) as Compilation | undefined,
       checkAnswer: (spec: string, answer: Automaton) => check_answer(spec, answer) as Feedback,
       minimumStates: (spec: string) => minimum_states(spec) ?? undefined,
+      problemSet: () => JSON.parse(problem_set()) as SetProblem[],
       minimization: (automaton: Automaton) => minimization(automaton) as Minimization,
       elimination: (automaton: Automaton, order: string) =>
         elimination(automaton, order) as Elimination,

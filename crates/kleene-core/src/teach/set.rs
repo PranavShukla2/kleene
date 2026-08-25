@@ -25,19 +25,13 @@
 
 use crate::teach::ProblemSpec;
 
-/// How hard a problem is to *see*.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-#[cfg_attr(feature = "ts", ts(export, export_to = "generated/"))]
-#[serde(rename_all = "kebab-case")]
-pub enum Tier {
-    /// Draw it directly from the description.
-    Introductory,
-    /// Needs a moment's thought about what the states have to remember.
-    Standard,
-    /// The states stand for something that is not obvious from the wording.
-    Pathological,
-}
+/// How hard a problem is to see.
+///
+/// The gallery's tiers, not a second set of them. They mean the same thing — and two enums
+/// named `Tier` also export to one `Tier.ts`, where the second silently overwrites the first.
+/// That happened here, and it was harmless only because the variants matched; the fix is to
+/// have one concept rather than two that agree by luck.
+pub use crate::examples::Tier;
 
 /// One problem in the set.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

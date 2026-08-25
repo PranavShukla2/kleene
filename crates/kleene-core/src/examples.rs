@@ -26,7 +26,13 @@ use crate::builder::AutomatonBuilder;
 /// Three levels, and deliberately few (task C6). Five would be a judgement nobody can make
 /// consistently, and a reader cannot tell the difference between "intermediate" and
 /// "moderate" anyway.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+// Serialised because the teaching layer's problem set carries a tier across the wasm boundary
+// and into TypeScript. The gallery reaches these through the catalogue rather than through
+// serde, so this costs it nothing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export, export_to = "generated/"))]
+#[serde(rename_all = "kebab-case")]
 pub enum Tier {
     /// Readable in the first week. The state *is* the thing being remembered.
     Introductory,

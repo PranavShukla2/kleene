@@ -43,6 +43,8 @@ export type { Minimization } from '@/model/generated/Minimization';
 export type { ProblemSpec } from '@/model/generated/ProblemSpec';
 export type { Feedback } from '@/model/generated/Feedback';
 export type { Failure } from '@/model/generated/Failure';
+export type { SetProblem } from '@/model/generated/SetProblem';
+export type { Tier as ProblemTier } from '@/model/generated/Tier';
 export type { MarkingTable } from '@/model/generated/MarkingTable';
 export type { Cell } from '@/model/generated/Cell';
 export type { Mark } from '@/model/generated/Mark';

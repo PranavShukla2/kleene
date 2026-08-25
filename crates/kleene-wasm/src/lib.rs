@@ -499,3 +499,19 @@ pub fn minimum_states(spec: &str) -> Result<Option<usize>, JsError> {
         serde_json::from_str(spec).map_err(|e| JsError::new(&e.to_string()))?;
     Ok(spec.minimum_states())
 }
+
+/// The ordered problem set (teaching layer C1).
+///
+/// Returned as JSON text for the same reason the catalogue is: it is read once when a page
+/// mounts, and a JSON string crosses the boundary without a serde-wasm-bindgen round trip per
+/// field.
+///
+/// # Errors
+///
+/// Returns a JS error only if the set itself fails to serialise, which would be a bug here
+/// rather than anything a caller did.
+#[wasm_bindgen]
+pub fn problem_set() -> Result<String, JsError> {
+    serde_json::to_string(&kleene_core::teach::problem_set())
+        .map_err(|e| JsError::new(&e.to_string()))
+}
