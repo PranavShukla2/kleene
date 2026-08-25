@@ -14,7 +14,7 @@ import { readFile } from 'node:fs/promises';
 
 import { expect, test } from '@playwright/test';
 
-import { drawn } from './canvas';
+import { drawn, openPanel } from './canvas';
 
 test('moving between two tool pages actually changes the page', async ({ page }) => {
   await page.goto('/tools/nfa-to-dfa');
@@ -143,6 +143,9 @@ test('the editor exports the machine it is showing, as TikZ', async ({ page }) =
   // the *content* rather than on the panel existing — a snippet that renders a different
   // machine is the failure worth catching, and it looks perfectly fine on screen.
   await page.goto('/editor');
+  // LaTeX is the panel's default tab, so this one opens the panel and reads it without
+  // clicking a tab — which is exactly why it was the test the bulk edit missed.
+  await openPanel(page, 'Export');
 
   const source = page.getByLabel('TikZ source');
   await expect(source).toBeVisible();
@@ -165,6 +168,7 @@ test('the editor exports a picture, cropped and free of interface state', async 
   // export that carries the whole canvas viewport, or the simulator's highlight, or no labels
   // because the font had not loaded when the raster was taken.
   await page.goto('/editor');
+  await openPanel(page, 'Export');
   await page.getByRole('button', { name: 'SVG', exact: true }).click();
 
   const started = page.waitForEvent('download');
@@ -199,6 +203,7 @@ test('the editor exports Graphviz DOT', async ({ page }) => {
   // Phase 4 Track G. The exporter was written in Phase 1; this is the wiring, and the thing
   // worth asserting is that the tab reaches the *same* engine rather than a second one.
   await page.goto('/editor');
+  await openPanel(page, 'Export');
   await page.getByRole('button', { name: 'DOT', exact: true }).click();
 
   const dot = await page.getByLabel('DOT source').inputValue();

@@ -9,10 +9,12 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { canvas, drawn } from './canvas';
+import { canvas, drawn, openPanel } from './canvas';
 
 /** Copy a share link for whatever is currently open. */
 async function shareLink(page: Page): Promise<string> {
+  // Share sits with export, under one rail button: both are ways of getting the machine out.
+  await openPanel(page, 'Export');
   await page.getByRole('button', { name: 'copy link' }).click();
   return page.evaluate(() => navigator.clipboard.readText());
 }

@@ -13,7 +13,7 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { canvas } from './canvas';
+import { canvas, openPanel } from './canvas';
 
 /** State radius, from `GEOM.radius`. Duplicated because e2e sees pixels, not modules. */
 const RADIUS = 24;
@@ -71,6 +71,9 @@ async function connect(
 
 /** Run a string and read the verdict chip. */
 async function verdictFor(page: Page, input: string): Promise<string> {
+  // The input tester lives behind the rail's Run button now. Asked for the way a person asks
+  // for it, rather than assumed to be on screen.
+  await openPanel(page, 'Run');
   const field = page.getByLabel('Input string to test');
   await field.fill(input);
   await expect(field).toHaveValue(input);
