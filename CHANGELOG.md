@@ -11,6 +11,43 @@ The site carries a shorter version of this at
 
 ---
 
+## Teaching layer — classroom and games
+
+_2026-08-26_
+
+Built on the v1 engine without a line of new algorithm and without a server. Roadmap §9.
+
+### Added
+
+- **Assignment links.** `kleene problem --prompt … --target …` prints a link. A student opens
+  it, draws a machine, presses Check, and is told the shortest string their answer gets wrong
+  and which way — never a bare "incorrect". The page says plainly that the check runs in their
+  browser and the answer is in the link, because a student who works that out alone stops
+  trusting everything else.
+- **`kleene grade submissions/ --against reference.kln`** over a directory, as CSV, JSON or
+  Markdown, with a counterexample beside every wrong answer. Nested folders, `.jff` files,
+  empty files and files that are not automata all become rows: a grader that dies on
+  submission 47 of 200 is worse than no grader.
+- **Twenty problems in difficulty order**, with progress kept in the browser and exportable —
+  there is no account, so the export is the whole backup story.
+- **The pumping lemma, as the game it already is.** The lemma alternates quantifiers, and
+  alternating quantifiers are a game: the adversary picks n, you pick w, it splits, you pump.
+  Win and the page prints the proof you just played. Two of the languages are regular and
+  cannot be beaten — that is the lesson, not an oversight.
+- **State-budget golf.** Score against the minimal machine, and on a correct-but-large answer,
+  the two states no string tells apart. It stops short of merging them.
+- **A GitHub Classroom template** whose Action grades on push, with the answer key in the
+  lecturer's repository rather than in the student's link.
+
+### Deliberately absent
+
+- No XP, badges, streaks, daily goals or leaderboards. A streak measures showing up rather
+  than understanding, and punishes the student who took a week off because they were
+  struggling. The mechanics here are the subject: the counterexample, the budget, the minimal
+  machine.
+- No accounts, no roster, no server. A class list means data-protection duties and a deadline
+  is an uptime promise landing in the week of finals.
+
 ## Phase 5 — Ready for other people · in progress
 
 _2026-08-24 onwards_

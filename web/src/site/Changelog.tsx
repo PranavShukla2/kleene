@@ -25,9 +25,21 @@ interface Entry {
 
 const ENTRIES: readonly Entry[] = [
   {
+    version: 'Teaching layer',
+    title: 'Assignment links, a problem set, and two games',
+    current: true,
+    changes: [
+      'A lecturer can produce an assignment link from one command, with no account and nothing to install — and a student opening it is told the shortest string their answer gets wrong, never just that it is wrong.',
+      '`kleene grade` marks a directory of submissions to CSV, with a counterexample beside every wrong answer. Unreadable files become rows rather than crashes.',
+      'Twenty problems in difficulty order, with progress kept in your browser and exportable — there is no account, so the export is the backup.',
+      'The pumping lemma played as the game it already is: the adversary picks n, you pick w, it splits, you pump. Win and it prints the proof you just played.',
+      'State-budget golf: score against the smallest possible machine, and be shown which two states no string can tell apart.',
+      'No XP, no badges, no streaks and no leaderboard. The mechanics are the subject.',
+    ],
+  },
+  {
     version: 'Phase 5',
     title: 'Ready for other people',
-    current: true,
     changes: [
       'Twenty worked examples, from a two-state DFA to Thompson’s construction of (a|b)*abb — each stating the language it recognises in words, and each a fixture the test suite runs against.',
       'Installable, and genuinely offline: the WebAssembly module and the fonts are precached, and a test switches the network off and opens a route the session has never visited.',
