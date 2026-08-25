@@ -595,3 +595,16 @@ fn parse_language(id: &str) -> Result<kleene_core::teach::pumping::Language, JsE
     serde_json::from_value(serde_json::Value::String(id.to_string()))
         .map_err(|_| JsError::new(&format!("no such language: {id}")))
 }
+
+/// Score a machine against the smallest one for its language (teaching layer F2/F3).
+///
+/// # Errors
+///
+/// Returns a JS error if the automaton is not an automaton.
+#[wasm_bindgen]
+pub fn golf_score(answer: JsValue) -> Result<JsValue, JsError> {
+    let answer: Automaton =
+        serde_wasm_bindgen::from_value(answer).map_err(|e| JsError::new(&e.to_string()))?;
+    let score = kleene_core::teach::golf::score(&answer);
+    serde_wasm_bindgen::to_value(&score).map_err(|e| JsError::new(&e.to_string()))
+}

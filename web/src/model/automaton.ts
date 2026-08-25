@@ -50,6 +50,10 @@ export type { Tier as ProblemTier } from '@/model/generated/Tier';
 export type { Cut } from '@/model/generated/Cut';
 export type { Illegal } from '@/model/generated/Illegal';
 export type { Round } from '@/model/generated/Round';
+
+/* State-budget golf (teaching layer Track F). */
+export type { Score } from '@/model/generated/Score';
+export type { Mergeable } from '@/model/generated/Mergeable';
 export type { MarkingTable } from '@/model/generated/MarkingTable';
 export type { Cell } from '@/model/generated/Cell';
 export type { Mark } from '@/model/generated/Mark';

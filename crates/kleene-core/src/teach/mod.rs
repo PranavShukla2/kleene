@@ -9,6 +9,7 @@
 //! What that buys is not only simplicity. A lecturer can hand out a link without an account,
 //! without a purchase order, and without asking anyone's IT department for anything.
 
+pub mod golf;
 pub mod problem;
 pub mod pumping;
 pub mod set;

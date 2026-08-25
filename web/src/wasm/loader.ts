@@ -13,6 +13,7 @@ import init, {
   epsilon_closure,
   from_jff,
   from_kln,
+  golf_score,
   minimization,
   minimum_states,
   problem_set,
@@ -46,6 +47,7 @@ import type {
   Point,
   Report,
   Round,
+  Score,
   SetProblem,
   Simulation,
   StateId,
@@ -132,6 +134,13 @@ export interface Engine {
   minimumStates: (spec: string) => number | undefined;
   /** The ordered problem set. Parsed here, because it crosses as JSON text. */
   problemSet: () => SetProblem[];
+  /**
+   * Score a machine against the smallest one for its language.
+   *
+   * Names the pairs that could still be merged, which is what makes a hint a hint rather than
+   * a score.
+   */
+  golfScore: (answer: Automaton) => Score;
   /** The languages the pumping lemma game can be played against (E3). */
   pumpingLanguages: () => { id: string; notation: string; regular: boolean }[];
   /** Whether a chosen `w` is legal. `undefined` means it is. */
@@ -254,6 +263,7 @@ export function loadEngine(): Promise<Engine> {
       checkAnswer: (spec: string, answer: Automaton) => check_answer(spec, answer) as Feedback,
       minimumStates: (spec: string) => minimum_states(spec) ?? undefined,
       problemSet: () => JSON.parse(problem_set()) as SetProblem[],
+      golfScore: (answer: Automaton) => golf_score(answer) as Score,
       pumpingLanguages: () =>
         JSON.parse(pumping_languages()) as { id: string; notation: string; regular: boolean }[],
       pumpingCheckWord: (language: string, word: string, n: number) =>
