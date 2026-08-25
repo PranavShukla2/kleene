@@ -13,6 +13,7 @@
  */
 
 import type { Document } from '@/model/automaton';
+import { desktopOpen, desktopSave, isDesktop } from '@/store/desktop';
 import type { Engine } from '@/wasm/loader';
 
 /** Kleene's own format. */
@@ -93,8 +94,15 @@ export async function openFile(engine: Engine, file: File): Promise<Opened> {
   }
 }
 
-/** Ask for a file. Resolves to nothing if the picker is dismissed. */
-export function pickFile(): Promise<File | undefined> {
+/**
+ * Ask for a file. Resolves to nothing if the picker is dismissed.
+ *
+ * The desktop build gets the operating system's dialog; a browser gets a hidden file input,
+ * which is the right answer there and the only one available.
+ */
+export async function pickFile(): Promise<File | undefined> {
+  if (isDesktop()) return desktopOpen();
+
   return new Promise((resolve) => {
     const input = window.document.createElement('input');
     input.type = 'file';
@@ -113,9 +121,22 @@ export function pickFile(): Promise<File | undefined> {
   });
 }
 
-/** Save a document, named after its title. */
+/**
+ * Save a document, named after its title.
+ *
+ * In the desktop build this goes through the system's save dialog. The browser path — an `<a
+ * download>` click — is the correct one in a browser and unreliable in a webview, where a
+ * download can be intercepted by the shell and land somewhere the user never sees, or be
+ * dropped in silence. "Save appears to do nothing" is the failure that produces.
+ */
 export function saveFile(engine: Engine, document: Document, title: string | undefined): void {
   const text = engine.toKln(document);
+
+  if (isDesktop()) {
+    void desktopSave(text, filenameFor(title));
+    return;
+  }
+
   const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
