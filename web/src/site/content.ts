@@ -106,7 +106,7 @@ export const FAQ: readonly { question: string; answer: string }[] = [
     // someone away from a feature that is already built.
     question: 'Can I install it, or download a desktop version?',
     answer:
-      'You can install it now, from the browser — there is an install control in the address bar in Chrome and Edge, and Add to Dock or Add to Home Screen in Safari. It then opens in its own window with no browser furniture and works offline. A separate native desktop build is planned but not written yet, so there is nothing to download for that one; the installed web app is the same engine and the same files.',
+      'You can install it now. There is an Install button in the editor: in Chrome and Edge it installs directly, and in Safari and Firefox it shows where that browser keeps the option. It then opens in its own window with no browser furniture and works offline. A separate native desktop build is planned but not written yet, so there is nothing to download for that one — the installed web app is the same engine and the same files.',
   },
   {
     question: 'Is it open source?',

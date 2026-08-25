@@ -26,6 +26,14 @@ _2026-08-24 onwards_
   a route the session has never visited.
 - **An update prompt** when a new version has been fetched, rather than a silent swap or a
   stale tab that never notices.
+- **An Install button** in the editor. Chrome and Edge install directly from it; Safari and
+  Firefox get told where that browser keeps the option, and that there is no separate desktop
+  application to download. It removes itself once the app is installed.
+- **Clear the canvas** — one button, one undo to reverse. It was always `Mod+A` then
+  `Backspace`, which is two keystrokes and no evidence on screen that either exists.
+- **Drag a state onto the canvas**, and an editor rebuilt around one panel at a time: a rail
+  replaces the permanent seven-panel column, the transition table opens along the bottom edge
+  at full width, and the canvas keeps the rest.
 - **A first-run tour** in the editor, three cards long and dismissed for good. It exists for
   one gesture: a transition is drawn from a state's _rim_, and someone who never learns that
   concludes the editor cannot draw transitions at all.

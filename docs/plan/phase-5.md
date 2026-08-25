@@ -28,14 +28,19 @@ here is not shipping something imperfect; it is not shipping.
 - [x] **A3.** Verify true offline: load, airplane mode, hard refresh, everything still works.
       Including wasm — an app that loads offline but cannot convert anything is worse than
       an honest error.
-- [ ] **A4.** Install prompt, shown at a sensible moment rather than on first paint.
+- [x] **A4.** Install prompt, shown at a sensible moment rather than on first paint.
 - [x] **A5.** Update flow — a non-intrusive "a new version is available, reload" prompt.
       A stale service worker serving last month's build is the classic PWA failure.
 
-> **Track A is closed except A4.** The install prompt is deliberately last: `beforeinstallprompt`
-> only fires when the browser already thinks the app is installable, and a prompt shown before
-> anyone has drawn anything is the interruption every PWA is disliked for. It wants a trigger
-> tied to having done something, which is a judgement about behaviour rather than a feature.
+> **Track A is closed.** A4 landed late and not as a prompt. An unprompted banner is the
+> interruption every PWA is disliked for, so it is a button in the command bar instead — asked
+> for rather than pushed, and gone once the app is installed.
+>
+> **The reason it could not simply be `beforeinstallprompt` is worth recording.** That event is
+> a Chromium extension which Firefox and WebKit have both declined to implement, so a control
+> that appears only when it fires is absent in Safari — which is most of the people who go
+> looking for a download. The button therefore has a second job: saying where _this_ browser
+> keeps the option, and that no separate desktop application exists to download.
 >
 > **A3 is the task that made the rest of the track real.** "Verify true offline" is a checkbox
 > that invites being ticked from memory, so it became an e2e test that switches the network off
@@ -151,8 +156,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-                  shorter feedback loop: writing it against gestures that are still moving means rewriting
-                  it, and a tour that describes a gesture the editor no longer has is worse than none.
+                      shorter feedback loop: writing it against gestures that are still moving means rewriting
+                      it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching
