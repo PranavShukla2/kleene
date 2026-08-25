@@ -68,7 +68,7 @@ export const PHASES: readonly Phase[] = [
   {
     number: 3,
     title: 'The conversion pipeline',
-    state: 'building',
+    state: 'done',
     summary:
       'The part nobody else has: watching a conversion happen, one round at a time, with the reason for each step.',
     items: [
@@ -82,25 +82,42 @@ export const PHASES: readonly Phase[] = [
   {
     number: 4,
     title: 'Export and share',
-    state: 'planned',
+    state: 'done',
     summary: 'Getting the diagram out — into an assignment, or into someone else’s browser.',
     items: [
       'TikZ export, matching what is on screen',
-      'SVG and PNG',
-      'The whole automaton in a URL',
-      'JFLAP .jff import',
+      'SVG, PNG and Graphviz DOT',
+      'The whole automaton in a URL, compressed',
+      'Save and open .kln files, or drop one on the canvas',
+      'JFLAP .jff import, saying what it had to change',
     ],
   },
   {
     number: 5,
     title: 'Ship v1',
-    state: 'planned',
+    // Not `done`: the desktop build and the tagged release are still outstanding, and a
+    // roadmap that rounds "nearly" up to "shipped" is the one thing a roadmap must not do.
+    state: 'building',
     summary: 'The things that make it a tool people can rely on rather than one they try once.',
     items: [
-      'About twenty curated examples',
-      'Offline as an installed app, and a desktop build',
-      'Documentation, generated from the same traces the UI shows',
+      'Twenty curated examples, each one also a test fixture',
+      'Offline as an installed app, engine and all',
       'A guided first run',
+      'A command line reference, and a documented file format',
+      'Release builds from a tag — desktop build still to come',
+    ],
+  },
+  {
+    number: 6,
+    title: 'After v1',
+    state: 'planned',
+    summary:
+      'Only once v1 is being used. Building any of this first would be guessing about people who are not here yet.',
+    items: [
+      'A desktop build',
+      'Embeddable diagrams',
+      'Notation settings — + or |, ε or λ',
+      'Pushdown automata, Turing machines, grammars',
     ],
   },
 ];
