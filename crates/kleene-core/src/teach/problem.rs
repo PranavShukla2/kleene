@@ -139,10 +139,16 @@ pub enum Failure {
 }
 
 /// The result of checking an answer.
+///
+/// Named `Feedback` rather than `Verdict`, and not for style: `simulate::Verdict` already
+/// exists, and two types with one name export to one TypeScript file — the second silently
+/// overwrites the first, or loses to it, depending on generation order. The collision produced
+/// no error at all; the file simply held the other type. `Feedback` is also the better word,
+/// since B4 rules out scoring and a "verdict" sounds like a mark.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export, export_to = "generated/"))]
-pub struct Verdict {
+pub struct Feedback {
     /// Whether the answer is accepted.
     pub solved: bool,
     /// Why not, when it is not.
@@ -168,11 +174,11 @@ pub struct Verdict {
 ///
 /// Unlimited attempts and no score (task B4). This is practice; framing it as assessment
 /// would be dishonest about what a client-side check can promise, and worse for learning.
-pub fn check(spec: &ProblemSpec, answer: &Automaton) -> Verdict {
+pub fn check(spec: &ProblemSpec, answer: &Automaton) -> Feedback {
     let states = answer.state_count();
 
     let Ok(ast) = parse(&spec.target) else {
-        return Verdict {
+        return Feedback {
             solved: false,
             failure: Some(Failure::BadProblem {
                 detail: format!(
@@ -190,7 +196,7 @@ pub fn check(spec: &ProblemSpec, answer: &Automaton) -> Verdict {
 
     if let Some(found) = counterexample(answer, &target) {
         let Counterexample { input, accepted_by } = found;
-        return Verdict {
+        return Feedback {
             solved: false,
             failure: Some(Failure::WrongLanguage {
                 input,
@@ -204,7 +210,7 @@ pub fn check(spec: &ProblemSpec, answer: &Automaton) -> Verdict {
     if let Some(expected) = &spec.alphabet {
         let found: Vec<String> = answer.alphabet.clone();
         if &found != expected {
-            return Verdict {
+            return Feedback {
                 solved: false,
                 failure: Some(Failure::WrongAlphabet {
                     expected: expected.clone(),
@@ -218,7 +224,7 @@ pub fn check(spec: &ProblemSpec, answer: &Automaton) -> Verdict {
 
     if let Some(limit) = spec.budget {
         if states > limit {
-            return Verdict {
+            return Feedback {
                 solved: false,
                 failure: Some(Failure::OverBudget {
                     used: states,
@@ -230,7 +236,7 @@ pub fn check(spec: &ProblemSpec, answer: &Automaton) -> Verdict {
         }
     }
 
-    Verdict {
+    Feedback {
         solved: true,
         failure: None,
         states,

@@ -11,4 +11,4 @@
 
 pub mod problem;
 
-pub use problem::{Failure, ProblemSpec, SPEC_VERSION, Verdict, check};
+pub use problem::{Failure, Feedback, ProblemSpec, SPEC_VERSION, check};

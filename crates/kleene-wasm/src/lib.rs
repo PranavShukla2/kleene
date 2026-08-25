@@ -459,3 +459,43 @@ pub fn from_jff(text: &str) -> Result<JsValue, JsError> {
     js_sys::JSON::parse(&payload.to_string())
         .map_err(|_| JsError::new("The imported machine could not be returned."))
 }
+
+/// Check an answer against a problem (teaching layer B1).
+///
+/// The spec crosses as a JSON string rather than as an object, for the reason `.kln` documents
+/// do: it arrives from a URL fragment that anyone can edit, and parsing it in Rust means one
+/// implementation decides what a valid problem is. A spec assembled in JavaScript and handed
+/// over as an object would make the browser a second authority on the format.
+///
+/// # Errors
+///
+/// Returns a JS error when the spec is not readable JSON, or the automaton is not an automaton.
+/// A spec that parses but names a target that does not is *not* an error — that is a `Verdict`
+/// with a `bad-problem` failure, because a student needs to be told the link is broken rather
+/// than watching a button do nothing.
+#[wasm_bindgen]
+pub fn check_answer(spec: &str, answer: JsValue) -> Result<JsValue, JsError> {
+    let spec: kleene_core::teach::ProblemSpec =
+        serde_json::from_str(spec).map_err(|e| JsError::new(&e.to_string()))?;
+    let answer: Automaton =
+        serde_wasm_bindgen::from_value(answer).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let feedback = kleene_core::teach::check(&spec, &answer);
+    serde_wasm_bindgen::to_value(&feedback).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// The fewest states any correct answer to this problem could use.
+///
+/// Used to verify a budget is achievable before a challenge is offered (task F1), and to
+/// score golf afterwards.
+///
+/// # Errors
+///
+/// Returns a JS error if the spec is not readable JSON. A target that does not parse yields
+/// `undefined` rather than an error, since that is a property of the problem and not a fault.
+#[wasm_bindgen]
+pub fn minimum_states(spec: &str) -> Result<Option<usize>, JsError> {
+    let spec: kleene_core::teach::ProblemSpec =
+        serde_json::from_str(spec).map_err(|e| JsError::new(&e.to_string()))?;
+    Ok(spec.minimum_states())
+}
