@@ -105,7 +105,7 @@ here is not shipping something imperfect; it is not shipping.
 
 - [ ] **D1.** Astro Starlight at `/docs` (roadmap §2.2).
 - [x] **D2.** Getting started, with a working automaton on screen immediately.
-- [ ] **D3.** An algorithms section, one page each, **generated from the `Traced` output** —
+- [x] **D3.** An algorithms section, one page each, **generated from the `Traced` output** —
       the same steps the UI renders. Three consumers of one source of truth is the
       architecture's whole claim; this is where it gets demonstrated in public.
 - [x] **D4.** CLI reference.
@@ -125,11 +125,19 @@ here is not shipping something imperfect; it is not shipping.
 > arrangement where documentation gets updated in the same commit as the thing it documents.
 > `/docs` stays a map that links to it.
 >
-> **D3 is the one worth coming back for**, and it is not a documentation task. Generating the
-> algorithm pages from `Traced` output is where "three consumers of one source of truth" stops
-> being an architecture diagram and becomes something a reader can check. Deferred because it
-> needs a rendering path from `Step` to prose outside React, which is a build step nobody has
-> designed yet.
+> **D3 is done, and it did not need the build step it looked like it needed.** `Step::detail`
+> is already a finished sentence — the rendering path from `Step` to prose was never missing,
+> it was the thing the type had carried since Phase 1. A 150-line example runs the real
+> algorithms and prints what they said.
+>
+> The pages are committed and diffed by CI, so the architecture's central claim is now checked
+> rather than asserted: change an algorithm's reasoning without regenerating and the build
+> fails. Verified by doing exactly that — editing one sentence in `minimize.rs` and watching
+> the gate catch it.
+>
+> One thing the first attempt got wrong: the check was inert while `docs/algorithms/` was
+> untracked, because `git diff` does not see untracked files. A gate that cannot fail is worse
+> than no gate, and it took deliberately breaking it to notice.
 >
 > **Writing D4 found two defects in the thing being documented**, which is the argument for
 > writing references by running the binary rather than reading its source. Standard input was
@@ -165,8 +173,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-                                          shorter feedback loop: writing it against gestures that are still moving means rewriting
-                                          it, and a tour that describes a gesture the editor no longer has is worse than none.
+                                              shorter feedback loop: writing it against gestures that are still moving means rewriting
+                                              it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching

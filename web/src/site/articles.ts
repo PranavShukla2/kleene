@@ -109,31 +109,34 @@ export const SECTIONS: readonly {
   },
   {
     heading: 'The algorithms',
-    blurb: 'What each conversion does, and the reasoning it produces while doing it.',
+    // Generated, and worth saying so: these pages are the same `Traced` output the
+    // step-through renders, so they cannot describe an algorithm the code does not have.
+    blurb:
+      'What each conversion does, and the reasoning it produces while doing it — generated from the algorithms themselves, so the worked examples cannot drift from the code.',
     articles: [
       {
         title: 'Thompson’s construction',
+        href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/algorithms/thompson.md',
         detail: 'Regular expression to ε-NFA, one operator at a time.',
         status: READY,
-        route: 'convert',
       },
       {
         title: 'Subset construction',
+        href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/algorithms/subset-construction.md',
         detail: 'ε-NFA to DFA, with the worklist and the ε-closures behind each round.',
         status: READY,
-        route: 'convert',
       },
       {
         title: 'Minimization',
+        href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/algorithms/minimization.md',
         detail: 'Partition refinement, and why two states end up in the same block.',
         status: READY,
-        route: 'convert',
       },
       {
         title: 'State elimination',
+        href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/algorithms/state-elimination.md',
         detail: 'DFA back to a regular expression, and why the order matters.',
         status: READY,
-        route: 'convert',
       },
     ],
   },
