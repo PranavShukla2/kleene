@@ -242,18 +242,30 @@ jobs:
           # in a release arrives through one path rather than two.
           includeUpdaterJson: true
 
+      # Flattened before upload, and that is not tidiness.
+      #
+      # An artifact uploaded with a wildcard keeps the directory structure the wildcard
+      # matched, so these arrived at `artifacts/desktop/target/release/bundle/dmg/…` — and the
+      # publish job attaches `artifacts/*`, which is not recursive. The first release shipped
+      # with the CLI attached and every desktop bundle missing, because the CLI's filenames
+      # happened to be flat and these were not. The build was fine; the collection was not.
+      - name: Gather the bundles into one flat directory
+        shell: bash
+        run: |
+          mkdir -p dist-desktop
+          find desktop/target -path '*/release/bundle/*' -type f \
+            \( -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.app.tar.gz.sig' \
+               -o -name '*.deb' -o -name '*.AppImage' -o -name '*.AppImage.sig' \
+               -o -name '*.exe' -o -name '*.msi' -o -name '*.msi.zip' \
+               -o -name '*.nsis.zip' -o -name '*.sig' -o -name 'latest.json' \) \
+            -exec cp {} dist-desktop/ \;
+          ls -lh dist-desktop
+
       - uses: actions/upload-artifact@v4
         with:
           name: kleene-desktop-${{ matrix.os }}
-          path: |
-            desktop/target/**/release/bundle/**/*.dmg
-            desktop/target/**/release/bundle/**/*.app.tar.gz*
-            desktop/target/**/release/bundle/**/*.deb
-            desktop/target/**/release/bundle/**/*.AppImage*
-            desktop/target/**/release/bundle/**/*.exe
-            desktop/target/**/release/bundle/**/*.msi*
-            desktop/target/**/release/bundle/**/*.json
-          if-no-files-found: warn
+          path: dist-desktop/*
+          if-no-files-found: error
 
   publish:
     name: Publish the release

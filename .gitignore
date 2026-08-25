@@ -43,3 +43,4 @@ proptest-regressions
 /desktop/icon-source.png
 # Tauri regenerates these from tauri.conf.json on every build.
 /desktop/gen/
+dist-desktop/
