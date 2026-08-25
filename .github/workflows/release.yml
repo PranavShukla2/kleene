@@ -254,9 +254,17 @@ jobs:
           # Written by hand rather than generated from commit subjects. The commits read as
           # a build log, which is the right register for a contributor and the wrong one for
           # someone deciding whether to download this.
-          #
-          # The whole file, which is right for v1.0.0 and wrong afterwards — trim it to the
-          # new section while the release is still a draft.
           body_path: CHANGELOG.md
           generate_release_notes: false
-          draft: true
+          # Published, not a draft.
+          #
+          # It was a draft, on the reasoning that release notes deserve a read before anyone
+          # else sees them. That was wrong in one specific way: `/download` links to
+          # `releases/latest`, and a draft release is invisible to that URL — so the download
+          # page would point at nothing while a perfectly good build sat unpublished behind a
+          # button nobody knew to press. A release that exists and cannot be downloaded is
+          # worse than no release.
+          #
+          # The notes are a hand-written file in the repository, so there is no generated text
+          # that needs reviewing after the fact anyway.
+          draft: false
