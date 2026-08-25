@@ -1,0 +1,43 @@
+[package]
+name = "kleene-desktop"
+description = "Kleene as a native window: the same engine, the same files, no browser."
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/PranavShukla2/kleene"
+publish = false
+
+# Its own workspace, deliberately detached from the one at the repository root.
+#
+# Tauri pulls in wry, tao and a platform's webview bindings — several hundred crates that take
+# minutes to build. The root workspace is compiled by `cargo clippy --workspace --all-targets`
+# and `cargo test --workspace` on every push, and both would pay that cost forever, on every
+# CI run, for a crate containing about eighty lines of glue and no algorithms at all.
+#
+# The cost of detaching is one more `Cargo.lock` and a second `cargo` invocation in the release
+# workflow. The cost of not detaching is paid by every commit for the life of the project.
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+# Tauri's convention: the CLI passes this when it builds a release bundle.
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+# A desktop bundle is downloaded once and read never — the trade that makes sense here is the
+# opposite of the one the web build makes, where every byte crosses a student's connection.
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

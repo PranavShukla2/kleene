@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Kleene",
+  "version": "0.1.0",
+  "identifier": "in.pranavmshukla.kleene",
+  "build": {
+    "frontendDist": "../web/dist",
+    "beforeBuildCommand": "",
+    "beforeDevCommand": ""
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Kleene",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 880,
+        "minHeight": 560,
+        "resizable": true,
+        "fullscreen": false,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg", "deb", "appimage", "msi", "nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Education",
+    "shortDescription": "Automata theory workbench",
+    "longDescription": "Draw a finite automaton, read it as a transition table, and watch a conversion happen one step at a time — with the reasoning attached to every step.",
+    "copyright": "Dual-licensed MIT or Apache-2.0",
+    "fileAssociations": [
+      {
+        "ext": ["kln"],
+        "name": "Kleene automaton",
+        "description": "A saved Kleene automaton",
+        "role": "Editor"
+      },
+      {
+        "ext": ["jff"],
+        "name": "JFLAP file",
+        "description": "A JFLAP finite automaton",
+        "role": "Viewer"
+      }
+    ]
+  }
+}

@@ -118,6 +118,27 @@ try {
   await icon.evaluate(() => document.fonts.ready);
   await icon.screenshot({ path: resolve(web, 'public/apple-touch-icon.png') });
   console.log('wrote public/apple-touch-icon.png');
+
+  /*
+    And a 1024×1024 master for the desktop bundle.
+
+    `tauri icon` wants one large square and derives every platform's set from it — .icns for
+    macOS, .ico for Windows, a ladder of PNGs for Linux. Rendering it here rather than keeping
+    a separate hand-made file is the same argument as everything else in this script: the
+    desktop icon and the web icon are the same mark, and two sources of one mark drift.
+  */
+  await writeFile(
+    scratch,
+    `<!doctype html><html><body style="margin:0;background:#0f1117;width:1024px;height:1024px;
+     display:flex;align-items:center;justify-content:center">
+     <img src="./public/favicon.svg" width="748" height="748" alt="" /></body></html>`,
+    'utf8',
+  );
+  const master = await browser.newPage({ viewport: { width: 1024, height: 1024 } });
+  await master.goto(`file://${scratch}`);
+  await master.evaluate(() => document.fonts.ready);
+  await master.screenshot({ path: resolve(web, '../desktop/icon-source.png') });
+  console.log('wrote desktop/icon-source.png');
 } finally {
   await browser.close();
   await rm(scratch, { force: true });
