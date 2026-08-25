@@ -528,92 +528,6 @@ fn print_automaton(cli: &Cli, automaton: &Automaton) {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use kleene_core::builder::AutomatonBuilder;
-
-    /// A chain whose creation order is deliberately not its reading order: `c` is built first,
-    /// and the start state `a` is built last.
-    fn out_of_order() -> Automaton {
-        AutomatonBuilder::new(["x"])
-            .state("c")
-            .state("b")
-            .accepting("a")
-            .start("a")
-            .edge("a", "b", "x")
-            .edge("b", "c", "x")
-            .build()
-    }
-
-    #[test]
-    fn the_start_state_is_leftmost() {
-        let machine = out_of_order();
-        let laid_out = row(&machine);
-
-        // The whole reason this is a walk rather than an enumeration. A figure whose first
-        // node is in the middle reads as a mistake even when every edge in it is correct.
-        assert_eq!(laid_out[&machine.start].x, 0.0);
-    }
-
-    #[test]
-    fn states_follow_the_ones_that_reach_them() {
-        let machine = out_of_order();
-        let laid_out = row(&machine);
-
-        let at = |label: &str| {
-            let id = machine
-                .states
-                .iter()
-                .find(|(_, state)| state.label == label)
-                .map(|(id, _)| *id)
-                .expect("the state exists");
-            laid_out[&id].x
-        };
-
-        assert!(at("a") < at("b"), "a reaches b");
-        assert!(at("b") < at("c"), "b reaches c");
-    }
-
-    #[test]
-    fn a_row_is_flat_and_evenly_spaced() {
-        let machine = out_of_order();
-        let laid_out = row(&machine);
-
-        let mut xs: Vec<f64> = laid_out.values().map(|at| at.x).collect();
-        xs.sort_by(f64::total_cmp);
-
-        assert_eq!(xs, vec![0.0, 96.0, 192.0]);
-        assert!(laid_out.values().all(|at| at.y == 0.0));
-    }
-
-    #[test]
-    fn a_state_nothing_reaches_still_gets_a_position() {
-        // An unreachable state is something this tool exists to point out. Dropping it from
-        // the export would hide the very thing the validator flags.
-        let machine = AutomatonBuilder::new(["x"])
-            .accepting("start")
-            .state("orphan")
-            .start("start")
-            .build();
-
-        let laid_out = row(&machine);
-        assert_eq!(laid_out.len(), machine.states.len());
-    }
-
-    #[test]
-    fn every_state_is_placed_exactly_once() {
-        let machine = out_of_order();
-        let laid_out = row(&machine);
-
-        let mut xs: Vec<f64> = laid_out.values().map(|at| at.x).collect();
-        xs.sort_by(f64::total_cmp);
-        xs.dedup();
-
-        assert_eq!(xs.len(), machine.states.len(), "no two states share a slot");
-    }
-}
-
 /// Build a problem link.
 ///
 /// The target is parsed here rather than trusted, so a typo becomes an error at the moment a
@@ -718,4 +632,90 @@ fn grade_command(
     // not whether the class passed. A non-zero exit for "someone got it wrong" would make
     // every CI wrapper around this fail on a normal Tuesday.
     Ok(ExitCode::SUCCESS)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kleene_core::builder::AutomatonBuilder;
+
+    /// A chain whose creation order is deliberately not its reading order: `c` is built first,
+    /// and the start state `a` is built last.
+    fn out_of_order() -> Automaton {
+        AutomatonBuilder::new(["x"])
+            .state("c")
+            .state("b")
+            .accepting("a")
+            .start("a")
+            .edge("a", "b", "x")
+            .edge("b", "c", "x")
+            .build()
+    }
+
+    #[test]
+    fn the_start_state_is_leftmost() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        // The whole reason this is a walk rather than an enumeration. A figure whose first
+        // node is in the middle reads as a mistake even when every edge in it is correct.
+        assert_eq!(laid_out[&machine.start].x, 0.0);
+    }
+
+    #[test]
+    fn states_follow_the_ones_that_reach_them() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        let at = |label: &str| {
+            let id = machine
+                .states
+                .iter()
+                .find(|(_, state)| state.label == label)
+                .map(|(id, _)| *id)
+                .expect("the state exists");
+            laid_out[&id].x
+        };
+
+        assert!(at("a") < at("b"), "a reaches b");
+        assert!(at("b") < at("c"), "b reaches c");
+    }
+
+    #[test]
+    fn a_row_is_flat_and_evenly_spaced() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        let mut xs: Vec<f64> = laid_out.values().map(|at| at.x).collect();
+        xs.sort_by(f64::total_cmp);
+
+        assert_eq!(xs, vec![0.0, 96.0, 192.0]);
+        assert!(laid_out.values().all(|at| at.y == 0.0));
+    }
+
+    #[test]
+    fn a_state_nothing_reaches_still_gets_a_position() {
+        // An unreachable state is something this tool exists to point out. Dropping it from
+        // the export would hide the very thing the validator flags.
+        let machine = AutomatonBuilder::new(["x"])
+            .accepting("start")
+            .state("orphan")
+            .start("start")
+            .build();
+
+        let laid_out = row(&machine);
+        assert_eq!(laid_out.len(), machine.states.len());
+    }
+
+    #[test]
+    fn every_state_is_placed_exactly_once() {
+        let machine = out_of_order();
+        let laid_out = row(&machine);
+
+        let mut xs: Vec<f64> = laid_out.values().map(|at| at.x).collect();
+        xs.sort_by(f64::total_cmp);
+        xs.dedup();
+
+        assert_eq!(xs.len(), machine.states.len(), "no two states share a slot");
+    }
 }
