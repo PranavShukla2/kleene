@@ -18,6 +18,11 @@ echo "== generated bindings =="
 git diff --exit-code -- web/src/model/generated \
   || { echo "Generated types are stale. Commit the regenerated files."; exit 1; }
 
+echo "== generated docs =="
+./scripts/generate-docs.sh >/dev/null
+git diff --exit-code -- docs/algorithms \
+  || { echo "The algorithm pages no longer match what the algorithms print. Commit them."; exit 1; }
+
 echo "== wasm =="
 wasm-pack build crates/kleene-wasm --target web --out-dir pkg --release >/dev/null 2>&1
 node scripts/check-wasm-size.mjs

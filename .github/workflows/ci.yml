@@ -47,6 +47,15 @@ jobs:
           git diff --exit-code -- web/src/model/generated \
             || { echo "::error::Generated types are stale. Run ./scripts/generate-types.sh and commit."; exit 1; }
 
+      # The algorithm pages are the architecture's claim made checkable: one implementation
+      # serving the step-through, the CLI and the documentation. If a change to an algorithm's
+      # reasoning did not reach the docs, this is where it shows.
+      - name: Algorithm pages match the algorithms
+        run: |
+          ./scripts/generate-docs.sh
+          git diff --exit-code -- docs/algorithms \
+            || { echo "::error::Algorithm pages are stale. Run ./scripts/generate-docs.sh and commit."; exit 1; }
+
       # The property suite runs at 256 cases under a normal `cargo test` so local runs stay
       # fast, and at the 10,000 the roadmap asks for here. Release mode because that is
       # 160,000 generated cases across sixteen properties — about 3 seconds optimised, and
