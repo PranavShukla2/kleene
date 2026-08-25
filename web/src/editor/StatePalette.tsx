@@ -16,11 +16,19 @@
  *
  * A hint, not a toolbar. A palette that grows a second row has started to become the panel
  * column this editor just removed.
+ *
+ * ## It has to work without a mouse
+ *
+ * HTML5 drag-and-drop is a mouse protocol — `dragstart` does not fire from a touch. Double
+ * click is not a touchscreen gesture either. So on a phone the two ways of creating a state
+ * were both dead, which is not a degraded experience but a missing feature: there was no way
+ * to put anything on the canvas. Tapping the chip is the answer, and it doubles as the
+ * keyboard path, because a real button is activated by Enter.
  */
 
 import { STATE_DRAG } from '@/editor/dragState';
 
-export function StatePalette() {
+export function StatePalette({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="pointer-events-none absolute top-3 left-3 z-20 flex items-center gap-2">
       <button
@@ -32,13 +40,20 @@ export function StatePalette() {
           // telling a user whether they are about to take the chip away or make a new state.
           event.dataTransfer.effectAllowed = 'copy';
         }}
+        onClick={onAdd}
         /*
-          A button rather than a bare div, so it is reachable and announced. It has no click
-          behaviour — the canvas's own double-click and context menu already cover the
-          pointer-free paths — so the label carries the instruction instead.
+          Tapping works too, and on a phone it is the only thing that does.
+
+          HTML5 drag-and-drop is a mouse protocol: `dragstart` never fires from a touch, so on
+          a phone this chip did nothing at all — and neither does double-click, which is not a
+          gesture a touchscreen has. Between them that left no way to put a state on the
+          canvas, which is most of what the editor is for.
+
+          So a tap adds one in the middle of the view. Not a mobile special case: it is also
+          the keyboard path, since the chip is a real button that Enter activates.
         */
-        aria-label="Drag onto the canvas to add a state"
-        title="Drag me onto the canvas — or double-click the canvas"
+        aria-label="Add a state — drag onto the canvas, or tap to place one"
+        title="Drag me onto the canvas, or tap to add a state in the middle"
         className="pointer-events-auto flex cursor-grab items-center gap-2 rounded-full border border-k-border bg-k-surface-raised/90 py-1.5 pr-3 pl-1.5 shadow-sm backdrop-blur transition-colors duration-(--duration-k-hover) hover:border-k-primary/50 active:cursor-grabbing"
       >
         <span

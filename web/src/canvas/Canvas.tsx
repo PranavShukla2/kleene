@@ -27,6 +27,7 @@ import { useCanvasEditing } from '@/canvas/useCanvasEditing';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { useViewport } from '@/canvas/useViewport';
 import { isStateDrag } from '@/editor/dragState';
+import { StatePalette } from '@/editor/StatePalette';
 import { useGeneration } from '@/store/editor';
 import { formatSymbols, newSymbols, parseSymbols } from '@/canvas/symbols';
 import { SNAP, snapPoint, toScreen } from '@/canvas/viewport';
@@ -516,6 +517,28 @@ export function Canvas({
         run(addState(snapPoint(pointerToWorld(event))));
       }}
     >
+      {/*
+        Canvas furniture, so it can reach the viewport. Tapping it places a state in the middle
+        of what is currently on screen, which is the only sensible answer without a pointer —
+        and on a touch device it is the only way to create one at all.
+      */}
+      <StatePalette
+        onAdd={() => {
+          const box = containerRef.current?.getBoundingClientRect();
+          if (!box) return;
+          run(
+            addState(
+              snapPoint(
+                pointerToWorld({
+                  clientX: box.left + box.width / 2,
+                  clientY: box.top + box.height / 2,
+                }),
+              ),
+            ),
+          );
+        }}
+      />
+
       {dropAt && (
         /*
           A preview at the snapped position, not under the cursor. The state will land on the
