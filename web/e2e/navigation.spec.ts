@@ -225,7 +225,7 @@ test('the first-run tour appears once and stays dismissed', async ({ page }) => 
 
   const tour = page.getByRole('dialog', { name: 'Getting started' });
   await expect(tour).toBeVisible();
-  await expect(tour).toContainText('Double-click');
+  await expect(tour).toContainText('Drag a state');
 
   // The card that carries the unguessable part. It is the second one, so reaching it is part
   // of what this test checks: a tour whose middle card never renders teaches nothing.

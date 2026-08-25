@@ -35,9 +35,13 @@ interface Card {
 
 const CARDS: readonly Card[] = [
   {
-    title: 'Double-click to place a state',
-    detail: 'Anywhere on the canvas. Double-click a state again to rename it.',
-    keys: 'double-click',
+    title: 'Drag a state onto the canvas',
+    // The chip is on screen now, so the card points at it rather than teaching a gesture in
+    // the abstract — and mentions the faster way second, where it will be read as a shortcut
+    // rather than as the only route in.
+    detail:
+      'The chip in the bottom-left corner. Double-clicking empty canvas does the same thing and is quicker once you know it; double-click a state again to rename it.',
+    keys: 'drag',
   },
   {
     title: 'Drag from the rim to draw a transition',
@@ -46,9 +50,9 @@ const CARDS: readonly Card[] = [
     keys: 'drag',
   },
   {
-    title: 'Everything else has a shortcut',
+    title: 'The rail on the right holds the rest',
     detail:
-      'Undo, select all, arrange the layout, run a string. The full sheet is one key away and worth thirty seconds.',
+      'The transition table, the 5-tuple, running a string, and every way of exporting. One at a time, over the canvas, closed with esc. Press ? for the shortcut sheet.',
     keys: '?',
   },
 ];

@@ -202,7 +202,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   {
     id: 'togglePanel',
     chord: 'Mod+Backslash',
-    label: 'Show or hide the panels',
+    label: 'Show or hide the transition table',
     group: 'View',
   },
 
