@@ -21,6 +21,7 @@
 
 #![forbid(unsafe_code)]
 
+mod grade;
 mod input;
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -30,6 +31,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use kleene_core::io::tikz::Point as TikzPoint;
 use kleene_core::io::{Document, to_dot, to_tikz};
 use kleene_core::notation::Notation;
+use kleene_core::teach::ProblemSpec;
 use kleene_core::{Automaton, StateId, Traced, convert, counterexample, examples, simulate};
 
 use crate::input::{From as InputKind, Input};
@@ -112,6 +114,49 @@ enum Command {
     },
     /// List the built-in example automata.
     Examples,
+    /// Build a problem a student can open from a link.
+    ///
+    /// Prints the link on stdout, so a set of problems is a shell loop rather than an
+    /// afternoon of clicking.
+    Problem {
+        /// What to ask for, in words. Shown to the student.
+        #[arg(long)]
+        prompt: String,
+        /// The target language, as a regular expression.
+        #[arg(long)]
+        target: String,
+        /// The most states an accepted answer may use.
+        #[arg(long)]
+        budget: Option<usize>,
+        /// Where the solve page lives. Override to point at a local build.
+        #[arg(long, default_value = "https://kleene.pranavmshukla.in")]
+        origin: String,
+    },
+    /// Grade a directory of submissions against a reference.
+    ///
+    /// Exits 0 when every submission was read, whatever the verdicts — a grader's exit code
+    /// reports whether *grading* worked, not whether the class passed.
+    Grade {
+        /// A directory of `.kln` and `.jff` files. Searched recursively.
+        directory: String,
+        /// The expected answer: a regular expression, a `.kln` file, or an example key.
+        #[arg(long)]
+        against: String,
+        /// How to print the results.
+        #[arg(long, value_enum, default_value_t = GradeFormat::Csv)]
+        format: GradeFormat,
+    },
+}
+
+/// How `grade` reports.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+enum GradeFormat {
+    /// A spreadsheet, which is what a marks upload usually wants.
+    Csv,
+    /// Machine-readable, for a script that does something else with it.
+    Json,
+    /// A table that reads well in a pull request or an email.
+    Md,
 }
 
 /// What `convert` should produce.
@@ -165,6 +210,17 @@ fn run(cli: &Cli) -> Result<ExitCode, String> {
             examples_command(cli);
             Ok(ExitCode::SUCCESS)
         }
+        Command::Problem {
+            prompt,
+            target,
+            budget,
+            origin,
+        } => problem_command(prompt, target, *budget, origin),
+        Command::Grade {
+            directory,
+            against,
+            format,
+        } => grade_command(cli, directory, against, *format),
     }
 }
 
@@ -556,4 +612,110 @@ mod tests {
 
         assert_eq!(xs.len(), machine.states.len(), "no two states share a slot");
     }
+}
+
+/// Build a problem link.
+///
+/// The target is parsed here rather than trusted, so a typo becomes an error at the moment a
+/// lecturer makes the link rather than a broken page for thirty students. A budget is checked
+/// against the language for the same reason: a problem that cannot be solved is not hard, it
+/// is broken, and finding that out from a student is the expensive way.
+fn problem_command(
+    prompt: &str,
+    target: &str,
+    budget: Option<usize>,
+    origin: &str,
+) -> Result<ExitCode, String> {
+    let mut spec = ProblemSpec::new(prompt, target);
+    if let Some(limit) = budget {
+        spec = spec.with_budget(limit);
+    }
+
+    let minimum = spec
+        .minimum_states()
+        .ok_or_else(|| format!("the target `{target}` is not a regular expression I can read"))?;
+
+    if let Some(limit) = budget {
+        if limit < minimum {
+            return Err(format!(
+                "a budget of {limit} cannot be met: the smallest machine for `{target}` has \
+                 {minimum} states"
+            ));
+        }
+    }
+
+    let json = serde_json::to_string(&spec).map_err(|error| error.to_string())?;
+    let payload = encode_payload(json.as_bytes());
+    println!("{}/solve#p={}", origin.trim_end_matches('/'), payload);
+
+    eprintln!("smallest possible answer: {minimum} states");
+    Ok(ExitCode::SUCCESS)
+}
+
+/// Base64url without padding, matching what the web codec reads.
+///
+/// The `u` marker is the web share format's "not compressed" case, which exists precisely
+/// because `CompressionStream` is not available everywhere. Using it here means the CLI needs
+/// no compressor at all — a problem spec is a few hundred bytes, and the link is short either
+/// way.
+fn encode_payload(bytes: &[u8]) -> String {
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+    let mut out = String::from("u");
+    for chunk in bytes.chunks(3) {
+        let b = [
+            chunk[0],
+            chunk.get(1).copied().unwrap_or(0),
+            chunk.get(2).copied().unwrap_or(0),
+        ];
+        let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
+        let indices = [n >> 18, (n >> 12) & 63, (n >> 6) & 63, n & 63];
+        for (position, index) in indices.iter().enumerate() {
+            if position <= chunk.len() {
+                out.push(ALPHABET[*index as usize] as char);
+            }
+        }
+    }
+    out
+}
+
+/// Grade a directory.
+fn grade_command(
+    cli: &Cli,
+    directory: &str,
+    against: &str,
+    format: GradeFormat,
+) -> Result<ExitCode, String> {
+    let reference = Input::resolve(against, cli.from)
+        .map_err(|error| error.to_string())?
+        .as_dfa();
+
+    let root = std::path::Path::new(directory);
+    if !root.is_dir() {
+        return Err(format!("{directory} is not a directory"));
+    }
+
+    let rows = grade::grade_all(root, &reference);
+    if rows.is_empty() {
+        return Err(format!(
+            "no .kln or .jff files under {directory} — is that the right directory?"
+        ));
+    }
+
+    print!(
+        "{}",
+        match format {
+            GradeFormat::Csv => grade::as_csv(&rows),
+            GradeFormat::Json => grade::as_json(&rows),
+            GradeFormat::Md => grade::as_markdown(&rows),
+        }
+    );
+
+    // On stderr, so it never lands in the middle of a CSV being piped into a spreadsheet.
+    eprintln!("{}", grade::summary(&rows));
+
+    // Zero whatever the verdicts are: a grader's exit code reports whether *grading* worked,
+    // not whether the class passed. A non-zero exit for "someone got it wrong" would make
+    // every CI wrapper around this fail on a normal Tuesday.
+    Ok(ExitCode::SUCCESS)
 }
