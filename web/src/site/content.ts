@@ -7,7 +7,7 @@
  * be audited in one place rather than found by reading JSX.
  */
 
-import { READY, planned, type Status } from '@/overview/status';
+import { READY, type Status } from '@/overview/status';
 
 /**
  * The numbers under the hero.
@@ -48,7 +48,7 @@ export const PIPELINE: readonly {
     title: 'Take it with you',
     detail:
       'Export the diagram to TikZ for an assignment, share the whole machine as a URL, or check two machines for equivalence from the command line.',
-    status: planned(4),
+    status: READY,
   },
 ];
 
@@ -125,13 +125,13 @@ export const AUDIENCES: readonly {
     need: 'Diagrams that go straight into notes',
     detail:
       'Export any diagram to TikZ with the layout you arranged, or share a machine as a link that opens exactly what you drew.',
-    status: planned(4),
+    status: READY,
   },
   {
     who: 'Graders',
     need: 'Check equivalence without checking by hand',
     detail:
       'A command line tool that takes two machines and tells you whether they accept the same language — and, when they do not, the shortest string that separates them.',
-    status: planned(4),
+    status: READY,
   },
 ];

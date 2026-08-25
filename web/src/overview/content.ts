@@ -57,17 +57,25 @@ export const FEATURES: readonly Feature[] = [
     title: 'Export to TikZ',
     detail:
       'One click from the diagram on screen to the LaTeX in an assignment, with the layout you arranged preserved.',
-    status: planned(4),
+    status: READY,
   },
   {
     title: 'Share as a URL',
     detail: 'The whole automaton in a link. No account, no upload, nothing stored on a server.',
-    status: planned(4),
+    status: READY,
   },
   {
-    title: 'Work offline, or on the desktop',
-    detail: 'An installable PWA, and a native build for people who prefer one.',
-    status: planned(5),
+    title: 'Work offline',
+    detail:
+      'Install it and it keeps working with the network off — the engine, the fonts and every page, not just the ones you had open.',
+    status: READY,
+  },
+  {
+    // Split from the line above, which claimed both and shipped one. A single badge over two
+    // features is a badge that is wrong about one of them whichever way it points.
+    title: 'A desktop build',
+    detail: 'A native window for people who would rather not keep a browser tab.',
+    status: planned(6),
   },
 ];
 
