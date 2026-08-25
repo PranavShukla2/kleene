@@ -30,7 +30,7 @@ export function Properties({
 }: Props) {
   if (selection.length === 0) {
     return (
-      <Panel title="Selection">
+      <Panel>
         <p className="text-sm text-k-text-faint">
           Nothing selected. Click a state, or drag a box across several.
         </p>
@@ -42,7 +42,7 @@ export function Properties({
     // A multi-selection gets a count and the operations that are meaningful on a group,
     // rather than the first state's properties dressed up as the group's.
     return (
-      <Panel title="Selection">
+      <Panel>
         <p className="text-sm text-k-text-muted">
           <span className="font-mono text-k-text">{selection.length}</span> states selected.
         </p>
@@ -63,7 +63,7 @@ export function Properties({
   const incoming = automaton.transitions.filter((t) => t.to === id).length;
 
   return (
-    <Panel title="Selection">
+    <Panel>
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-mono text-base text-k-text">{state.label}</span>
         <button

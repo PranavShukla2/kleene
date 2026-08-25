@@ -39,7 +39,7 @@ export function TransitionTablePanel({ table, automaton, selection, onSelect, on
 
   if (!table || table.rows.length === 0) {
     return (
-      <Panel title="Transition table">
+      <Panel>
         <p className="text-sm text-k-text-faint">
           No states yet. δ has nothing to say about a machine with no states.
         </p>
@@ -48,20 +48,25 @@ export function TransitionTablePanel({ table, automaton, selection, onSelect, on
   }
 
   return (
-    <Panel title="Transition table">
+    <Panel>
       <div className="-mx-1 overflow-x-auto">
-        <table className="w-full border-collapse font-mono text-xs">
+        {/* `w-auto`, not `w-full`. This was written for a 288px column, where filling the
+              width was right; in a drawer spanning the window it spread two symbols across
+              1400px and put δ and its values a hand's width apart. A table should be the size
+              of its contents — which also means a large alphabet scrolls rather than
+              compressing. */}
+        <table className="w-auto border-collapse font-mono text-sm">
           <thead>
             <tr>
               {/*
                 The corner cell carries the function's name. A table headed `δ` is the one in
                 the textbook; a table headed "State" is a spreadsheet about an automaton.
               */}
-              <th className="px-1.5 py-1 text-left font-normal text-k-text-faint">δ</th>
+              <th className="px-4 py-2 text-left font-normal text-k-text-faint">δ</th>
               {table.columns.map((column) => (
                 <th
                   key={column.heading}
-                  className="px-1.5 py-1 text-left font-medium text-k-text"
+                  className="px-4 py-2 text-left font-medium text-k-text"
                   // The ε column is worth naming, because it is the one a reader may not
                   // expect and the one that explains why the machine is an ε-NFA.
                   title={column.symbol === undefined ? 'the empty string' : undefined}
@@ -137,7 +142,7 @@ function Row({
 }) {
   return (
     <tr className={selected ? 'bg-k-primary/10' : 'hover:bg-k-primary/5'}>
-      <th scope="row" className="px-1.5 py-1 text-left font-normal whitespace-nowrap">
+      <th scope="row" className="px-4 py-2 text-left font-normal whitespace-nowrap">
         <button
           type="button"
           onClick={onSelect}
@@ -193,7 +198,7 @@ function Cell({
 
   if (editing) {
     return (
-      <td className="px-0.5 py-0.5">
+      <td className="px-2 py-1">
         <CellEditor
           value={shown}
           onCommit={(text) => {
@@ -206,11 +211,11 @@ function Cell({
   }
 
   return (
-    <td className="px-0.5 py-0.5">
+    <td className="px-2 py-1">
       <button
         type="button"
         onClick={onEdit}
-        className="w-full rounded px-1 py-0.5 text-left whitespace-nowrap hover:bg-k-primary/10"
+        className="w-full rounded px-2 py-1 text-left whitespace-nowrap hover:bg-k-primary/10"
       >
         {targets.length === 0 ? <span className="text-k-text-faint">{EMPTY_CELL}</span> : shown}
       </button>
@@ -252,7 +257,7 @@ function CellEditor({
       onBlur={() => {
         onCommit(text);
       }}
-      className="w-full min-w-16 rounded border border-k-primary bg-k-surface-raised px-1 py-0.5 font-mono text-xs text-k-text outline-none"
+      className="w-full min-w-20 rounded border border-k-primary bg-k-surface-raised px-2 py-1 font-mono text-sm text-k-text outline-none"
     />
   );
 }

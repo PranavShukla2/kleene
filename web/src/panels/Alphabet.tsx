@@ -176,12 +176,28 @@ function countUses(automaton: Automaton, symbol: Sym): number {
  * with only a gap between them read as one long list, and the eye has to count borders to
  * find where a section starts.
  */
-export function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+export function Panel({
+  title,
+  children,
+}: {
+  /**
+   * Omitted when the dock's own header already names this panel.
+   *
+   * A panel that is the only thing in a drawer titled "Table" does not need to say
+   * "TRANSITION TABLE" underneath it. The heading still earns its place where two panels
+   * share a drawer — the 5-tuple beside the alphabet, export beside share — because there the
+   * rule is what separates them.
+   */
+  title?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-k-border bg-k-surface-raised/70 p-3 shadow-[0_1px_2px_0_var(--color-k-glass-shadow)]">
-      <h2 className="mb-2 border-b border-k-border/70 pb-1.5 font-mono text-[10px] font-medium tracking-[0.08em] text-k-text-faint uppercase">
-        {title}
-      </h2>
+      {title !== undefined && (
+        <h2 className="mb-2 border-b border-k-border/70 pb-1.5 font-mono text-[10px] font-medium tracking-[0.08em] text-k-text-faint uppercase">
+          {title}
+        </h2>
+      )}
       {children}
     </section>
   );

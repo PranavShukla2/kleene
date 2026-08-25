@@ -29,7 +29,7 @@ export function InputTester({ simulation, input, onInput, step, onStep }: Props)
   const last = run ? run.configurations.length - 1 : 0;
 
   return (
-    <Panel title="Input">
+    <Panel>
       <div className="flex gap-1.5">
         <input
           value={input}

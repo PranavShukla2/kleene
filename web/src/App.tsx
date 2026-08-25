@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { Tour } from '@/canvas/Tour';
+import { Dock } from '@/editor/Dock';
 import { tourSeen } from '@/canvas/tourSeen';
 import { ExportPanel } from '@/panels/Export';
 import { droppedFile, isFileDrag, openFile, pickFile, saveFile } from '@/store/files';
@@ -102,7 +103,7 @@ export function Editor({ onHome }: { onHome: () => void }) {
   const [storedStep, setStep] = useState(0);
   const [laying, setLaying] = useState(false);
   const { choice, cycle } = useTheme();
-  const { preferences, togglePanel } = usePreferences();
+  const { preferences, togglePanel, togglePanelId, closePanel } = usePreferences();
   const autosave = useAutosave();
   const document = useDocument();
   const selection = useSelection();
@@ -532,8 +533,6 @@ export function Editor({ onHome }: { onHome: () => void }) {
         arranging={laying || animating}
         canArrange={document.automaton.states.length > 0}
         canShake={!animating && hasOverlap(document.layout, ids)}
-        panelOpen={preferences.panelOpen}
-        onTogglePanel={togglePanel}
         onOpen={() => {
           void pickFile().then(open);
         }}
@@ -570,8 +569,13 @@ export function Editor({ onHome }: { onHome: () => void }) {
         /* `min-h-0` is what lets the canvas column actually shrink inside a flex parent —
            without it a flex child refuses to go below its content height and the canvas
            pushes the status bar off the bottom of the window. */
-        <main className="flex min-h-0 flex-1">
-          <div className="relative flex min-w-0 flex-1 flex-col">
+        /* `relative`, because the dock's rail and its panels are positioned against this. */
+        <main className="relative flex min-h-0 flex-1">
+          {/* `pr-13` reserves the rail's width. The panels themselves float *over* the canvas
+              rather than pushing it: a drawer that resizes the diagram every time it opens
+              moves the thing you were looking at, and on the table — which is read against
+              the diagram — that is the worst possible moment to move it. */}
+          <div className="relative flex min-w-0 flex-1 flex-col pr-13">
             <Canvas
               automaton={perf ? perf.automaton : document.automaton}
               layout={perf ? perf.layout : layout}
@@ -609,52 +613,74 @@ export function Editor({ onHome }: { onHome: () => void }) {
             <Validation report={report} onFocus={focusStates} />
           </div>
 
-          <SidePanel open={preferences.panelOpen} onClose={togglePanel}>
-            <Properties
-              automaton={document.automaton}
-              selection={selection}
-              onToggleAccepting={(id) => {
-                run(toggleAccepting(id));
-              }}
-              onSetStart={(id) => {
-                run(setStart(id));
-              }}
-              onRename={(id) => {
-                select([id]);
-              }}
-            />
-            <SharePanel
-              document={document}
-              onSaveInstead={() => {
-                saveFile(load.engine, document, document.meta?.title);
-              }}
-            />
-            <ExportPanel engine={load.engine} automaton={document.automaton} layout={layout} />
-            <InputTester
-              simulation={simulation}
-              input={input}
-              onInput={setInput}
-              step={step}
-              onStep={setStep}
-            />
-            <TransitionTablePanel
-              table={table}
-              automaton={document.automaton}
-              selection={selection}
-              onSelect={select}
-              onEdit={editCell}
-            />
-            <FormalDefinitionPanel definition={definition} />
-            <Alphabet
-              automaton={document.automaton}
-              onAdd={(symbol) => {
-                run(addSymbol(symbol));
-              }}
-              onRemove={(symbol) => {
-                run(deleteSymbol(symbol));
-              }}
-            />
-          </SidePanel>
+          <Dock open={preferences.openPanel} onToggle={togglePanelId} onClose={closePanel}>
+            {preferences.openPanel === 'selection' && (
+              <Properties
+                automaton={document.automaton}
+                selection={selection}
+                onToggleAccepting={(id) => {
+                  run(toggleAccepting(id));
+                }}
+                onSetStart={(id) => {
+                  run(setStart(id));
+                }}
+                onRename={(id) => {
+                  select([id]);
+                }}
+              />
+            )}
+
+            {preferences.openPanel === 'table' && (
+              <TransitionTablePanel
+                table={table}
+                automaton={document.automaton}
+                selection={selection}
+                onSelect={select}
+                onEdit={editCell}
+              />
+            )}
+
+            {preferences.openPanel === 'test' && (
+              <InputTester
+                simulation={simulation}
+                input={input}
+                onInput={setInput}
+                step={step}
+                onStep={setStep}
+              />
+            )}
+
+            {preferences.openPanel === 'define' && (
+              <div className="flex flex-col gap-2.5">
+                <FormalDefinitionPanel definition={definition} />
+                <Alphabet
+                  automaton={document.automaton}
+                  onAdd={(symbol) => {
+                    run(addSymbol(symbol));
+                  }}
+                  onRemove={(symbol) => {
+                    run(deleteSymbol(symbol));
+                  }}
+                />
+              </div>
+            )}
+
+            {preferences.openPanel === 'export' && (
+              <div className="flex flex-col gap-2.5">
+                <ExportPanel
+                  engine={load.engine}
+                  automaton={document.automaton}
+                  layout={layout}
+                />
+                <SharePanel
+                  document={document}
+                  onSaveInstead={() => {
+                    saveFile(load.engine, document, document.meta?.title);
+                  }}
+                />
+              </div>
+            )}
+          </Dock>
         </main>
       )}
 
@@ -694,8 +720,6 @@ function CommandBar({
   arranging,
   canArrange,
   canShake,
-  panelOpen,
-  onTogglePanel,
   onOpen,
   onSave,
   onHelp,
@@ -712,8 +736,6 @@ function CommandBar({
   arranging: boolean;
   canArrange: boolean;
   canShake: boolean;
-  panelOpen: boolean;
-  onTogglePanel: () => void;
   /** Pick a `.kln` and open it. */
   onOpen: () => void;
   /** Write the current document to a file. */
@@ -794,15 +816,6 @@ function CommandBar({
         <ToolButton onClick={onHelp} title="Keyboard shortcuts">
           ?
         </ToolButton>
-        <ToolButton
-          onClick={onTogglePanel}
-          title={panelOpen ? 'Hide the panels' : 'Show the panels'}
-          aria-expanded={panelOpen}
-        >
-          {/* The glyph shows the panel, not an abstract arrow, so it reads the same whichever
-              side of the toggle you are on. */}
-          {panelOpen ? '▨' : '▤'}
-        </ToolButton>
       </div>
     </header>
   );
@@ -810,46 +823,6 @@ function CommandBar({
 
 function Divider() {
   return <span aria-hidden className="h-4 w-px shrink-0 bg-k-border" />;
-}
-
-/**
- * The collapsible panel column.
- *
- * J2 and J7. **The diagram is the only permanent surface** — closing this leaves a canvas and
- * a command bar, which is design-system §1.1 stated as geometry rather than as an aspiration.
- *
- * Below `lg` it becomes a sheet over the canvas instead of a column beside it. A 288px column
- * next to a canvas on a tablet leaves neither usable, and building a second layout for small
- * screens is how two layouts drift apart.
- */
-function SidePanel({
-  open,
-  onClose,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  if (!open) return null;
-
-  return (
-    <aside
-      aria-label="Panels"
-      className="absolute inset-y-0 right-0 z-30 flex w-80 shrink-0 flex-col gap-2.5 overflow-y-auto border-l border-k-border bg-k-surface/60 p-3 shadow-lg backdrop-blur lg:static lg:z-auto lg:w-72 lg:shadow-none"
-    >
-      {/* Only reachable below `lg`, where the panel covers the canvas and the command bar's
-          toggle may be behind it. */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="self-end rounded-full px-2 py-0.5 font-mono text-xs text-k-text-faint hover:text-k-text lg:hidden"
-      >
-        close
-      </button>
-      {children}
-    </aside>
-  );
 }
 
 /**
