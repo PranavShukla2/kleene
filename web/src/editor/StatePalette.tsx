@@ -10,15 +10,19 @@
  * "state" in words, and dragging it does the obvious thing. It does not replace double-click;
  * it is the affordance that lets someone discover there is anything to do here at all.
  *
- * Bottom-left, over the canvas, deliberately small. This is a hint, not a toolbar — a palette
- * that grows a second row has started to become the panel column this editor just removed.
+ * Top-left, under the command bar, deliberately small. It was bottom-left until the transition
+ * table started opening along the bottom edge and covered it — an affordance that disappears
+ * when a panel opens is one that is missing whenever someone is midway through something.
+ *
+ * A hint, not a toolbar. A palette that grows a second row has started to become the panel
+ * column this editor just removed.
  */
 
 import { STATE_DRAG } from '@/editor/dragState';
 
 export function StatePalette() {
   return (
-    <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex items-center gap-2">
+    <div className="pointer-events-none absolute top-3 left-3 z-20 flex items-center gap-2">
       <button
         type="button"
         draggable

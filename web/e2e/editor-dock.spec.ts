@@ -90,6 +90,41 @@ test('the transition table opens along the bottom, at full width', async ({ page
   expect(table.y + table.height).toBeGreaterThan(view.height * 0.7);
 });
 
+test('a bottom panel does not cover the problem strip or the palette', async ({ page }) => {
+  // What the strip says is most worth reading when someone has just opened the table to work
+  // out why — so a sheet that covers it is at its most wrong exactly when it matters. Same for
+  // the chip: an affordance that disappears when a panel opens is missing whenever someone is
+  // midway through something.
+  const problems = page.getByText('No problems.');
+  const chip = page.getByRole('button', { name: 'Drag onto the canvas to add a state' });
+
+  await expect(problems).toBeVisible();
+  await expect(chip).toBeVisible();
+
+  await openPanel(page, 'Table');
+
+  await expect(problems).toBeVisible();
+  await expect(chip).toBeVisible();
+
+  /*
+    Visible is not enough — an element behind an opaque sheet still reports visible. The strip
+    has to sit *below* the panel, not under it.
+
+    Polled rather than measured once: the panel slides in, so a single measurement taken the
+    moment it exists catches it a few pixels short of its resting place and fails by five.
+    Waiting for a fixed number of milliseconds instead would be the same guess this suite has
+    already been bitten by twice.
+  */
+  await expect
+    .poll(async () => {
+      const strip = await problems.boundingBox();
+      const panel = await page.getByRole('complementary', { name: 'Table' }).boundingBox();
+      if (!strip || !panel) return -1;
+      return Math.round(strip.y - (panel.y + panel.height));
+    })
+    .toBe(0);
+});
+
 test('a state can be dragged onto the canvas', async ({ page }) => {
   // The affordance an empty canvas otherwise lacks: double-click works and is faster, but
   // nothing on screen says so.

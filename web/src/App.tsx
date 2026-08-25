@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { Tour } from '@/canvas/Tour';
-import { Dock } from '@/editor/Dock';
+import { DockPanel, DockRail } from '@/editor/Dock';
 import { StatePalette } from '@/editor/StatePalette';
 import { tourSeen } from '@/canvas/tourSeen';
 import { ExportPanel } from '@/panels/Export';
@@ -614,79 +614,84 @@ export function Editor({ onHome }: { onHome: () => void }) {
                 at exactly the point they have started using it. */}
             <StatePalette />
 
+            {/* Above the problem strip, not over it: a bottom panel takes its height from
+                the column. See the note in Dock.tsx — hiding "3 states are unreachable" is
+                worst at the moment someone opened the table to work out why. */}
+            <DockPanel open={preferences.openPanel} onClose={closePanel}>
+              {preferences.openPanel === 'selection' && (
+                <Properties
+                  automaton={document.automaton}
+                  selection={selection}
+                  onToggleAccepting={(id) => {
+                    run(toggleAccepting(id));
+                  }}
+                  onSetStart={(id) => {
+                    run(setStart(id));
+                  }}
+                  onRename={(id) => {
+                    select([id]);
+                  }}
+                />
+              )}
+
+              {preferences.openPanel === 'table' && (
+                <TransitionTablePanel
+                  table={table}
+                  automaton={document.automaton}
+                  selection={selection}
+                  onSelect={select}
+                  onEdit={editCell}
+                />
+              )}
+
+              {preferences.openPanel === 'test' && (
+                <InputTester
+                  simulation={simulation}
+                  input={input}
+                  onInput={setInput}
+                  step={step}
+                  onStep={setStep}
+                />
+              )}
+
+              {preferences.openPanel === 'define' && (
+                <div className="flex flex-col gap-2.5">
+                  <FormalDefinitionPanel definition={definition} />
+                  <Alphabet
+                    automaton={document.automaton}
+                    onAdd={(symbol) => {
+                      run(addSymbol(symbol));
+                    }}
+                    onRemove={(symbol) => {
+                      run(deleteSymbol(symbol));
+                    }}
+                  />
+                </div>
+              )}
+
+              {preferences.openPanel === 'export' && (
+                <div className="flex flex-col gap-2.5">
+                  <ExportPanel
+                    engine={load.engine}
+                    automaton={document.automaton}
+                    layout={layout}
+                  />
+                  <SharePanel
+                    document={document}
+                    onSaveInstead={() => {
+                      saveFile(load.engine, document, document.meta?.title);
+                    }}
+                  />
+                </div>
+              )}
+            </DockPanel>
+
             {/* Docked against the canvas, not below the fold (J5). A problem list you have
                 to scroll to find is a problem list nobody reads. */}
             <Validation report={report} onFocus={focusStates} />
           </div>
 
-          <Dock open={preferences.openPanel} onToggle={togglePanelId} onClose={closePanel}>
-            {preferences.openPanel === 'selection' && (
-              <Properties
-                automaton={document.automaton}
-                selection={selection}
-                onToggleAccepting={(id) => {
-                  run(toggleAccepting(id));
-                }}
-                onSetStart={(id) => {
-                  run(setStart(id));
-                }}
-                onRename={(id) => {
-                  select([id]);
-                }}
-              />
-            )}
-
-            {preferences.openPanel === 'table' && (
-              <TransitionTablePanel
-                table={table}
-                automaton={document.automaton}
-                selection={selection}
-                onSelect={select}
-                onEdit={editCell}
-              />
-            )}
-
-            {preferences.openPanel === 'test' && (
-              <InputTester
-                simulation={simulation}
-                input={input}
-                onInput={setInput}
-                step={step}
-                onStep={setStep}
-              />
-            )}
-
-            {preferences.openPanel === 'define' && (
-              <div className="flex flex-col gap-2.5">
-                <FormalDefinitionPanel definition={definition} />
-                <Alphabet
-                  automaton={document.automaton}
-                  onAdd={(symbol) => {
-                    run(addSymbol(symbol));
-                  }}
-                  onRemove={(symbol) => {
-                    run(deleteSymbol(symbol));
-                  }}
-                />
-              </div>
-            )}
-
-            {preferences.openPanel === 'export' && (
-              <div className="flex flex-col gap-2.5">
-                <ExportPanel
-                  engine={load.engine}
-                  automaton={document.automaton}
-                  layout={layout}
-                />
-                <SharePanel
-                  document={document}
-                  onSaveInstead={() => {
-                    saveFile(load.engine, document, document.meta?.title);
-                  }}
-                />
-              </div>
-            )}
-          </Dock>
+          <DockRail open={preferences.openPanel} onToggle={togglePanelId} />
         </main>
       )}
 
