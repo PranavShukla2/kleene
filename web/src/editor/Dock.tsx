@@ -96,7 +96,15 @@ export function DockPanel({
           transition={{ duration: 0.18, ease: EASE }}
           className={
             spec.edge === 'side'
-              ? 'absolute inset-y-0 right-13 z-30 flex w-[22rem] flex-col border-l border-k-border bg-k-surface/95 shadow-xl backdrop-blur'
+              ? /*
+                  22rem is 352px, wider than the content area of a 360px phone — so the
+                  panel hung off the left edge and its first column of text was cut in
+                  half. Below `sm` it fills whatever is left beside the rail instead.
+                  The rail deliberately stays reachable: a touch screen has no escape
+                  key, so covering the only visible way out would trap someone inside a
+                  panel with no way back to the diagram.
+                */
+                'absolute inset-y-0 right-13 left-0 z-30 flex flex-col border-l border-k-border bg-k-surface/95 shadow-xl backdrop-blur sm:left-auto sm:w-[22rem]'
               : /*
                   In the column's flow, not over it — see the note above. Height is a fraction
                   of the window rather than a fixed number of pixels: a transition table's
