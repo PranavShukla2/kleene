@@ -120,6 +120,19 @@ export function linkFor(payload: string, origin = window.location.origin): strin
   return `${origin}/editor#${SHARE_KEY}=${payload}`;
 }
 
+/**
+ * Which problem of the set a link is, when it is one.
+ *
+ * A separate fragment key rather than a field on `ProblemSpec`. The spec is what a *problem*
+ * is, and is frozen at version 1; a set key is a fact about this site's problem list, and a
+ * lecturer's hand-made link has no business carrying one. Keeping it outside also means the
+ * same solve view serves both without knowing which it has.
+ */
+export function problemKeyIn(hash: string): string | undefined {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  return params.get('k') ?? undefined;
+}
+
 /** The problem payload in a URL fragment, if there is one. */
 export function problemIn(hash: string): string | undefined {
   const params = new URLSearchParams(hash.replace(/^#/, ''));

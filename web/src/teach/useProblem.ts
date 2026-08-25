@@ -12,17 +12,19 @@
 
 import { useEffect, useState } from 'react';
 
-import { decodeValue, problemIn } from '@/store/share';
+import { decodeValue, problemIn, problemKeyIn } from '@/store/share';
 import type { ProblemSpec } from '@/model/automaton';
 
-export function useProblem(): ProblemSpec | undefined {
+export function useProblem(): { spec: ProblemSpec | undefined; key: string | undefined } {
   const [spec, setSpec] = useState<ProblemSpec | undefined>(undefined);
+  const [key, setKey] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let live = true;
 
     const read = () => {
       const payload = problemIn(window.location.hash);
+      setKey(problemKeyIn(window.location.hash));
       if (payload === undefined) {
         setSpec(undefined);
         return;
@@ -42,5 +44,18 @@ export function useProblem(): ProblemSpec | undefined {
     };
   }, []);
 
-  return spec;
+  return { spec, key };
+}
+
+/**
+ * Encode a spec the way a link carries one.
+ *
+ * Used when the problem set opens a problem: the solve view reads its problem out of the
+ * fragment and should not learn a second way of receiving one. A problem chosen from the list
+ * and a problem sent by a lecturer arrive by the same door, which also means the URL is
+ * shareable from either.
+ */
+export async function openProblem(spec: ProblemSpec): Promise<string> {
+  const { encodeValue } = await import('@/store/share');
+  return encodeValue(spec);
 }

@@ -27,6 +27,7 @@ import { Band, Masthead } from '@/site/page';
 import { Lift, Reveal } from '@/site/motion';
 import { useEditor } from '@/store/editor';
 import { useSavedAnswer } from '@/teach/useSavedAnswer';
+import { record } from '@/teach/progress';
 import type { Automaton, Feedback, ProblemSpec } from '@/model/automaton';
 import type { Engine } from '@/wasm/loader';
 import type { Route } from '@/router';
@@ -34,12 +35,20 @@ import type { Route } from '@/router';
 export function Solve({
   engine,
   spec,
+  problemKey,
   onNavigate,
   onEdit,
 }: {
   engine: Engine | undefined;
   /** The problem, decoded from the fragment. `undefined` when the link was not readable. */
   spec: ProblemSpec | undefined;
+  /**
+   * Which problem of the set this is, when it is one.
+   *
+   * Absent for a lecturer's own link, and then nothing is recorded — there is no set entry for
+   * a problem that is not in the set.
+   */
+  problemKey: string | undefined;
   onNavigate: (to: Route) => void;
   /** Open the answer in the editor to work on it. */
   onEdit: () => void;
@@ -75,8 +84,19 @@ export function Solve({
 
   const check = useCallback(() => {
     if (!engine || !spec || !answer) return;
-    setChecked({ of: answer, feedback: engine.checkAnswer(JSON.stringify(spec), answer) });
-  }, [engine, spec, answer]);
+    const result = engine.checkAnswer(JSON.stringify(spec), answer);
+    setChecked({ of: answer, feedback: result });
+
+    if (problemKey !== undefined) {
+      record(problemKey, {
+        solved: result.solved,
+        // A budget met counts only when there was one to meet, so a problem without a budget
+        // never reports a constraint it did not have.
+        withinBudget: result.solved && spec.budget !== undefined && spec.budget !== null,
+        states: result.states,
+      });
+    }
+  }, [engine, spec, answer, problemKey]);
 
   if (!spec) {
     return (
