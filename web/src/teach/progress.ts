@@ -159,7 +159,7 @@ export function importProgress(text: string): Progress | undefined {
   if (file.kind !== 'kleene-progress') return undefined;
   if (typeof file.progress !== 'object' || file.progress === null) return undefined;
 
-  const incoming = sanitise(file.progress as Record<string, unknown>);
+  const incoming = sanitise(file.progress);
   const merged = readProgress();
 
   for (const [key, attempt] of Object.entries(incoming)) {
