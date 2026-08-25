@@ -96,7 +96,7 @@ test('a bottom panel does not cover the problem strip or the palette', async ({ 
   // the chip: an affordance that disappears when a panel opens is missing whenever someone is
   // midway through something.
   const problems = page.getByText('No problems.');
-  const chip = page.getByRole('button', { name: 'Drag onto the canvas to add a state' });
+  const chip = page.getByRole('button', { name: /Add a state/ });
 
   await expect(problems).toBeVisible();
   await expect(chip).toBeVisible();
@@ -130,7 +130,7 @@ test('a state can be dragged onto the canvas', async ({ page }) => {
   // nothing on screen says so.
   await expect(page.getByText('3 states')).toBeVisible();
 
-  const chip = page.getByRole('button', { name: 'Drag onto the canvas to add a state' });
+  const chip = page.getByRole('button', { name: /Add a state/ });
   const box = await canvas(page).boundingBox();
   if (!box) throw new Error('no canvas');
 
