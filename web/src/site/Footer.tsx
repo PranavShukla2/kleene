@@ -39,7 +39,7 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
       { label: 'Docs', route: 'docs' },
       { label: 'Roadmap', route: 'roadmap' },
       { label: 'Changelog', route: 'changelog' },
-      { label: 'Course kit', soon: 'phase 5' },
+      { label: 'Course kit', soon: 'phase 6' },
     ],
   },
   {
@@ -54,10 +54,10 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
   {
     heading: 'Build on it',
     items: [
-      { label: 'CLI', soon: 'phase 4' },
-      { label: 'Desktop app', soon: 'phase 5' },
+      { label: 'CLI', href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/cli.md' },
+      { label: 'Desktop app', soon: 'phase 6' },
       { label: 'File format', route: 'docs' },
-      { label: 'Embed a diagram', soon: 'phase 5' },
+      { label: 'Embed a diagram', soon: 'phase 6' },
     ],
   },
   {

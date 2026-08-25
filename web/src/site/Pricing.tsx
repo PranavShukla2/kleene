@@ -29,15 +29,30 @@ const INCLUDED: readonly { label: string; detail: string }[] = [
   { label: 'No telemetry', detail: 'Nothing is measured, because nothing is sent.' },
 ];
 
+/**
+ * Not written yet — and this list is only worth having if everything on it is still true.
+ *
+ * It used to carry TikZ export, share links, the CLI and offline, all of which now exist. A
+ * "coming soon" list that has stopped being pruned reads as a project that stopped shipping,
+ * which is the exact opposite of what it is there to say.
+ */
 const LATER: readonly { label: string; detail: string; phase: number }[] = [
-  { label: 'TikZ and SVG export', detail: 'Diagrams straight into LaTeX.', phase: 4 },
-  { label: 'Share as a URL', detail: 'The machine encoded in the link itself.', phase: 4 },
+  { label: 'A desktop build', detail: 'A native window rather than a browser tab.', phase: 6 },
   {
-    label: 'Command line tool',
-    detail: 'Equivalence checking and batch conversion.',
-    phase: 4,
+    label: 'Embeddable diagrams',
+    detail: 'An automaton in someone else’s page, still interactive.',
+    phase: 6,
   },
-  { label: 'Offline and desktop', detail: 'An installable app and a native build.', phase: 5 },
+  {
+    label: 'Notation settings',
+    detail: 'Choose between + and |, ε and λ, to match your course.',
+    phase: 6,
+  },
+  {
+    label: 'A course kit',
+    detail: 'Problem sets and per-institution examples, for teaching with.',
+    phase: 6,
+  },
 ];
 
 export function Pricing({ onNavigate }: { onNavigate: (to: Route) => void }) {
