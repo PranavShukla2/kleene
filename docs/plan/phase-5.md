@@ -104,7 +104,7 @@ here is not shipping something imperfect; it is not shipping.
 ### Track D — Documentation site
 
 - [ ] **D1.** Astro Starlight at `/docs` (roadmap §2.2).
-- [ ] **D2.** Getting started, with a working automaton on screen immediately.
+- [x] **D2.** Getting started, with a working automaton on screen immediately.
 - [ ] **D3.** An algorithms section, one page each, **generated from the `Traced` output** —
       the same steps the UI renders. Three consumers of one source of truth is the
       architecture's whole claim; this is where it gets demonstrated in public.
@@ -165,8 +165,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-                                      shorter feedback loop: writing it against gestures that are still moving means rewriting
-                                      it, and a tour that describes a gesture the editor no longer has is worse than none.
+                                          shorter feedback loop: writing it against gestures that are still moving means rewriting
+                                          it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching
