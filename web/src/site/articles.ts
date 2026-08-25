@@ -43,8 +43,14 @@ export const SECTIONS: readonly {
     blurb: 'Enough to draw a machine and run a string through it.',
     articles: [
       {
+        title: 'Start here',
+        detail: 'The whole tool in four steps, with a working machine on screen throughout.',
+        status: READY,
+        route: 'start',
+      },
+      {
         title: 'Draw your first automaton',
-        detail: 'Double-click to place a state, drag from its edge to make a transition.',
+        detail: 'Drag a state onto the canvas, then drag from its rim to make a transition.',
         status: READY,
         route: 'editor',
       },

@@ -42,6 +42,18 @@ export function siteActions(themeLabel: string): Action[] {
       keywords: ['theory', 'glossary', 'definitions', 'dfa', 'nfa', 'closure'],
     },
     { id: 'go:docs', label: 'Docs', group: 'Go to', keywords: ['documentation', 'help'] },
+    {
+      id: 'go:start',
+      label: 'Getting started',
+      group: 'Go to',
+      keywords: ['start', 'begin', 'new', 'tutorial', 'how'],
+    },
+    {
+      id: 'go:download',
+      label: 'Download',
+      group: 'Go to',
+      keywords: ['install', 'desktop', 'app', 'offline', 'native'],
+    },
     { id: 'go:pricing', label: 'Pricing', group: 'Go to', keywords: ['free', 'cost'] },
     { id: 'go:roadmap', label: 'Roadmap', group: 'Go to', keywords: ['plan', 'phases'] },
     { id: 'go:changelog', label: 'Changelog', group: 'Go to', keywords: ['releases', 'new'] },

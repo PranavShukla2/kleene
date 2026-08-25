@@ -127,6 +127,8 @@ const PAGES = [
   '/changelog',
   '/about',
   '/jflap-alternative',
+  '/download',
+  '/start',
   '/tools/nfa-to-dfa',
   '/tools/dfa-to-regex',
   '/tools/dfa-to-latex',

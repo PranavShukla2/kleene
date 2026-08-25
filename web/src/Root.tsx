@@ -33,6 +33,7 @@ import { Roadmap } from '@/overview/Roadmap';
 import { CommandPalette } from '@/site/CommandPalette';
 import { Footer } from '@/site/Footer';
 import { Download } from '@/site/Download';
+import { Start } from '@/site/Start';
 import { Jflap } from '@/site/Jflap';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
@@ -142,7 +143,7 @@ export function Root() {
 }
 
 /** The routes that cannot render anything real until WebAssembly has arrived. */
-const NEEDS_ENGINE = new Set<Route>(['convert', 'examples', 'tool']);
+const NEEDS_ENGINE = new Set<Route>(['convert', 'examples', 'tool', 'start']);
 
 /** What each of them is waiting for, in words the visitor can do something with. */
 const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
@@ -151,6 +152,8 @@ const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
   examples:
     'Every example is drawn by the same engine that checks it, so the cards show the real machines rather than pictures of them.',
   tool: 'The conversion runs in your browser, on the same engine the rest of the site uses. Nothing you type is sent anywhere.',
+  start:
+    'The machine on this page is drawn by the same engine the editor uses, so it has to arrive before the page can show you one.',
 };
 
 function Page({
@@ -233,6 +236,17 @@ function Page({
       return <Jflap onNavigate={go} onOpenPath={goPath} />;
     case 'download':
       return <Download onNavigate={go} />;
+    case 'start':
+      return (
+        <Start
+          engine={engine}
+          onNavigate={go}
+          onOpenPath={goPath}
+          onConvert={(expression) => {
+            go('convert', `?q=${encodeURIComponent(expression)}`);
+          }}
+        />
+      );
     case 'learn':
       return (
         <Learn
