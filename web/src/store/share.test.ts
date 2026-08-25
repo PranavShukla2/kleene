@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { decode, encode, linkFor, LINK_LIMIT, payloadIn, SHARE_KEY } from '@/store/share';
+import {
+  LINK_LIMIT,
+  SHARE_KEY,
+  decode,
+  decodeValue,
+  encode,
+  encodeValue,
+  linkFor,
+  payloadIn,
+  problemIn,
+  problemLinkFor,
+} from '@/store/share';
 import type { Document } from '@/model/automaton';
 
 /** A document with something of every kind in it, so the round trip has work to do. */
@@ -130,5 +141,50 @@ describe('the size limit', () => {
 
   it('leaves an ordinary machine far inside it', async () => {
     expect((await encode(DOCUMENT)).length).toBeLessThan(LINK_LIMIT / 4);
+  });
+});
+
+describe('carrying a problem in a link', () => {
+  const spec = {
+    version: 1,
+    prompt: 'Strings over {a, b} with an even number of a’s.',
+    target: '(b + ab*a)*',
+    budget: 2,
+  };
+
+  it('round-trips a problem spec', async () => {
+    // The claim the teaching layer's plan makes: this is the Phase 4 codec carrying a
+    // different payload, not a second encoder.
+    const payload = await encodeValue(spec);
+    expect(await decodeValue(payload)).toEqual(spec);
+  });
+
+  it('marks a problem payload the same way a machine payload is marked', async () => {
+    // Not an assertion that it *was* compressed: `CompressionStream` does not exist in jsdom,
+    // so this environment always takes the plain fallback. Real compression is checked in the
+    // browser, by the sharing e2e test that asserts a link starts `#kln=z`.
+    const payload = await encodeValue(spec);
+    expect(['z', 'u']).toContain(payload.slice(0, 1));
+  });
+
+  it('keeps a problem link short enough to paste anywhere', async () => {
+    // A lecturer pastes these into a slide, an email, an LMS box that truncates. A problem
+    // is far smaller than a machine, and if that ever stops being true it is worth knowing.
+    const payload = await encodeValue(spec);
+    expect(payload.length).toBeLessThan(400);
+  });
+
+  it('reads a problem out of a fragment', () => {
+    expect(problemIn('#p=zABC')).toBe('zABC');
+    expect(problemIn('#kln=zABC')).toBeUndefined();
+  });
+
+  it('keeps problems and machines on different keys, and different pages', () => {
+    // Which page a link opens has to be decidable before anything is decompressed. One key
+    // carrying both would mean decoding an unknown blob to find out what was asked for.
+    expect(problemLinkFor('zX', 'https://example.test')).toBe(
+      'https://example.test/solve#p=zX',
+    );
+    expect(linkFor('zX', 'https://example.test')).toBe('https://example.test/editor#kln=zX');
   });
 });

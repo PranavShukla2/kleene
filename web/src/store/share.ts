@@ -29,6 +29,16 @@ import type { Document } from '@/model/automaton';
 /** The fragment key. Named so it does not collide with the converter's step deep links. */
 export const SHARE_KEY = 'kln';
 
+/**
+ * The fragment key a problem travels under.
+ *
+ * A separate key rather than a flag inside one payload, so that opening a link is a decision
+ * made before anything is decompressed: `#kln=` is a machine to edit and `#p=` is a problem to
+ * solve, and those open different pages. One key carrying both would mean decoding an unknown
+ * blob to find out which page the visitor asked for.
+ */
+export const PROBLEM_KEY = 'p';
+
 /** Marks a compressed payload. */
 const DEFLATED = 'z';
 
@@ -45,17 +55,25 @@ const PLAIN = 'u';
  */
 export const LINK_LIMIT = 8000;
 
-/** Encode a document into a fragment payload. */
-export async function encode(document: Document): Promise<string> {
-  const json = JSON.stringify(document);
+/**
+ * Encode any JSON value into a fragment payload.
+ *
+ * The teaching layer's plan predicted that carrying a problem in a link would reuse this
+ * "unchanged, and if it needs changing the codec was written too narrowly". That was half
+ * right, and the half is worth recording: every byte of the compression, the base64url and
+ * the marker scheme was reusable exactly as written. What was too narrow was the *type* —
+ * the functions said `Document` when nothing in them cared.
+ */
+export async function encodeValue(value: unknown): Promise<string> {
+  const json = JSON.stringify(value);
   const bytes = new TextEncoder().encode(json);
 
   const deflated = await deflate(bytes);
   return deflated ? DEFLATED + base64url(deflated) : PLAIN + base64url(bytes);
 }
 
-/** Decode a fragment payload, or `undefined` if it is not one. */
-export async function decode(payload: string): Promise<Document | undefined> {
+/** Decode a fragment payload into a value, or `undefined` if it is not one. */
+export async function decodeValue<T>(payload: string): Promise<T | undefined> {
   const marker = payload.slice(0, 1);
   const body = payload.slice(1);
   if (body === '') return undefined;
@@ -78,11 +96,18 @@ export async function decode(payload: string): Promise<Document | undefined> {
   }
 
   try {
-    return JSON.parse(new TextDecoder().decode(bytes)) as Document;
+    return JSON.parse(new TextDecoder().decode(bytes)) as T;
   } catch {
     return undefined;
   }
 }
+
+/** Encode a document. The shape the editor's Share button uses. */
+export const encode = (document: Document): Promise<string> => encodeValue(document);
+
+/** Decode a document. */
+export const decode = (payload: string): Promise<Document | undefined> =>
+  decodeValue<Document>(payload);
 
 /** The share payload in a URL fragment, if there is one. */
 export function payloadIn(hash: string): string | undefined {
@@ -93,6 +118,17 @@ export function payloadIn(hash: string): string | undefined {
 /** A full shareable URL for a payload. */
 export function linkFor(payload: string, origin = window.location.origin): string {
   return `${origin}/editor#${SHARE_KEY}=${payload}`;
+}
+
+/** The problem payload in a URL fragment, if there is one. */
+export function problemIn(hash: string): string | undefined {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  return params.get(PROBLEM_KEY) ?? undefined;
+}
+
+/** A full URL for a problem someone can be handed. */
+export function problemLinkFor(payload: string, origin = window.location.origin): string {
+  return `${origin}/solve#${PROBLEM_KEY}=${payload}`;
 }
 
 /**
