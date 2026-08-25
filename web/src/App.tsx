@@ -12,6 +12,7 @@ import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { Tour } from '@/canvas/Tour';
 import { Dock } from '@/editor/Dock';
+import { StatePalette } from '@/editor/StatePalette';
 import { tourSeen } from '@/canvas/tourSeen';
 import { ExportPanel } from '@/panels/Export';
 import { droppedFile, isFileDrag, openFile, pickFile, saveFile } from '@/store/files';
@@ -607,6 +608,11 @@ export function Editor({ onHome }: { onHome: () => void }) {
                 }}
               />
             )}
+
+            {/* Not gated on the canvas being empty. The chip is how someone learns states can
+                be placed, and hiding it the moment they succeed once takes the affordance away
+                at exactly the point they have started using it. */}
+            <StatePalette />
 
             {/* Docked against the canvas, not below the fold (J5). A problem list you have
                 to scroll to find is a problem list nobody reads. */}

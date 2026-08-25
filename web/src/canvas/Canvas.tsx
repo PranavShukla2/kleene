@@ -26,6 +26,7 @@ import { formatChord } from '@/canvas/shortcuts';
 import { useCanvasEditing } from '@/canvas/useCanvasEditing';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { useViewport } from '@/canvas/useViewport';
+import { isStateDrag } from '@/editor/dragState';
 import { useGeneration } from '@/store/editor';
 import { formatSymbols, newSymbols, parseSymbols } from '@/canvas/symbols';
 import { SNAP, snapPoint, toScreen } from '@/canvas/viewport';
@@ -182,6 +183,9 @@ export function Canvas({
     },
     [viewportRef, editingRef],
   );
+
+  /** Where a dragged chip would land, in diagram coordinates. */
+  const [dropAt, setDropAt] = useState<Point | undefined>(undefined);
 
   const closeEditor = useCallback(() => {
     setEditing(undefined);
@@ -471,7 +475,54 @@ export function Canvas({
       className={`relative overflow-hidden bg-k-canvas outline-none focus-visible:ring-1 focus-visible:ring-k-primary/40 focus-visible:ring-inset ${className ?? ''}`}
       style={{ cursor: cursorFor(panning, interaction), touchAction: 'none' }}
       onContextMenu={openMenu}
+      /*
+        Dropping a state chip. `preventDefault` on dragover is what marks this a valid drop
+        target — without it the browser refuses the drop and the chip animates back, which
+        reads as the feature being broken rather than as the drop being declined.
+
+        Guarded on our own MIME type so a dropped `.kln` file still reaches the editor's own
+        handler, which replaces the document. The two must not be confused: one adds a state
+        and the other discards everything on screen.
+      */
+      onDragOver={(event) => {
+        if (!isStateDrag(event.nativeEvent)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        setDropAt(pointerToWorld(event));
+      }}
+      onDragLeave={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+        setDropAt(undefined);
+      }}
+      onDrop={(event) => {
+        if (!isStateDrag(event.nativeEvent)) return;
+        event.preventDefault();
+        setDropAt(undefined);
+        // Snapped, like every other way of placing a state. A state that lands off-grid
+        // because it arrived by drag would be the one thing on the canvas that does not
+        // line up with the others.
+        run(addState(snapPoint(pointerToWorld(event))));
+      }}
     >
+      {dropAt && (
+        /*
+          A preview at the snapped position, not under the cursor. The state will land on the
+          grid, and showing it anywhere else means the thing that appears is not the thing
+          that was promised — over a 24px snap that is a visible jump at the only moment the
+          user is watching closely.
+        */
+        <div
+          aria-hidden
+          className="pointer-events-none absolute z-20 rounded-full border-2 border-dashed border-k-primary/70 bg-k-primary/10"
+          style={{
+            width: GEOM.radius * 2 * viewport.scale,
+            height: GEOM.radius * 2 * viewport.scale,
+            left: toScreen(viewport, snapPoint(dropAt)).x - GEOM.radius * viewport.scale,
+            top: toScreen(viewport, snapPoint(dropAt)).y - GEOM.radius * viewport.scale,
+          }}
+        />
+      )}
+
       {/*
         The grid is drawn in *screen* space and scrolled by the viewport, rather than being
         part of the zoomed diagram. A grid that scales with the zoom becomes a grey wash at
