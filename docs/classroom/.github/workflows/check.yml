@@ -1,0 +1,57 @@
+name: Check submissions
+
+# Runs on the student's push, so the feedback arrives while they are still working rather than
+# after a deadline. Unlimited attempts, deliberately: this is the same practice loop the
+# browser offers, and a limit would turn formative feedback into an exam.
+on:
+  push:
+    paths: ['submission/**']
+  pull_request:
+    paths: ['submission/**']
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Automata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A released binary rather than `cargo install`: a student's Action minute is not worth
+      # spending on compiling a Rust toolchain, and the version is pinned so the marking does
+      # not change under an assignment that is already out.
+      - name: Install kleene
+        env:
+          VERSION: v0.1.0
+        run: |
+          curl -fsSL -o kleene.tar.gz \
+            "https://github.com/PranavShukla2/kleene/releases/download/${VERSION}/kleene-x86_64-unknown-linux-gnu.tar.gz"
+          tar xzf kleene.tar.gz
+          sudo install kleene-x86_64-unknown-linux-gnu/kleene /usr/local/bin/kleene
+          kleene --version
+
+      - name: Grade
+        run: |
+          failed=0
+          for answer in reference/*.kln; do
+            name=$(basename "$answer")
+            mine="submission/$name"
+
+            if [ ! -f "$mine" ]; then
+              echo "::warning file=$mine::Not submitted yet."
+              continue
+            fi
+
+            # `equiv` exits 1 on disagreement, which is a verdict rather than an error — so it
+            # is captured instead of being allowed to end the job at the first wrong answer.
+            if output=$(kleene equiv "$answer" "$mine" --counterexample 2>&1); then
+              echo "::notice file=$mine::Correct."
+            else
+              # The counterexample is the second line, and it is the half worth reading.
+              witness=$(echo "$output" | tail -n +2 | sed 's/^ *//')
+              echo "::error file=$mine::$witness"
+              failed=1
+            fi
+          done
+
+          exit $failed

@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "automaton": {
+    "alphabet": [
+      "b",
+      "a"
+    ],
+    "states": [
+      {
+        "id": 0,
+        "label": "q0"
+      },
+      {
+        "id": 1,
+        "label": "q1"
+      },
+      {
+        "id": 2,
+        "label": "q2"
+      },
+      {
+        "id": 3,
+        "label": "q3"
+      },
+      {
+        "id": 4,
+        "label": "q4"
+      },
+      {
+        "id": 5,
+        "label": "q5"
+      },
+      {
+        "id": 6,
+        "label": "q6"
+      },
+      {
+        "id": 7,
+        "label": "q7"
+      },
+      {
+        "id": 8,
+        "label": "q8"
+      },
+      {
+        "id": 9,
+        "label": "q9"
+      },
+      {
+        "id": 10,
+        "label": "q10"
+      },
+      {
+        "id": 11,
+        "label": "q11"
+      },
+      {
+        "id": 12,
+        "label": "q12"
+      },
+      {
+        "id": 13,
+        "label": "q13",
+        "accepting": true
+      }
+    ],
+    "start": 12,
+    "transitions": [
+      {
+        "from": 0,
+        "to": 1,
+        "on": "b"
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "on": "a"
+      },
+      {
+        "from": 4,
+        "to": 5,
+        "on": "b"
+      },
+      {
+        "from": 6,
+        "to": 4
+      },
+      {
+        "from": 5,
+        "to": 7
+      },
+      {
+        "from": 5,
+        "to": 4
+      },
+      {
+        "from": 6,
+        "to": 7
+      },
+      {
+        "from": 3,
+        "to": 6
+      },
+      {
+        "from": 8,
+        "to": 9,
+        "on": "a"
+      },
+      {
+        "from": 7,
+        "to": 8
+      },
+      {
+        "from": 10,
+        "to": 0
+      },
+      {
+        "from": 10,
+        "to": 2
+      },
+      {
+        "from": 1,
+        "to": 11
+      },
+      {
+        "from": 9,
+        "to": 11
+      },
+      {
+        "from": 12,
+        "to": 10
+      },
+      {
+        "from": 11,
+        "to": 13
+      },
+      {
+        "from": 11,
+        "to": 10
+      },
+      {
+        "from": 12,
+        "to": 13
+      }
+    ]
+  }
+}
