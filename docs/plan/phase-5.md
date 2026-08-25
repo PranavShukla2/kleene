@@ -50,11 +50,14 @@ here is not shipping something imperfect; it is not shipping.
 
 ### Track B — Desktop (Tauri v2)
 
-- [ ] **B1.** Tauri shell reusing the exact same `dist/` (roadmap §2.5).
+- [x] **B1.** Tauri shell reusing the exact same `dist/` (roadmap §2.5).
 - [ ] **B2.** Native file open/save for `.kln` and `.jff`, and OS file-association for `.kln`.
 - [ ] **B3.** Builds for `x86_64-linux`, `aarch64-darwin`, `x86_64-windows`.
-- [ ] **B4.** Verify the ~6 MB bundle claim and record the real number. The JFLAP comparison
-      is only worth making if the figure is true.
+- [x] **B4.** Verify the ~6 MB bundle claim and record the real number. The JFLAP comparison
+      is only worth making if the figure is true. **Measured on `aarch64-darwin`: a 4.6 MB
+      `.app`, 2.9 MB as a `.dmg`.** The estimate was borrowed from Tauri's own marketing and
+      was pessimistic — the real figure is better, which is the good way to be wrong about a
+      published number, and it is now a measurement rather than a quotation.
 - [ ] **B5.** 🔴 **DECISION D15** — code signing. Unsigned macOS builds show a scary
       Gatekeeper warning and unsigned Windows builds trip SmartScreen; certificates cost real
       money annually. Shipping unsigned with clear install instructions is a legitimate
@@ -157,8 +160,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-                          shorter feedback loop: writing it against gestures that are still moving means rewriting
-                          it, and a tour that describes a gesture the editor no longer has is worse than none.
+                              shorter feedback loop: writing it against gestures that are still moving means rewriting
+                              it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching

@@ -21,7 +21,7 @@ Three concrete pains, all of which you have personally felt this semester:
 
 1. **Nothing is shareable.** A student who wants to ask a TA "why is my DFA wrong?" has to screenshot it or email a `.jff` file.
 2. **Diagrams have to be redrawn by hand for assignments.** Students hand-draw state diagrams in Word, or fight with TikZ syntax at 2am, or paste a low-res screenshot into a PDF.
-3. **The tools give answers, not reasoning.** JFLAP will minimize a DFA. It will not show you *which input string distinguished the two states you thought were equivalent*. For a subject where the exam asks you to *show the partition refinement rounds*, that is the thing that matters.
+3. **The tools give answers, not reasoning.** JFLAP will minimize a DFA. It will not show you _which input string distinguished the two states you thought were equivalent_. For a subject where the exam asks you to _show the partition refinement rounds_, that is the thing that matters.
 
 ### 1.2 The product
 
@@ -34,18 +34,19 @@ A single-page web app where you can:
 - Run an input string and watch the configuration set move through the machine
 - Export the diagram as **TikZ**, SVG, or PNG
 - Share the entire automaton as a **URL** — no account, no server storage
-- Work fully **offline** as an installed PWA, or as a ~6 MB native desktop app
+- Work fully **offline** as an installed PWA, or as a native desktop app (measured: a
+  4.6 MB app bundle, 2.9 MB compressed — see Phase 5 B4)
 - Do all of the above from a **CLI**, so a professor can autograde 200 submissions
 
 ### 1.3 The five things that make it different from JFLAP
 
-| | JFLAP | Kleene |
-|---|---|---|
-| Install | JRE + jar download | Open a URL |
-| Sharing | Email a `.jff` file | Copy a link |
-| LaTeX | None | One-click TikZ |
-| Explanation | Shows the result | Shows every step and *why* |
-| Automation | None | CLI with equivalence checking |
+|             | JFLAP               | Kleene                        |
+| ----------- | ------------------- | ----------------------------- |
+| Install     | JRE + jar download  | Open a URL                    |
+| Sharing     | Email a `.jff` file | Copy a link                   |
+| LaTeX       | None                | One-click TikZ                |
+| Explanation | Shows the result    | Shows every step and _why_    |
+| Automation  | None                | CLI with equivalence checking |
 
 **Migration path:** Kleene imports `.jff` files. Existing JFLAP users and existing course materials work on day one. This is how you take users from an incumbent — you make switching free.
 
@@ -64,7 +65,7 @@ Write this on a sticky note.
 All of these are good v2 ideas. Shipping v1 with them is how the project dies in November.
 
 The classroom and gamification features people will ask for are not excluded forever — see
-§9. They are excluded from *v1*, and when they do arrive they arrive without a backend.
+§9. They are excluded from _v1_, and when they do arrive they arrive without a backend.
 
 ---
 
@@ -81,7 +82,7 @@ pub struct Traced<T> {
 }
 ```
 
-This is not a UI feature bolted on later. It is the shape of the core library. `determinize()` does not return a DFA; it returns a DFA *and* the ordered list of subset-construction rounds that produced it, each with the subset being expanded, the symbol being read, the resulting ε-closure, and whether the target subset was new or already seen.
+This is not a UI feature bolted on later. It is the shape of the core library. `determinize()` does not return a DFA; it returns a DFA _and_ the ordered list of subset-construction rounds that produced it, each with the subset being expanded, the symbol being read, the resulting ε-closure, and whether the target subset was new or already seen.
 
 The frontend then does something almost trivial: it renders `steps[i]` and gives you a scrubber. All the intelligence lives in Rust, is unit-testable without a browser, and is equally available to the CLI.
 
@@ -174,39 +175,39 @@ The document format layers presentation on top:
 ```jsonc
 {
   "version": 1,
-  "automaton": { /* semantic model above */ },
+  "automaton": {/* semantic model above */},
   "layout": { "0": { "x": 120, "y": 200 }, "1": { "x": 300, "y": 200 } },
-  "meta": { "title": "Even number of a's", "created": "2026-08-15" }
+  "meta": { "title": "Even number of a's", "created": "2026-08-15" },
 }
 ```
 
 ### 2.4 Algorithms in v1
 
-| Algorithm | Notes |
-|---|---|
-| Regex lexer + recursive-descent parser | Precedence: alternation < concatenation < postfix (`*`, `+`, `?`). Support `∅`, `ε`, grouping. |
-| Thompson construction | AST → ε-NFA. Clean, produces the diagram students are taught. |
-| ε-closure | Worklist algorithm. Traced — show the closure growing. |
-| Subset construction | NFA → DFA. Traced per round. |
-| Partition refinement (Moore) | **Primary** minimizer. O(n²·\|Σ\|) is irrelevant at teaching sizes, and it's what your syllabus teaches — so it's the one that must be explainable. |
-| Hopcroft minimization | Secondary, for the CLI on large inputs. Not traced. |
-| Completion / trap state | Needed before complement. |
-| Product construction | Union, intersection, difference. |
-| Hopcroft–Karp equivalence | Union-find, near-linear. Powers the CLI autograder. |
-| **Counterexample search** | Symmetric difference by product construction, then BFS from the start state to the nearest accepting state of the product. Returns the shortest string the two machines disagree on, and which one accepts it. Both halves are already in this table — this is assembly, not new theory. Powers the CLI's grading output and every form of student feedback in the app. |
-| State elimination → regex | DFA → regex. Arden's theorem territory; heavily taught, poorly tooled. |
-| Simulation | NFA config-set stepping, DFA single-state stepping, with full trace. |
-| Reachable / co-reachable pruning | Dead state removal. |
+| Algorithm                              | Notes                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Regex lexer + recursive-descent parser | Precedence: alternation < concatenation < postfix (`*`, `+`, `?`). Support `∅`, `ε`, grouping.                                                                                                                                                                                                                                                                          |
+| Thompson construction                  | AST → ε-NFA. Clean, produces the diagram students are taught.                                                                                                                                                                                                                                                                                                           |
+| ε-closure                              | Worklist algorithm. Traced — show the closure growing.                                                                                                                                                                                                                                                                                                                  |
+| Subset construction                    | NFA → DFA. Traced per round.                                                                                                                                                                                                                                                                                                                                            |
+| Partition refinement (Moore)           | **Primary** minimizer. O(n²·\|Σ\|) is irrelevant at teaching sizes, and it's what your syllabus teaches — so it's the one that must be explainable.                                                                                                                                                                                                                     |
+| Hopcroft minimization                  | Secondary, for the CLI on large inputs. Not traced.                                                                                                                                                                                                                                                                                                                     |
+| Completion / trap state                | Needed before complement.                                                                                                                                                                                                                                                                                                                                               |
+| Product construction                   | Union, intersection, difference.                                                                                                                                                                                                                                                                                                                                        |
+| Hopcroft–Karp equivalence              | Union-find, near-linear. Powers the CLI autograder.                                                                                                                                                                                                                                                                                                                     |
+| **Counterexample search**              | Symmetric difference by product construction, then BFS from the start state to the nearest accepting state of the product. Returns the shortest string the two machines disagree on, and which one accepts it. Both halves are already in this table — this is assembly, not new theory. Powers the CLI's grading output and every form of student feedback in the app. |
+| State elimination → regex              | DFA → regex. Arden's theorem territory; heavily taught, poorly tooled.                                                                                                                                                                                                                                                                                                  |
+| Simulation                             | NFA config-set stepping, DFA single-state stepping, with full trace.                                                                                                                                                                                                                                                                                                    |
+| Reachable / co-reachable pruning       | Dead state removal.                                                                                                                                                                                                                                                                                                                                                     |
 
 ### 2.4a The three representations
 
 A finite automaton is taught three ways, and a tool that shows only one teaches only one:
 
-| Representation | What it is | Where students meet it |
-|---|---|---|
-| **Diagram** | A drawing of δ | Lectures, textbooks, the thing everyone pictures |
-| **Transition table** | δ written out as a function | Exams, homework, every proof that manipulates δ directly |
-| **5-tuple** | `M = (Q, Σ, δ, q₀, F)` | The formal definition; "give the formal definition of the machine below" |
+| Representation       | What it is                  | Where students meet it                                                   |
+| -------------------- | --------------------------- | ------------------------------------------------------------------------ |
+| **Diagram**          | A drawing of δ              | Lectures, textbooks, the thing everyone pictures                         |
+| **Transition table** | δ written out as a function | Exams, homework, every proof that manipulates δ directly                 |
+| **5-tuple**          | `M = (Q, Σ, δ, q₀, F)`      | The formal definition; "give the formal definition of the machine below" |
 
 These are not three views of the product. They are **the same object in the three notations
 the subject actually uses**, and converting between them by hand is itself an examined skill.
@@ -224,15 +225,15 @@ Two consequences for the build:
 
 ### 2.5 Frontend stack, with reasons
 
-| Choice | Why not the obvious alternative |
-|---|---|
-| **Vite + React + TS** | Not Next.js. There is no server, no SSR, no routes worth pre-rendering, and Next's bundler makes WASM loading fiddly. This is a static SPA; Vite is the correct tool and ships a smaller bundle. You already know React — that transfers. |
-| **SVG rendering, not Canvas** | Hit-testing for drag is free, CSS transitions work, keyboard focus works, and **SVG export becomes almost trivial** because you're already producing the DOM you want to export. Automata are <100 nodes; the DOM cost is a non-issue. |
-| **elkjs** for auto-layout | Layered left-to-right layout reads correctly for automata. `d3-force` is the wrong mental model (automata aren't a physics sim) but is worth adding as a secondary "shake it out" button. |
-| **Zustand + explicit command stack** | It's an editor, so undo/redo is table stakes. Model edits as commands from day one rather than diffing state later. |
-| **Tailwind** | With your existing identity: `#0D9488` teal, JetBrains Mono for state labels and the regex input. |
-| **vite-plugin-pwa** | Full offline. The whole app is static assets + one `.wasm`. This is genuinely a good PWA candidate, unlike most. |
-| **Tauri v2** for desktop | ~6 MB bundle vs Electron's ~100 MB. Reuses the exact same `dist/`. The comparison to JFLAP's JRE requirement writes itself. |
+| Choice                               | Why not the obvious alternative                                                                                                                                                                                                           |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vite + React + TS**                | Not Next.js. There is no server, no SSR, no routes worth pre-rendering, and Next's bundler makes WASM loading fiddly. This is a static SPA; Vite is the correct tool and ships a smaller bundle. You already know React — that transfers. |
+| **SVG rendering, not Canvas**        | Hit-testing for drag is free, CSS transitions work, keyboard focus works, and **SVG export becomes almost trivial** because you're already producing the DOM you want to export. Automata are <100 nodes; the DOM cost is a non-issue.    |
+| **elkjs** for auto-layout            | Layered left-to-right layout reads correctly for automata. `d3-force` is the wrong mental model (automata aren't a physics sim) but is worth adding as a secondary "shake it out" button.                                                 |
+| **Zustand + explicit command stack** | It's an editor, so undo/redo is table stakes. Model edits as commands from day one rather than diffing state later.                                                                                                                       |
+| **Tailwind**                         | With your existing identity: `#0D9488` teal, JetBrains Mono for state labels and the regex input.                                                                                                                                         |
+| **vite-plugin-pwa**                  | Full offline. The whole app is static assets + one `.wasm`. This is genuinely a good PWA candidate, unlike most.                                                                                                                          |
+| **Tauri v2** for desktop             | Measured at 4.6 MB for the macOS app bundle, 2.9 MB compressed, against Electron's ~100 MB. Reuses the exact same `dist/`. The comparison to JFLAP's JRE requirement writes itself.                                                       |
 
 ### 2.6 URL sharing
 
@@ -265,7 +266,7 @@ Handle correctly: self-loops (`loop above/below/left/right` chosen by free space
 
 Two surfaces, and they are not the same product:
 
-**The workbench is full-bleed.** Not a page with a tool on it — the tool *is* the page. One
+**The workbench is full-bleed.** Not a page with a tool on it — the tool _is_ the page. One
 compact command bar across the top, the canvas filling everything below it, side panels that
 collapse, and viewport controls floating over the canvas rather than sitting in a strip that
 costs vertical space. Design-system §1.5 fixes the target as a 1366×768 laptop; a centred
@@ -277,14 +278,14 @@ collapsible, nothing else is load-bearing, and closing everything leaves a canva
 command bar. That follows from §1.1 — chrome recedes, the automaton does not.
 
 **The front door is a different product.** Someone who has never seen this needs to know what
-it is and be *using* it within one click, without an account:
+it is and be _using_ it within one click, without an account:
 
 - A landing page with a **working automaton already on screen** — the thing itself, not a
   screenshot of it.
 - An **example gallery**: curated machines, each tagged with what it demonstrates and how hard
   it is, each opening in the editor in one click.
 - A **first-run tour** in the editor, skippable and never shown twice. Kleene's gestures are
-  discoverable but not obvious — dragging from a state's *rim* draws a transition — and a tool
+  discoverable but not obvious — dragging from a state's _rim_ draws a transition — and a tool
   that requires reading the shortcut sheet before the first success has already lost most of
   its audience.
 
@@ -426,7 +427,7 @@ This is the feature nobody else has. It's what the launch post is about.
 - [ ] Regex input bar → live ε-NFA
 - [ ] Multi-pane view: regex | ε-NFA | DFA | minimal DFA
 - [ ] Step scrubber driven by `Traced.steps`
-- [ ] Each step shows plain-language reasoning: *"Reading `a` from {q1, q3} reaches {q2, q4} — new state, added to the worklist."*
+- [ ] Each step shows plain-language reasoning: _"Reading `a` from {q1, q3} reaches {q2, q4} — new state, added to the worklist."_
 - [ ] Hover a DFA state → highlight its `origin` states in the NFA pane
 - [ ] Partition refinement view: show each round's blocks and the distinguishing string that split them
 - [ ] DFA → regex via state elimination, with the elimination order animated
@@ -470,7 +471,7 @@ The part student projects skip. Build time is maybe 20% of whether this succeeds
 
 ### 6.1 Search
 
-People actively search for a way out of JFLAP. Own those queries with pages that are *working tools with the input prefilled*, not blog posts:
+People actively search for a way out of JFLAP. Own those queries with pages that are _working tools with the input prefilled_, not blog posts:
 
 - `/tools/nfa-to-dfa` — converter, loaded with an example
 - `/tools/regex-to-nfa`
@@ -494,7 +495,7 @@ Faculty adoption is what turns a tool into a department standard, and the CLI au
 - r/compsci, r/ProgrammingLanguages, r/rust (the Rust→WASM angle plays well there)
 - lobste.rs
 - `awesome-compilers`, `awesome-wasm`, `awesome-rust` PRs
-- A short blog post on `pranavmshukla.in` in your existing voice: *"Property-testing an automata library, or: how regex → DFA → regex found my bugs"*
+- A short blog post on `pranavmshukla.in` in your existing voice: _"Property-testing an automata library, or: how regex → DFA → regex found my bugs"_
 
 ### 6.4 Measurement
 
@@ -506,26 +507,27 @@ You want these numbers because "3,000 students used this last semester" is a res
 
 ## 7. Risks
 
-| Risk | Mitigation |
-|---|---|
-| **Scope creep into PDA/TM** | The v1 exclusion list in §1.4 is a hard line. Open GitHub issues for them and close the mental loop. |
-| **Classroom scope creep** | Every §9 feature is static files or CLI — no exceptions. "No backend" is the same kind of hard line §1.4 is for PDA/TM, and it holds even when the feature would clearly be nicer with a server. A database enters this project only when a named professor asks for something specific enough to justify it. |
-| **Edge routing looks bad** | This is the single biggest UX risk and it's easy to underestimate. Budget the full three weeks of Phase 2. Study how Graphviz handles self-loops and parallel edges before writing your own. |
-| **Auto-layout produces spaghetti** | elkjs layered mode with tuned spacing; always let the user drag afterwards; persist manual positions so layout never overwrites intent. |
-| **You abandon it mid-build** | Phases 0–1 alone produce a publishable Rust crate with a strong property-test suite. Every phase boundary is a defensible stopping point. Never be more than two weeks from something shippable. |
-| **Nobody uses it** | Then it is still a Rust + WASM + algorithms portfolio piece with real tests. But §6 is why that shouldn't happen — distribution is planned, not hoped for. |
-| **Semester crunch** | Phase 2 is the interruptible one. If SIH or exams hit, pause there, not mid-Phase-1. |
-| **Naming** | Don't use "JFLAP" in the product name or domain. Comparison pages are fine and normal; trading on their name is not. |
+| Risk                               | Mitigation                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Scope creep into PDA/TM**        | The v1 exclusion list in §1.4 is a hard line. Open GitHub issues for them and close the mental loop.                                                                                                                                                                                                          |
+| **Classroom scope creep**          | Every §9 feature is static files or CLI — no exceptions. "No backend" is the same kind of hard line §1.4 is for PDA/TM, and it holds even when the feature would clearly be nicer with a server. A database enters this project only when a named professor asks for something specific enough to justify it. |
+| **Edge routing looks bad**         | This is the single biggest UX risk and it's easy to underestimate. Budget the full three weeks of Phase 2. Study how Graphviz handles self-loops and parallel edges before writing your own.                                                                                                                  |
+| **Auto-layout produces spaghetti** | elkjs layered mode with tuned spacing; always let the user drag afterwards; persist manual positions so layout never overwrites intent.                                                                                                                                                                       |
+| **You abandon it mid-build**       | Phases 0–1 alone produce a publishable Rust crate with a strong property-test suite. Every phase boundary is a defensible stopping point. Never be more than two weeks from something shippable.                                                                                                              |
+| **Nobody uses it**                 | Then it is still a Rust + WASM + algorithms portfolio piece with real tests. But §6 is why that shouldn't happen — distribution is planned, not hoped for.                                                                                                                                                    |
+| **Semester crunch**                | Phase 2 is the interruptible one. If SIH or exams hit, pause there, not mid-Phase-1.                                                                                                                                                                                                                          |
+| **Naming**                         | Don't use "JFLAP" in the product name or domain. Comparison pages are fine and normal; trading on their name is not.                                                                                                                                                                                          |
 
 ---
 
 ## 8. How to talk about it
 
 **Resume:**
-> **Kleene** — Automata theory workbench. Rust core compiled to WebAssembly, shared by a browser app, native CLI, and desktop build. Implements Thompson construction, subset construction, partition-refinement minimization, and Hopcroft–Karp equivalence, with every algorithm emitting a step-by-step trace consumed by the UI. Wrong answers are never reported as merely wrong — a counterexample search over the product automaton returns the shortest input string on which two machines disagree, and the direction of the error. Property-tested with proptest across all machine representations. *N users across M universities.*
+
+> **Kleene** — Automata theory workbench. Rust core compiled to WebAssembly, shared by a browser app, native CLI, and desktop build. Implements Thompson construction, subset construction, partition-refinement minimization, and Hopcroft–Karp equivalence, with every algorithm emitting a step-by-step trace consumed by the UI. Wrong answers are never reported as merely wrong — a counterexample search over the product automaton returns the shortest input string on which two machines disagree, and the direction of the error. Property-tested with proptest across all machine representations. _N users across M universities._
 
 **The interview answer to "what was hard about it":**
-Not the algorithms — they're in every textbook. The hard part was designing the core library so that *explanation* was a first-class output rather than a UI afterthought. Once `determinize()` returned its reasoning alongside its result, the browser step-through, the CLI's verbose mode, and the docs examples all came from one source of truth. And the regex → DFA → regex round-trip property test found three bugs in state elimination that hand-written tests missed entirely.
+Not the algorithms — they're in every textbook. The hard part was designing the core library so that _explanation_ was a first-class output rather than a UI afterthought. Once `determinize()` returned its reasoning alongside its result, the browser step-through, the CLI's verbose mode, and the docs examples all came from one source of truth. And the regex → DFA → regex round-trip property test found three bugs in state elimination that hand-written tests missed entirely.
 
 That is a systems-design answer, not a coursework answer. It's the whole reason to build this.
 
@@ -533,8 +535,8 @@ That is a systems-design answer, not a coursework answer. It's the whole reason 
 
 ## 9. Teaching layer (v1.1 / v1.2)
 
-Two things people will ask for the moment this is usable: *can my professor set problems
-with it*, and *can it be more fun than a textbook*. Both are reasonable. Both are also the
+Two things people will ask for the moment this is usable: _can my professor set problems
+with it_, and _can it be more fun than a textbook_. Both are reasonable. Both are also the
 fastest available route to a rewrite, an on-call rotation, and a legal obligation.
 
 So this section has exactly one organising constraint:
@@ -577,7 +579,7 @@ kleene grade submissions/ --against reference.kln --format csv
 Batch-grade a directory into whatever gradebook the institution already mandates. The
 reference automaton never leaves the professor's machine, so there is nothing to inspect.
 This is also where the counterexample engine earns its place twice over: the CSV can carry
-*why* each submission failed, not just that it did, which is the difference between a grade
+_why_ each submission failed, not just that it did, which is the difference between a grade
 and feedback.
 
 **GitHub Classroom.** A template repository plus a GitHub Action that runs `kleene equiv` on
@@ -594,12 +596,12 @@ them as exactly that. They also cost real implementation time and teach nothing.
 Every mechanic below is instead a real property of the subject, machine-checkable, and
 already something the course asks students to do.
 
-| Mechanic | Why it works |
-|---|---|
-| **Counterexample feedback** | Ships in v1 (§2.4). The foundation everything else stands on: an attempt can always be told the shortest specific string it gets wrong, and in which direction. |
-| **State-budget challenges** | *"Accept this language in ≤ 4 states."* Minimality is decidable, so the constraint is real rather than arbitrary — the tool can prove the bound is achievable and prove the student hit it. Automata golf, with a verifier. |
-| **Pumping lemma game** | Implemented literally as the adversarial game it is already taught as: the machine picks *n*, the student picks *w*, the machine decomposes into *xyz*, the student picks *i*. Aimed squarely at the students who can recite the lemma and cannot apply it — which is most of them. |
-| **Ordered problem set** | ~20 problems in difficulty order, *"strings ending in `ab`"* through *"binary numbers divisible by 3"*. Progress in `localStorage`. |
+| Mechanic                    | Why it works                                                                                                                                                                                                                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Counterexample feedback** | Ships in v1 (§2.4). The foundation everything else stands on: an attempt can always be told the shortest specific string it gets wrong, and in which direction.                                                                                                                     |
+| **State-budget challenges** | _"Accept this language in ≤ 4 states."_ Minimality is decidable, so the constraint is real rather than arbitrary — the tool can prove the bound is achievable and prove the student hit it. Automata golf, with a verifier.                                                         |
+| **Pumping lemma game**      | Implemented literally as the adversarial game it is already taught as: the machine picks _n_, the student picks _w_, the machine decomposes into _xyz_, the student picks _i_. Aimed squarely at the students who can recite the lemma and cannot apply it — which is most of them. |
+| **Ordered problem set**     | ~20 problems in difficulty order, _"strings ending in `ab`"_ through _"binary numbers divisible by 3"_. Progress in `localStorage`.                                                                                                                                                 |
 
 The pumping lemma game is the one worth building even if nothing else here gets built. It is
 the topic students most reliably fail, the failure is always the same failure — treating a
@@ -608,15 +610,15 @@ software is good at being.
 
 ### 9.3 Sequencing
 
-| Version | Contents | Cost |
-|---|---|---|
-| **v1** | Counterexample engine only. | Already in §2.4; no additional scope. |
-| **v1.1** | Assignment links + the ordered problem set. | One weekend. Both are the §2.6 share format with a different payload. |
-| **v1.2** | Pumping lemma game + state-budget golf. | The only genuinely new interaction work in this section. |
-| **Anything with a database** | Only when a real professor asks, with specific requirements. | Not estimated, deliberately. |
+| Version                      | Contents                                                     | Cost                                                                  |
+| ---------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| **v1**                       | Counterexample engine only.                                  | Already in §2.4; no additional scope.                                 |
+| **v1.1**                     | Assignment links + the ordered problem set.                  | One weekend. Both are the §2.6 share format with a different payload. |
+| **v1.2**                     | Pumping lemma game + state-budget golf.                      | The only genuinely new interaction work in this section.              |
+| **Anything with a database** | Only when a real professor asks, with specific requirements. | Not estimated, deliberately.                                          |
 
 That last row is not a refusal. A professor arriving with specific requirements is the
 strongest validation signal this project can receive, and it should be treated as such —
-answered, scoped, and taken seriously. The point is that the requirements come *first*. A
+answered, scoped, and taken seriously. The point is that the requirements come _first_. A
 database built in anticipation of a user is how a static site becomes a service nobody asked
 for; a database built for a named professor with a stated need is a product decision.
