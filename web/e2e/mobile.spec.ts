@@ -91,10 +91,44 @@ test('the rail stays reachable while a panel is open', async ({ page }) => {
   await expect(page.getByRole('complementary')).toHaveCount(0);
 });
 
-test('tapping the chip adds a state, because nothing else can', async ({ page }) => {
-  // `dragstart` never fires from a touch and double-click is not a gesture a phone has, so
-  // without this there is no way to create a state on a touchscreen.
+test('tapping the chip adds a state', async ({ page }) => {
+  // Double-click is not a gesture a phone has, so without this there is no way to create a
+  // state on a touchscreen at all.
   await expect(page.getByText('3 states')).toBeVisible();
   await page.getByRole('button', { name: /Add a state/ }).tap();
+  await expect(page.getByText('4 states')).toBeVisible();
+});
+
+test('the chip can be dragged with a finger', async ({ page }) => {
+  /*
+    The gesture the chip is shaped like, and the one that was dead.
+
+    It used HTML5 drag-and-drop, which is a mouse-only protocol: `dragstart` does not fire from
+    a touch, so on a phone dragging the chip did nothing at all — and it looked like nothing,
+    which is worse than an error. Pointer events are one path for mouse, touch and pen.
+  */
+  await expect(page.getByText('3 states')).toBeVisible();
+
+  const chip = page.getByRole('button', { name: /Add a state/ });
+  const from = await chip.boundingBox();
+  if (!from) throw new Error('no chip');
+
+  const touch = { pointerId: 1, pointerType: 'touch', isPrimary: true };
+  await page.dispatchEvent('button[aria-label^="Add a state"]', 'pointerdown', {
+    ...touch,
+    clientX: from.x + from.width / 2,
+    clientY: from.y + from.height / 2,
+  });
+  await page.dispatchEvent('div[role="application"]', 'pointermove', {
+    ...touch,
+    clientX: 180,
+    clientY: 500,
+  });
+  await page.dispatchEvent('div[role="application"]', 'pointerup', {
+    ...touch,
+    clientX: 180,
+    clientY: 500,
+  });
+
   await expect(page.getByText('4 states')).toBeVisible();
 });

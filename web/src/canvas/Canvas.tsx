@@ -26,7 +26,6 @@ import { formatChord } from '@/canvas/shortcuts';
 import { useCanvasEditing } from '@/canvas/useCanvasEditing';
 import { useShortcuts } from '@/canvas/useShortcuts';
 import { useViewport } from '@/canvas/useViewport';
-import { isStateDrag } from '@/editor/dragState';
 import { StatePalette } from '@/editor/StatePalette';
 import { useGeneration } from '@/store/editor';
 import { formatSymbols, newSymbols, parseSymbols } from '@/canvas/symbols';
@@ -186,8 +185,76 @@ export function Canvas({
     [viewportRef, editingRef],
   );
 
-  /** Where a dragged chip would land, in diagram coordinates. */
+  /** Where a chip being carried would land, in diagram coordinates. */
   const [dropAt, setDropAt] = useState<Point | undefined>(undefined);
+
+  /**
+   * Carry a state from the palette to wherever the pointer is released.
+   *
+   * Pointer events rather than HTML5 drag-and-drop, which is a mouse-only protocol: it never
+   * fired from a touch, and a webview hands native drags to its shell before the page sees
+   * them, so the gesture was dead on phones and dead in the desktop build. This works for
+   * mouse, touch and pen with one code path and no dependence on the host.
+   *
+   * `setPointerCapture` on the *canvas* keeps the events coming after the pointer leaves the
+   * chip, which happens immediately — the entire gesture is about leaving it.
+   *
+   * A press and release that never moved is a tap, and lands the state in the middle of the
+   * view. That is the keyboard and touch path both, and it costs one comparison.
+   */
+  const placeStart = useCallback(
+    (event: React.PointerEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+      event.preventDefault();
+
+      const startedAt = { clientX: event.clientX, clientY: event.clientY };
+      container.setPointerCapture(event.pointerId);
+      setDropAt(pointerToWorld(startedAt));
+
+      const move = (moved: PointerEvent) => {
+        setDropAt(pointerToWorld(moved));
+      };
+
+      const finish = (ended: PointerEvent) => {
+        container.removeEventListener('pointermove', move);
+        container.removeEventListener('pointerup', finish);
+        container.removeEventListener('pointercancel', cancel);
+        setDropAt(undefined);
+
+        const box = container.getBoundingClientRect();
+        // Under six pixels is a tap, not a carry — a finger never holds perfectly still, and
+        // treating the tiniest tremor as a drag would drop the state under the chip itself.
+        const moved =
+          Math.hypot(ended.clientX - startedAt.clientX, ended.clientY - startedAt.clientY) > 6;
+        const at = moved
+          ? { clientX: ended.clientX, clientY: ended.clientY }
+          : { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
+
+        // Released outside the canvas: nothing placed, which is how a drag is cancelled.
+        const inside =
+          at.clientX >= box.left &&
+          at.clientX <= box.right &&
+          at.clientY >= box.top &&
+          at.clientY <= box.bottom;
+        if (!inside) return;
+
+        run(addState(snapPoint(pointerToWorld(at))));
+      };
+
+      const cancel = () => {
+        container.removeEventListener('pointermove', move);
+        container.removeEventListener('pointerup', finish);
+        container.removeEventListener('pointercancel', cancel);
+        setDropAt(undefined);
+      };
+
+      container.addEventListener('pointermove', move);
+      container.addEventListener('pointerup', finish);
+      container.addEventListener('pointercancel', cancel);
+    },
+    [pointerToWorld, run],
+  );
 
   const closeEditor = useCallback(() => {
     setEditing(undefined);
@@ -488,56 +555,13 @@ export function Canvas({
       className={`relative overflow-hidden bg-k-canvas outline-none focus-visible:ring-1 focus-visible:ring-k-primary/40 focus-visible:ring-inset ${className ?? ''}`}
       style={{ cursor: cursorFor(panning, interaction), touchAction: 'none' }}
       onContextMenu={openMenu}
-      /*
-        Dropping a state chip. `preventDefault` on dragover is what marks this a valid drop
-        target — without it the browser refuses the drop and the chip animates back, which
-        reads as the feature being broken rather than as the drop being declined.
-
-        Guarded on our own MIME type so a dropped `.kln` file still reaches the editor's own
-        handler, which replaces the document. The two must not be confused: one adds a state
-        and the other discards everything on screen.
-      */
-      onDragOver={(event) => {
-        if (!isStateDrag(event.nativeEvent)) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'copy';
-        setDropAt(pointerToWorld(event));
-      }}
-      onDragLeave={(event) => {
-        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
-        setDropAt(undefined);
-      }}
-      onDrop={(event) => {
-        if (!isStateDrag(event.nativeEvent)) return;
-        event.preventDefault();
-        setDropAt(undefined);
-        // Snapped, like every other way of placing a state. A state that lands off-grid
-        // because it arrived by drag would be the one thing on the canvas that does not
-        // line up with the others.
-        run(addState(snapPoint(pointerToWorld(event))));
-      }}
     >
       {/*
         Canvas furniture, so it can reach the viewport. Tapping it places a state in the middle
         of what is currently on screen, which is the only sensible answer without a pointer —
         and on a touch device it is the only way to create one at all.
       */}
-      <StatePalette
-        onAdd={() => {
-          const box = containerRef.current?.getBoundingClientRect();
-          if (!box) return;
-          run(
-            addState(
-              snapPoint(
-                pointerToWorld({
-                  clientX: box.left + box.width / 2,
-                  clientY: box.top + box.height / 2,
-                }),
-              ),
-            ),
-          );
-        }}
-      />
+      <StatePalette onPlaceStart={placeStart} />
 
       {dropAt && (
         /*
