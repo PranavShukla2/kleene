@@ -132,10 +132,14 @@ impl Language {
 }
 
 /// One way of cutting a word into `xyz`.
+///
+/// Named `Cut` rather than `Split` because `convert::minimize::Split` exists, and two types
+/// with one name export to one TypeScript file where the second silently loses. This is the
+/// fourth such collision in the project; `scripts/generate-types.sh` now refuses them.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export, export_to = "generated/"))]
-pub struct Split {
+pub struct Cut {
     /// Everything before the pumped part.
     pub x: String,
     /// The part that gets repeated. Never empty — the lemma requires |y| ≥ 1.
@@ -144,7 +148,7 @@ pub struct Split {
     pub z: String,
 }
 
-impl Split {
+impl Cut {
     /// `xyⁱz`.
     pub fn pumped(&self, i: usize) -> String {
         format!("{}{}{}", self.x, self.y.repeat(i), self.z)
@@ -155,13 +159,13 @@ impl Split {
 ///
 /// The constraints are the lemma's own: `|xy| ≤ n` and `|y| ≥ 1`. A student arguing about a
 /// split that breaks either has misread the lemma, and the game never offers one.
-pub fn legal_splits(word: &str, n: usize) -> Vec<Split> {
+pub fn legal_cuts(word: &str, n: usize) -> Vec<Cut> {
     let chars: Vec<char> = word.chars().collect();
     let mut splits = Vec::new();
 
     for start in 0..chars.len().min(n) {
         for end in (start + 1)..=chars.len().min(n) {
-            splits.push(Split {
+            splits.push(Cut {
                 x: chars[..start].iter().collect(),
                 y: chars[start..end].iter().collect(),
                 z: chars[end..].iter().collect(),
@@ -175,7 +179,7 @@ pub fn legal_splits(word: &str, n: usize) -> Vec<Split> {
 ///
 /// `None` when no `i` up to the search bound defeats it — which, for a regular language, is
 /// every split, and is exactly why the student loses.
-fn defeat(language: Language, split: &Split, bound: usize) -> Option<usize> {
+fn defeat(language: Language, split: &Cut, bound: usize) -> Option<usize> {
     (0..=bound).find(|&i| !language.contains(&split.pumped(i)))
 }
 
@@ -188,10 +192,10 @@ fn defeat(language: Language, split: &Split, bound: usize) -> Option<usize> {
 ///
 /// This is E2 and D19: the machine plays its best move every time, and the difficulty lives in
 /// the language rather than in an artificial handicap.
-pub fn best_split(language: Language, word: &str, n: usize) -> Option<Split> {
+pub fn best_cut(language: Language, word: &str, n: usize) -> Option<Cut> {
     const BOUND: usize = 6;
 
-    legal_splits(word, n).into_iter().max_by_key(|split| {
+    legal_cuts(word, n).into_iter().max_by_key(|split| {
         let hardness = defeat(language, split, BOUND).map_or(usize::MAX, |i| i);
         (hardness, split.y.chars().count())
     })
@@ -252,7 +256,7 @@ pub struct Round {
     /// The word the student chose.
     pub word: String,
     /// How the machine cut it.
-    pub split: Split,
+    pub split: Cut,
     /// The exponent the student chose.
     pub i: usize,
     /// `xyⁱz`.
@@ -267,7 +271,7 @@ pub struct Round {
 }
 
 /// Play out a round once the student has chosen `i`.
-pub fn settle(language: Language, n: usize, word: &str, split: &Split, i: usize) -> Round {
+pub fn settle(language: Language, n: usize, word: &str, split: &Cut, i: usize) -> Round {
     const BOUND: usize = 6;
 
     let pumped = split.pumped(i);

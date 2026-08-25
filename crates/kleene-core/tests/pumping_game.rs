@@ -7,7 +7,7 @@
 //! teaching claim and worth taking advantage of.
 
 use kleene_core::teach::pumping::{
-    Illegal, Language, as_proof, best_split, check_word, legal_splits, settle,
+    Illegal, Language, as_proof, best_cut, check_word, legal_cuts, settle,
 };
 
 #[test]
@@ -25,7 +25,7 @@ fn a_good_choice_beats_a_perfect_opponent() {
 
         assert_eq!(check_word(language, &word, n), None, "{language:?}");
 
-        let split = best_split(language, &word, n).expect("a split exists");
+        let split = best_cut(language, &word, n).expect("a split exists");
         // Some i must defeat even the machine's best split.
         let beaten = (0..=6).any(|i| settle(language, n, &word, &split, i).won);
         assert!(beaten, "{language:?}: the best split survived every i");
@@ -38,7 +38,7 @@ fn every_legal_split_of_a_good_word_can_be_defeated() {
     // relying on the machine choosing badly.
     let (language, n, word) = (Language::AnBn, 4, "aaaabbbb");
 
-    for split in legal_splits(word, n) {
+    for split in legal_cuts(word, n) {
         let beaten = (0..=6).any(|i| settle(language, n, word, &split, i).won);
         assert!(beaten, "no i defeats {split:?}");
     }
@@ -58,7 +58,7 @@ fn a_regular_language_cannot_be_beaten() {
         };
         assert_eq!(check_word(language, word, n), None);
 
-        let split = best_split(language, word, n).expect("a split exists");
+        let split = best_cut(language, word, n).expect("a split exists");
         for i in 0..=6 {
             assert!(
                 !settle(language, n, word, &split, i).won,
@@ -73,7 +73,7 @@ fn the_machine_prefers_the_split_that_is_hardest_to_beat() {
     // E2. A machine that splits carelessly lets a student win without understanding, and they
     // conclude the lemma is easy.
     let (language, n, word) = (Language::EvenAs, 3, "aabb");
-    let best = best_split(language, word, n).expect("a split");
+    let best = best_cut(language, word, n).expect("a split");
 
     // Against a regular language the best split is one that cannot be defeated at all.
     assert!((0..=6).all(|i| !settle(language, n, word, &best, i).won));
@@ -84,7 +84,7 @@ fn every_offered_split_obeys_the_lemma() {
     // |xy| ≤ n and |y| ≥ 1. A student arguing about an illegal split has misread the lemma,
     // and the game must never be the reason they think one is allowed.
     let n = 3;
-    for split in legal_splits("aaaabbbb", n) {
+    for split in legal_cuts("aaaabbbb", n) {
         assert!(!split.y.is_empty(), "y must be non-empty: {split:?}");
         assert!(
             split.x.chars().count() + split.y.chars().count() <= n,
@@ -128,7 +128,7 @@ fn a_lost_round_offers_an_exponent_that_would_have_worked() {
     // Only after the round, and only when one exists — during play it would be answering the
     // exercise.
     let (language, n, word) = (Language::AnBn, 3, "aaabbb");
-    let split = best_split(language, word, n).expect("a split");
+    let split = best_cut(language, word, n).expect("a split");
     // i = 1 is xyz itself, which is always in the language, so this is a guaranteed loss.
     let round = settle(language, n, word, &split, 1);
 
@@ -139,7 +139,7 @@ fn a_lost_round_offers_an_exponent_that_would_have_worked() {
 #[test]
 fn a_regular_language_hints_nothing_because_there_is_nothing_to_hint() {
     let (language, n, word) = (Language::EvenAs, 2, "aabb");
-    let split = best_split(language, word, n).expect("a split");
+    let split = best_cut(language, word, n).expect("a split");
     let round = settle(language, n, word, &split, 1);
     assert_eq!(round.hint, None);
 }
@@ -148,7 +148,7 @@ fn a_regular_language_hints_nothing_because_there_is_nothing_to_hint() {
 fn a_won_round_reads_back_as_a_proof() {
     // E5. Not a summary of the game — the same moves, read as the quantifiers they were.
     let (language, n, word) = (Language::AnBn, 3, "aaabbb");
-    let split = best_split(language, word, n).expect("a split");
+    let split = best_cut(language, word, n).expect("a split");
     let i = (0..=6)
         .find(|&i| settle(language, n, word, &split, i).won)
         .expect("a winning i");
@@ -163,7 +163,7 @@ fn a_won_round_reads_back_as_a_proof() {
 fn a_lost_round_says_the_proof_does_not_close() {
     // Rather than claiming a proof that was not produced.
     let (language, n, word) = (Language::EvenAs, 2, "aabb");
-    let split = best_split(language, word, n).expect("a split");
+    let split = best_cut(language, word, n).expect("a split");
     let proof = as_proof(language, &settle(language, n, word, &split, 1));
 
     assert!(proof.contains("does not close"), "{proof}");

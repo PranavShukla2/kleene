@@ -515,3 +515,83 @@ pub fn problem_set() -> Result<String, JsError> {
     serde_json::to_string(&kleene_core::teach::problem_set())
         .map_err(|e| JsError::new(&e.to_string()))
 }
+
+/// The pumping lemma game's languages (teaching layer E3).
+///
+/// # Errors
+///
+/// Returns a JS error only if the list fails to serialise.
+#[wasm_bindgen]
+pub fn pumping_languages() -> Result<String, JsError> {
+    use kleene_core::teach::pumping::Language;
+
+    let entries: Vec<serde_json::Value> = Language::all()
+        .into_iter()
+        .map(|language| {
+            serde_json::json!({
+                "id": serde_json::to_value(language).unwrap_or(serde_json::Value::Null),
+                "notation": language.notation(),
+                "regular": language.is_regular(),
+            })
+        })
+        .collect();
+
+    serde_json::to_string(&entries).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Check a student's choice of `w`. Returns `null` when the choice is legal.
+///
+/// # Errors
+///
+/// Returns a JS error if `language` is not one of the known ids.
+#[wasm_bindgen]
+pub fn pumping_check_word(language: &str, word: &str, n: usize) -> Result<JsValue, JsError> {
+    let language = parse_language(language)?;
+    let illegal = kleene_core::teach::pumping::check_word(language, word, n);
+    serde_wasm_bindgen::to_value(&illegal).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// The machine's split: the hardest one it can legally choose.
+///
+/// # Errors
+///
+/// Returns a JS error if `language` is not a known id.
+#[wasm_bindgen]
+pub fn pumping_split(language: &str, word: &str, n: usize) -> Result<JsValue, JsError> {
+    let language = parse_language(language)?;
+    let split = kleene_core::teach::pumping::best_cut(language, word, n);
+    serde_wasm_bindgen::to_value(&split).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Play out a round, and report how it ended.
+///
+/// # Errors
+///
+/// Returns a JS error if `language` is not a known id, or the split is not a split.
+#[wasm_bindgen]
+pub fn pumping_settle(
+    language: &str,
+    n: usize,
+    word: &str,
+    split: JsValue,
+    i: usize,
+) -> Result<JsValue, JsError> {
+    let language = parse_language(language)?;
+    let split: kleene_core::teach::pumping::Cut =
+        serde_wasm_bindgen::from_value(split).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let round = kleene_core::teach::pumping::settle(language, n, word, &split, i);
+    let proof = kleene_core::teach::pumping::as_proof(language, &round);
+
+    let value = serde_json::json!({
+        "round": serde_json::to_value(&round).map_err(|e| JsError::new(&e.to_string()))?,
+        "proof": proof,
+    });
+    js_sys::JSON::parse(&value.to_string()).map_err(|_| JsError::new("could not encode the round"))
+}
+
+/// A language id from the string the UI holds.
+fn parse_language(id: &str) -> Result<kleene_core::teach::pumping::Language, JsError> {
+    serde_json::from_value(serde_json::Value::String(id.to_string()))
+        .map_err(|_| JsError::new(&format!("no such language: {id}")))
+}
