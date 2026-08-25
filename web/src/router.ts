@@ -32,6 +32,7 @@ export type Route =
   | 'download'
   | 'start'
   | 'solve'
+  | 'practice'
   /** A `/tools/<slug>` landing page. The slug is read separately, from the path. */
   | 'tool'
   /** No such page. Not a path anyone navigates *to* — only where an unknown one lands. */
@@ -56,6 +57,7 @@ const PATHS: Record<Route, string> = {
   download: '/download',
   start: '/start',
   solve: '/solve',
+  practice: '/practice',
   // The prefix only. `pathOf` never builds a real tool URL — `toolPath` does, because a route
   // with a parameter cannot round-trip through a table of constants.
   tool: '/tools',

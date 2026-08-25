@@ -34,8 +34,9 @@ import { CommandPalette } from '@/site/CommandPalette';
 import { Footer } from '@/site/Footer';
 import { Download } from '@/site/Download';
 import { Start } from '@/site/Start';
+import { Practice } from '@/teach/Practice';
 import { Solve } from '@/teach/Solve';
-import { useProblem } from '@/teach/useProblem';
+import { openProblem, useProblem } from '@/teach/useProblem';
 import { Jflap } from '@/site/Jflap';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
@@ -145,7 +146,14 @@ export function Root() {
 }
 
 /** The routes that cannot render anything real until WebAssembly has arrived. */
-const NEEDS_ENGINE = new Set<Route>(['convert', 'examples', 'tool', 'start', 'solve']);
+const NEEDS_ENGINE = new Set<Route>([
+  'convert',
+  'examples',
+  'tool',
+  'start',
+  'solve',
+  'practice',
+]);
 
 /** What each of them is waiting for, in words the visitor can do something with. */
 const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
@@ -158,6 +166,8 @@ const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
     'The machine on this page is drawn by the same engine the editor uses, so it has to arrive before the page can show you one.',
   solve:
     'Checking an answer runs the same conversions the rest of the site does, in your browser. Nothing is uploaded, and nothing is checked anywhere else.',
+  practice:
+    'The problem set is built by the engine rather than shipped as a list, so every problem in it is one the checker can actually verify.',
 };
 
 function Page({
@@ -242,6 +252,23 @@ function Page({
       return <Download onNavigate={go} />;
     case 'solve':
       return <SolveRoute engine={engine} go={go} />;
+    case 'practice':
+      return (
+        <Practice
+          engine={engine}
+          onOpen={(problem) => {
+            // Straight into the solve view, carrying the problem the same way a lecturer's
+            // link would. One path into solving, whether the problem came from the set or
+            // from an email.
+            void openProblem(problem.spec).then((payload) => {
+              // The key rides alongside so progress can be recorded against it. A lecturer's
+              // link has no key and records nothing, which is correct: there is no set entry
+              // for a problem that is not in the set.
+              goPath(`/solve#p=${payload}&k=${encodeURIComponent(problem.key)}`);
+            });
+          }}
+        />
+      );
     case 'start':
       return (
         <Start
@@ -351,11 +378,12 @@ function SolveRoute({
   engine: Engine | undefined;
   go: (to: Route, search?: string) => void;
 }) {
-  const spec = useProblem();
+  const { spec, key } = useProblem();
   return (
     <Solve
       engine={engine}
       spec={spec}
+      problemKey={key}
       onNavigate={go}
       onEdit={() => {
         go('editor');
