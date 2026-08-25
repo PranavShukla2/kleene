@@ -11,9 +11,12 @@
  *
  * ## Why the numbers are here
  *
- * 4.6 MB is a fact about this project that is worth stating where someone is deciding whether
- * to download it, and it is measured rather than quoted — see Phase 5 B4. It is also the
+ * A download size is worth stating where someone is deciding whether to download, and these are
+ * measured from a published release rather than quoted — see Phase 5 B4. They are also the
  * comparison that makes the JFLAP point without needing to make it: a JRE is around 200 MB.
+ *
+ * Per platform, not one number for all three. The macOS app is 4.6 MB installed, and printing
+ * that everywhere would have been wrong for Linux by a factor of twenty.
  *
  * ## Why the Gatekeeper warning is on the page and not in a FAQ
  *
@@ -41,26 +44,38 @@ interface Build {
   warning?: string;
 }
 
+/*
+  Sizes are the real ones, taken from a published release rather than from the app bundle's
+  size on disk.
+
+  The macOS app measures 4.6 MB installed and it was tempting to print that figure everywhere.
+  It is wrong for two of these three: the Linux AppImage is 81 MB, because an AppImage carries
+  its own copy of webkit2gtk rather than using the system's. Someone who read "4.6 MB" and
+  downloaded an 81 MB file would be right to distrust the next number this project prints.
+*/
 const BUILDS: readonly Build[] = [
   {
     platform: 'macOS',
-    detail: 'Apple silicon. 4.6 MB installed.',
-    file: 'Kleene_…_aarch64.dmg',
+    detail: 'Apple silicon. 3.8 MB to download, 4.6 MB installed.',
+    file: 'Kleene_0.1.0_aarch64.dmg',
     warning:
       'macOS will say it cannot check the app for malicious software. Right-click the app and choose Open, then Open again — the second dialog has the button the first one hides.',
   },
   {
     platform: 'Windows',
-    detail: 'x86-64.',
-    file: 'Kleene_…_x64-setup.exe',
+    detail: 'x86-64. 3.1 MB as an installer, or 3.8 MB as an .msi.',
+    file: 'Kleene_0.1.0_x64-setup.exe',
     warning:
       'SmartScreen will show a blue "Windows protected your PC" screen. More info → Run anyway.',
   },
   {
     platform: 'Linux',
-    detail: 'x86-64, as a .deb or an AppImage.',
-    file: 'Kleene_…_amd64.deb',
-    warning: 'An AppImage needs the executable bit: chmod +x before running it.',
+    // The .deb first, and the size difference stated: an AppImage carries its own webkit2gtk
+    // instead of using the system's, which is the entire 78 MB.
+    detail: 'x86-64. 3.7 MB as a .deb, or 81 MB as an AppImage that bundles its own webkit.',
+    file: 'Kleene_0.1.0_amd64.deb',
+    warning:
+      'An AppImage needs the executable bit — chmod +x before running it. Prefer the .deb if your distribution takes one; it is twenty times smaller because it uses the webkit already on your machine.',
   },
 ];
 
@@ -108,7 +123,7 @@ export function Download({ onNavigate }: { onNavigate: (to: Route) => void }) {
       <Band>
         <BandHeading
           title="Or the native build"
-          detail="A 4.6 MB application — measured, not estimated. For comparison, running JFLAP means installing a Java runtime, which is around two hundred."
+          detail="Around 4 MB on macOS and Windows — measured, not estimated. For comparison, running JFLAP means installing a Java runtime, which is around two hundred."
         />
 
         <RevealGroup className="mt-8 grid gap-4 sm:grid-cols-3">
