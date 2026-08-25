@@ -33,6 +33,13 @@ export interface Tool {
   detail: readonly string[];
   /** The question people ask on the page for this task specifically. */
   faq: readonly { question: string; answer: string }[];
+  /**
+   * Open the state-elimination section on arrival.
+   *
+   * For the one tool that *is* that section. Everywhere else it stays collapsed, because it
+   * costs a conversion run and is not what the visitor came for.
+   */
+  elimination?: boolean;
 }
 
 export const TOOLS: readonly Tool[] = [
@@ -125,6 +132,32 @@ export const TOOLS: readonly Tool[] = [
         question: 'Can I get rid of the ε-transitions?',
         answer:
           'Yes — that is what subset construction does. Turn on the DFA pane and the ε-transitions are gone, replaced by states that stand for sets of the ones you can see here.',
+      },
+    ],
+  },
+  {
+    slug: 'dfa-to-regex',
+    title: 'DFA to regular expression',
+    tagline: 'State elimination, one state at a time, with what is left on the edges.',
+    // Small on purpose. State elimination is worst-case exponential and this page runs it on
+    // arrival, so the worked example has to be one whose answer stays readable.
+    example: '(a|b)*abb',
+    panes: ['dfa'],
+    elimination: true,
+    detail: [
+      'The other direction, and the one most courses spend least time on. Add a new start and accept state, then remove the original states one by one — each time a state goes, every path *through* it is rewritten as a single edge whose label is the expression describing those paths. When only the two added states are left, the expression on the edge between them is the answer.',
+      'The order you remove states in changes the expression but not the language. There is no known way to pick the order that gives the shortest result, which is why two correct answers to the same exercise can look nothing like each other — and why the order is a control on this page rather than a decision made for you.',
+    ],
+    faq: [
+      {
+        question: 'My answer looks completely different from this one. Is it wrong?',
+        answer:
+          'Probably not. Eliminating states in a different order gives a different expression for the same language, and both are correct. The way to check is to convert both back to DFAs and compare — or run the two through `kleene equiv`, which reports the shortest string they disagree on if they do.',
+      },
+      {
+        question: 'Why does the expression get so long?',
+        answer:
+          'Because each elimination can multiply the number of paths that have to be described. It is exponential in the worst case: a 33-state machine produces an expression of about 177,000 characters. Kleene refuses above 25 states and says so rather than freezing, which is a measured limit and not a bug.',
       },
     ],
   },

@@ -45,13 +45,23 @@ export function Elimination({
   engine,
   dfa,
   epsilon,
+  startOpen = false,
 }: {
   engine: Engine | undefined;
   /** The machine to convert. The DFA, not the minimal one — that is what a course starts from. */
   dfa: Automaton;
   epsilon: string;
+  /**
+   * Open on arrival, for the page that is *about* this conversion.
+   *
+   * Collapsed is right on `/convert`, where this is the fourth thing on the page and costs a
+   * state-elimination run nobody asked for. It is wrong on `/tools/dfa-to-regex`, where
+   * someone who searched for this conversion would land on a closed section and have to find
+   * the thing they came for.
+   */
+  startOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [order, setOrder] = useState<string>(ORDERS[0]?.id ?? 'fewest-edges');
   /**
    * How far in, and into *which* run.

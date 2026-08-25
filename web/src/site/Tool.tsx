@@ -69,7 +69,7 @@ export function Tool({
       <Convert
         engine={engine}
         onOpenInEditor={onOpenInEditor}
-        embedded={{ source: tool.example, panes: tool.panes }}
+        embedded={{ source: tool.example, panes: tool.panes, elimination: tool.elimination }}
       />
 
       <Band>

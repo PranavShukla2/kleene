@@ -55,7 +55,7 @@ export function Convert({
    * would be a second implementation of the one thing this project exists to have exactly one
    * of.
    */
-  embedded?: { source: string; panes: readonly PaneId[] };
+  embedded?: { source: string; panes: readonly PaneId[]; elimination?: boolean };
 }) {
   // Seeded from the URL, so a link — or the command palette — can open the page with an
   // expression already compiling. Read once: after that the bar owns the value, and a URL
@@ -256,7 +256,14 @@ export function Convert({
         Below the panes, because it runs the pipeline backwards and putting it among the
         stages would suggest it is one of them.
       */}
-      {parsed && <Elimination engine={engine} dfa={parsed.dfa.automaton} epsilon={EPSILON} />}
+      {parsed && (
+        <Elimination
+          engine={engine}
+          dfa={parsed.dfa.automaton}
+          epsilon={EPSILON}
+          startOpen={embedded?.elimination ?? false}
+        />
+      )}
 
       {parsed && (
         <p className="mt-8 max-w-prose text-sm text-k-text-faint">
