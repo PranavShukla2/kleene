@@ -10,6 +10,7 @@
 //! without a purchase order, and without asking anyone's IT department for anything.
 
 pub mod problem;
+pub mod pumping;
 pub mod set;
 
 pub use problem::{Failure, Feedback, ProblemSpec, SPEC_VERSION, check};
