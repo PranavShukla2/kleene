@@ -16,6 +16,10 @@ import init, {
   minimization,
   minimum_states,
   problem_set,
+  pumping_check_word,
+  pumping_languages,
+  pumping_settle,
+  pumping_split,
   example_automaton,
   example_catalogue,
   formal_definition,
@@ -33,12 +37,15 @@ import type {
   Compilation,
   Determinism,
   Document,
+  Cut,
   Elimination,
   Feedback,
+  Illegal,
   FormalDefinition,
   Minimization,
   Point,
   Report,
+  Round,
   SetProblem,
   Simulation,
   StateId,
@@ -125,6 +132,20 @@ export interface Engine {
   minimumStates: (spec: string) => number | undefined;
   /** The ordered problem set. Parsed here, because it crosses as JSON text. */
   problemSet: () => SetProblem[];
+  /** The languages the pumping lemma game can be played against (E3). */
+  pumpingLanguages: () => { id: string; notation: string; regular: boolean }[];
+  /** Whether a chosen `w` is legal. `undefined` means it is. */
+  pumpingCheckWord: (language: string, word: string, n: number) => Illegal | undefined;
+  /** The machine's cut: the hardest one the lemma allows it (E2). */
+  pumpingCut: (language: string, word: string, n: number) => Cut | undefined;
+  /** Play out a round, with the proof it reads back as (E5). */
+  pumpingSettle: (
+    language: string,
+    n: number,
+    word: string,
+    cut: Cut,
+    i: number,
+  ) => { round: Round; proof: string };
   /**
    * State elimination, with the GNFA recorded at every step (Phase 3 Track F).
    *
@@ -233,6 +254,14 @@ export function loadEngine(): Promise<Engine> {
       checkAnswer: (spec: string, answer: Automaton) => check_answer(spec, answer) as Feedback,
       minimumStates: (spec: string) => minimum_states(spec) ?? undefined,
       problemSet: () => JSON.parse(problem_set()) as SetProblem[],
+      pumpingLanguages: () =>
+        JSON.parse(pumping_languages()) as { id: string; notation: string; regular: boolean }[],
+      pumpingCheckWord: (language: string, word: string, n: number) =>
+        (pumping_check_word(language, word, n) as Illegal | null) ?? undefined,
+      pumpingCut: (language: string, word: string, n: number) =>
+        (pumping_split(language, word, n) as Cut | null) ?? undefined,
+      pumpingSettle: (language: string, n: number, word: string, cut: Cut, i: number) =>
+        pumping_settle(language, n, word, cut, i) as { round: Round; proof: string },
       minimization: (automaton: Automaton) => minimization(automaton) as Minimization,
       elimination: (automaton: Automaton, order: string) =>
         elimination(automaton, order) as Elimination,

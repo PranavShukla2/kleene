@@ -45,6 +45,11 @@ export type { Feedback } from '@/model/generated/Feedback';
 export type { Failure } from '@/model/generated/Failure';
 export type { SetProblem } from '@/model/generated/SetProblem';
 export type { Tier as ProblemTier } from '@/model/generated/Tier';
+
+/* The pumping lemma game (roadmap §9.2, teaching layer Track E). */
+export type { Cut } from '@/model/generated/Cut';
+export type { Illegal } from '@/model/generated/Illegal';
+export type { Round } from '@/model/generated/Round';
 export type { MarkingTable } from '@/model/generated/MarkingTable';
 export type { Cell } from '@/model/generated/Cell';
 export type { Mark } from '@/model/generated/Mark';

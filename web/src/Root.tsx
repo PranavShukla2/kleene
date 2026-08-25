@@ -35,6 +35,7 @@ import { Footer } from '@/site/Footer';
 import { Download } from '@/site/Download';
 import { Start } from '@/site/Start';
 import { Practice } from '@/teach/Practice';
+import { Pumping } from '@/teach/Pumping';
 import { Solve } from '@/teach/Solve';
 import { openProblem, useProblem } from '@/teach/useProblem';
 import { Jflap } from '@/site/Jflap';
@@ -153,6 +154,7 @@ const NEEDS_ENGINE = new Set<Route>([
   'start',
   'solve',
   'practice',
+  'pumping',
 ]);
 
 /** What each of them is waiting for, in words the visitor can do something with. */
@@ -168,6 +170,8 @@ const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
     'Checking an answer runs the same conversions the rest of the site does, in your browser. Nothing is uploaded, and nothing is checked anywhere else.',
   practice:
     'The problem set is built by the engine rather than shipped as a list, so every problem in it is one the checker can actually verify.',
+  pumping:
+    'The adversary has to play well, which means working out which split is hardest — that is a real computation, and it runs here.',
 };
 
 function Page({
@@ -252,6 +256,8 @@ function Page({
       return <Download onNavigate={go} />;
     case 'solve':
       return <SolveRoute engine={engine} go={go} />;
+    case 'pumping':
+      return <Pumping engine={engine} />;
     case 'practice':
       return (
         <Practice
