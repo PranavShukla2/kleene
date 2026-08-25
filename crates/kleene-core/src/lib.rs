@@ -37,6 +37,7 @@ pub mod ops;
 pub mod regex;
 pub mod simulate;
 pub mod table;
+pub mod teach;
 pub mod trace;
 pub mod validate;
 
