@@ -64,9 +64,10 @@ here is not shipping something imperfect; it is not shipping.
 > it is blocked on the code: the web build it wraps has been ready since Track A closed. It is
 > blocked on machines that can produce a bundle per platform, and on D15.
 >
-> **B4 is worth doing before B1, not after.** The ~6 MB figure already appears in the JFLAP
-> comparison, and a number published before it is measured is the kind of claim a project gets
-> quoted back at itself.
+> **B4 is worth doing before B1, not after.** The ~6 MB figure is already published — in
+> [ROADMAP.md](../ROADMAP.md) twice, not on the JFLAP page as this note first claimed — and a
+> number published before it is measured is the kind of claim a project gets quoted back at
+> itself. It came from Tauri's own marketing rather than from a build of _this_ app.
 
 ### Track C — Examples
 
@@ -156,8 +157,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-                      shorter feedback loop: writing it against gestures that are still moving means rewriting
-                      it, and a tour that describes a gesture the editor no longer has is worse than none.
+                          shorter feedback loop: writing it against gestures that are still moving means rewriting
+                          it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching
