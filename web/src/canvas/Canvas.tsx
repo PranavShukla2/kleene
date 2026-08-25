@@ -33,6 +33,7 @@ import { SNAP, snapPoint, toScreen } from '@/canvas/viewport';
 import type { Automaton, StateId } from '@/model/automaton';
 import {
   addState,
+  clearCanvas,
   deleteEdge,
   deleteStates,
   moveStates,
@@ -341,6 +342,17 @@ export function Canvas({
           },
           undefined,
           { label: 'Select all', keys: formatChord('Mod+KeyA'), onSelect: selectAll },
+          {
+            label: 'Clear the canvas',
+            // Destructive styling and last in the group, but no confirmation: it is a single
+            // undo away, and a dialog on every use taxes the people who meant it more than
+            // the undo taxes the people who did not.
+            destructive: true,
+            disabled: ids.length === 0,
+            onSelect: () => {
+              run(clearCanvas(ids));
+            },
+          },
           {
             label: 'Fit to content',
             keys: formatChord('Shift+Digit1'),

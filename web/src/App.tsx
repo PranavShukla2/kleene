@@ -42,6 +42,7 @@ import { autoLayout, hasOverlap, shake } from '@/layout/auto';
 import { useAnimatedLayout } from '@/layout/useAnimatedLayout';
 import {
   addSymbol,
+  clearCanvas,
   deleteSymbol,
   setEdgeSymbols,
   setLayout,
@@ -534,6 +535,9 @@ export function Editor({ onHome }: { onHome: () => void }) {
         arranging={laying || animating}
         canArrange={document.automaton.states.length > 0}
         canShake={!animating && hasOverlap(document.layout, ids)}
+        onClear={() => {
+          run(clearCanvas(ids));
+        }}
         onOpen={() => {
           void pickFile().then(open);
         }}
@@ -731,6 +735,7 @@ function CommandBar({
   arranging,
   canArrange,
   canShake,
+  onClear,
   onOpen,
   onSave,
   onHelp,
@@ -747,6 +752,7 @@ function CommandBar({
   arranging: boolean;
   canArrange: boolean;
   canShake: boolean;
+  onClear: () => void;
   /** Pick a `.kln` and open it. */
   onOpen: () => void;
   /** Write the current document to a file. */
@@ -799,6 +805,16 @@ function CommandBar({
       </ToolButton>
       <ToolButton onClick={onShake} disabled={!canShake} title="Push overlapping states apart">
         Shake
+      </ToolButton>
+      {/* With Arrange and Shake, because all three act on the whole canvas rather than on a
+          selection. No confirmation: it is one undo away, and `canArrange` already means
+          "there is something here", which is exactly when clearing is possible. */}
+      <ToolButton
+        onClick={onClear}
+        disabled={!canArrange}
+        title="Remove every state and transition. Undo brings them back"
+      >
+        Clear
       </ToolButton>
 
       <Divider />
