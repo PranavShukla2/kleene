@@ -97,7 +97,16 @@ export const FAQ: readonly { question: string; answer: string }[] = [
   {
     question: 'Does it work offline?',
     answer:
-      'Not yet. It will: an installable progressive web app is planned for phase 5, and so is a native desktop build. There is no technical obstacle, because nothing here needs a network in the first place.',
+      'Yes, once you have opened it once. Everything is cached — the engine, the fonts and every page, not only the ones you visited — so a hard refresh with the network off still works. There was never a technical obstacle, because nothing here needs a network in the first place.',
+  },
+  {
+    // The question behind the question is usually "where is the download button", and the
+    // honest answer has two halves: you can install this today, and the thing people picture
+    // when they say "desktop app" does not exist yet. Saying only the second half sends
+    // someone away from a feature that is already built.
+    question: 'Can I install it, or download a desktop version?',
+    answer:
+      'You can install it now, from the browser — there is an install control in the address bar in Chrome and Edge, and Add to Dock or Add to Home Screen in Safari. It then opens in its own window with no browser furniture and works offline. A separate native desktop build is planned but not written yet, so there is nothing to download for that one; the installed web app is the same engine and the same files.',
   },
   {
     question: 'Is it open source?',
