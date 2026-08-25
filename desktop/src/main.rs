@@ -12,6 +12,24 @@
 //! is a line that has to be written twice and will eventually differ. The file dialogs below
 //! are the exception the rule is worth making: they are OS integration, not product.
 //!
+//! ## Updating
+//!
+//! The web app updates itself: the service worker fetches a new build and asks before
+//! switching. This one cannot, because it *contains* its copy of the app rather than
+//! fetching it — so a new version means replacing the application, which is what the updater
+//! plugin does. It checks a signed manifest on the releases page at launch, and the page
+//! decides what to do about it; nothing is installed without being asked.
+//!
+//! The check runs **in Rust**, not in the page. Calling it from JavaScript would mean adding
+//! Tauri's client packages to `web/`, which is a bundle with a 400 KB budget that every
+//! browser user pays for — to reach a feature only the desktop build can use. Keeping it here
+//! costs the web app nothing and keeps this crate from becoming a second front end.
+//!
+//! Signed with a key that is not in this repository. The public half is in `tauri.conf.json`
+//! and is what the app checks against; the private half signs release artifacts in CI and
+//! lives in a GitHub secret. That is the whole point of the scheme — a bundle that did not
+//! come from this project cannot be offered as an update to it.
+//!
 //! ## Opening a file by double-clicking it
 //!
 //! Three platforms, three mechanisms, and none of them is a command-line argument alone:
@@ -33,6 +51,8 @@ use std::sync::Mutex;
 
 use serde::Serialize;
 use tauri::{Manager, State};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+use tauri_plugin_updater::UpdaterExt;
 
 /// A file the operating system asked us to open, waiting for the page to collect it.
 #[derive(Default)]
@@ -99,11 +119,50 @@ fn is_desktop() -> bool {
     true
 }
 
+/// Ask about a new version, once, at launch.
+///
+/// Deliberately not silent. The app holds unsaved work — a machine someone is drawing lives in
+/// IndexedDB inside this window — and an updater that replaced the application underneath one
+/// is a way to lose it. The same reasoning as the web app's `prompt` service worker, for the
+/// same reason.
+///
+/// Every failure is swallowed. No network, a releases page that is unreachable, a manifest
+/// that will not parse: none of those are the user's problem and none should interrupt someone
+/// who opened this to draw an automaton. The next launch will try again.
+async fn offer_update(app: tauri::AppHandle) {
+    let Ok(updater) = app.updater() else { return };
+    let Ok(Some(update)) = updater.check().await else {
+        return;
+    };
+
+    let take = app
+        .dialog()
+        .message(format!(
+            "Kleene {} is available. You have {}.",
+            update.version, update.current_version
+        ))
+        .title("A new version")
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            "Install and restart".into(),
+            "Not now".into(),
+        ))
+        .blocking_show();
+
+    if !take {
+        return;
+    }
+
+    if update.download_and_install(|_, _| {}, || {}).await.is_ok() {
+        app.restart();
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![take_opened_file, is_desktop])
         .setup(|app| {
             // Windows and Linux: the path arrives in `argv`. Skipped on macOS, which uses the
@@ -115,7 +174,11 @@ fn main() {
                     stash(&state, std::path::Path::new(&argument));
                 }
             }
-            let _ = app;
+            // Spawned rather than awaited: a network round trip must not sit between the
+            // process starting and the window appearing.
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(offer_update(handle));
+
             Ok(())
         })
         .build(tauri::generate_context!())

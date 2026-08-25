@@ -32,6 +32,7 @@ import { Pricing } from '@/site/Pricing';
 import { Roadmap } from '@/overview/Roadmap';
 import { CommandPalette } from '@/site/CommandPalette';
 import { Footer } from '@/site/Footer';
+import { Download } from '@/site/Download';
 import { Jflap } from '@/site/Jflap';
 import { Nav } from '@/site/Nav';
 import { usePaletteShortcut } from '@/site/usePaletteShortcut';
@@ -230,6 +231,8 @@ function Page({
       return <About onNavigate={go} />;
     case 'jflap':
       return <Jflap onNavigate={go} onOpenPath={goPath} />;
+    case 'download':
+      return <Download onNavigate={go} />;
     case 'learn':
       return (
         <Learn

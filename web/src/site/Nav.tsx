@@ -33,6 +33,9 @@ const NAV: readonly { route: Route; label: string }[] = [
   // finished with the site to find. It is the page that answers "who made this and is it
   // serious", which is a question people have early rather than last.
   { route: 'about', label: 'About' },
+  // Last, and in the nav rather than only the footer: someone who wants the app on their
+  // machine is looking for a word, and the word they look for is "Download".
+  { route: 'download', label: 'Download' },
 ];
 
 export function Nav({

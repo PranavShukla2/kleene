@@ -18,7 +18,8 @@
         "minHeight": 560,
         "resizable": true,
         "fullscreen": false,
-        "dragDropEnabled": true
+        "dragDropEnabled": true,
+        "label": "main"
       }
     ],
     "security": {
@@ -27,7 +28,14 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg", "deb", "appimage", "msi", "nsis"],
+    "targets": [
+      "app",
+      "dmg",
+      "deb",
+      "appimage",
+      "msi",
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -37,21 +45,37 @@
     ],
     "category": "Education",
     "shortDescription": "Automata theory workbench",
-    "longDescription": "Draw a finite automaton, read it as a transition table, and watch a conversion happen one step at a time — with the reasoning attached to every step.",
+    "longDescription": "Draw a finite automaton, read it as a transition table, and watch a conversion happen one step at a time \u2014 with the reasoning attached to every step.",
     "copyright": "Dual-licensed MIT or Apache-2.0",
     "fileAssociations": [
       {
-        "ext": ["kln"],
+        "ext": [
+          "kln"
+        ],
         "name": "Kleene automaton",
         "description": "A saved Kleene automaton",
         "role": "Editor"
       },
       {
-        "ext": ["jff"],
+        "ext": [
+          "jff"
+        ],
         "name": "JFLAP file",
         "description": "A JFLAP finite automaton",
         "role": "Viewer"
       }
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE2QjFFNEU5Rjg5MTM2M0YKUldRL05wSDQ2ZVN4RnBhS0t3ZGdpNEs2YkViOVhnKzRjTXhFb3lVUGdmNmNpOEFuZDdFOW9zSmcK",
+      "endpoints": [
+        "https://github.com/PranavShukla2/kleene/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
