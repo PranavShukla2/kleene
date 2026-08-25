@@ -64,6 +64,8 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
     heading: 'Project',
     items: [
       { label: 'Getting started', route: 'start' },
+      { label: 'Practice problems', route: 'practice' },
+      { label: 'Pumping lemma game', route: 'pumping' },
       { label: 'Download', route: 'download' },
       { label: 'About', route: 'about' },
       { label: 'Compared to JFLAP', route: 'jflap' },

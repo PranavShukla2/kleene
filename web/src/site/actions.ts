@@ -49,6 +49,18 @@ export function siteActions(themeLabel: string): Action[] {
       keywords: ['start', 'begin', 'new', 'tutorial', 'how'],
     },
     {
+      id: 'go:practice',
+      label: 'Practice problems',
+      group: 'Go to',
+      keywords: ['exercise', 'problems', 'homework', 'solve', 'set'],
+    },
+    {
+      id: 'go:pumping',
+      label: 'Pumping lemma game',
+      group: 'Go to',
+      keywords: ['pumping', 'lemma', 'non-regular', 'proof', 'game'],
+    },
+    {
       id: 'go:download',
       label: 'Download',
       group: 'Go to',

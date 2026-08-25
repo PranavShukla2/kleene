@@ -26,6 +26,8 @@ const NAV: readonly { route: Route; label: string }[] = [
   { route: 'convert', label: 'Convert' },
   { route: 'examples', label: 'Examples' },
   { route: 'learn', label: 'Learn' },
+  // Between Learn and Docs, because it is the doing half of Learn.
+  { route: 'practice', label: 'Practice' },
   { route: 'docs', label: 'Docs' },
   { route: 'pricing', label: 'Pricing' },
   { route: 'roadmap', label: 'Roadmap' },

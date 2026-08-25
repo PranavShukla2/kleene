@@ -129,6 +129,8 @@ const PAGES = [
   '/jflap-alternative',
   '/download',
   '/start',
+  '/practice',
+  '/pumping-lemma',
   '/tools/nfa-to-dfa',
   '/tools/dfa-to-regex',
   '/tools/dfa-to-latex',
