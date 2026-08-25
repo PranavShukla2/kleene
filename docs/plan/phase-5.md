@@ -112,7 +112,7 @@ here is not shipping something imperfect; it is not shipping.
 - [x] **D5.** `.kln` format spec (from Phase 4 D2).
 - [x] **D6.** A `/jflap-alternative` page — honest comparison, `.jff` import front and centre
       (roadmap §6.1). Honest means naming what JFLAP does better.
-- [ ] **D7.** Tool landing pages, each a working tool with input prefilled, not a blog post
+- [x] **D7.** Tool landing pages, each a working tool with input prefilled, not a blog post
       (roadmap §6.1): `/tools/nfa-to-dfa`, `/tools/regex-to-nfa`, `/tools/dfa-minimizer`,
       `/tools/dfa-to-regex`, `/tools/dfa-to-latex`.
 
@@ -137,7 +137,12 @@ here is not shipping something imperfect; it is not shipping.
 > keys that no other command would accept. Both are fixed; the CLI also gained TikZ export,
 > which it had been missing since Phase 4 while the editor had it.
 >
-> **D7 is partly done.** Four tool pages exist; `dfa-to-regex` and `dfa-to-latex` do not.
+> **D7 is closed, and the last two were not the same page a fifth and sixth time.** The four
+> that existed are conversions rendered as panes. `dfa-to-regex` is a section further down
+> `/convert` that starts collapsed — right there, wrong on the page named after it — so a tool
+> can now ask for it open. `dfa-to-latex` is not a conversion at all: it is an export, and the
+> page shows the TikZ source for its own example rather than describing a panel in an editor
+> the visitor has not opened.
 
 ### Track E — Landing page
 
@@ -160,8 +165,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-                                  shorter feedback loop: writing it against gestures that are still moving means rewriting
-                                  it, and a tour that describes a gesture the editor no longer has is worse than none.
+                                      shorter feedback loop: writing it against gestures that are still moving means rewriting
+                                      it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching
