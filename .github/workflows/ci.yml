@@ -41,6 +41,8 @@ jobs:
       # Generated files are committed so the web build never needs a Rust toolchain. That
       # only works if they cannot drift: a generated file out of step with its source is
       # worse than a hand-written one, because it carries a promise it is not keeping.
+      # `generate-types.sh` also refuses two exported Rust types that share a name, which is a
+      # collision ts-rs resolves silently by dropping one of them. It has happened four times.
       - name: TypeScript bindings are up to date
         run: |
           ./scripts/generate-types.sh
