@@ -65,7 +65,7 @@
         "role": "Viewer"
       }
     ],
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": false
   },
   "plugins": {
     "updater": {

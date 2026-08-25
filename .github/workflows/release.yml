@@ -201,12 +201,38 @@ jobs:
           npm ci
           npm run build
 
+      # Updater artifacts are off in the committed config and turned on here, only when a
+      # signing key exists.
+      #
+      # I had assumed a missing key would simply skip them. It does not — Tauri fails the
+      # build outright with "a public key has been found, but no private key", which took all
+      # three desktop jobs down on the first tagged release. The comment that said otherwise
+      # was an assumption I had not run.
+      #
+      # Doing it here rather than asking for a config edit means adding the secret is the only
+      # step: the flag follows the key.
+      - name: Sign the update manifest, if there is a key to sign it with
+        shell: bash
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path('desktop/tauri.conf.json')
+          c = json.loads(p.read_text())
+          c['bundle']['createUpdaterArtifacts'] = True
+          p.write_text(json.dumps(c, indent=2) + '\n')
+          print('updater artifacts: on')
+          PY
+          else
+            echo "No signing key set, so this release ships without auto-update."
+            echo "Add TAURI_SIGNING_PRIVATE_KEY to enable it; the bundles install either way."
+          fi
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Signs the update manifest. Without these the build still succeeds and simply
-          # produces no updater artifacts, which is the right failure: a missing secret should
-          # not block a release, it should block auto-update.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
@@ -215,7 +241,6 @@ jobs:
           # Artifacts are collected and attached by the publish job below, so that every file
           # in a release arrives through one path rather than two.
           includeUpdaterJson: true
-          uploadReleaseAssets: false
 
       - uses: actions/upload-artifact@v4
         with:
