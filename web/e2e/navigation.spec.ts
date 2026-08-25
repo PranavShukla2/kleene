@@ -128,6 +128,8 @@ const PAGES = [
   '/about',
   '/jflap-alternative',
   '/tools/nfa-to-dfa',
+  '/tools/dfa-to-regex',
+  '/tools/dfa-to-latex',
 ];
 
 for (const path of PAGES) {
@@ -258,4 +260,28 @@ test('the JFLAP comparison names what JFLAP does better', async ({ page }) => {
 
   // The rows Kleene loses are labelled as such.
   await expect(main.getByText('JFLAP', { exact: true })).not.toHaveCount(0);
+});
+
+test('the LaTeX tool shows source, not a description of one', async ({ page }) => {
+  // D7. The one tool page that is an export rather than a conversion. Someone who searched
+  // "dfa to latex" wants to see the source — being told a panel exists in an editor they have
+  // not opened is the landing page this was written to avoid.
+  await page.goto('/tools/dfa-to-latex');
+
+  const source = page.locator('pre').first();
+  await expect(source).toBeVisible({ timeout: 20_000 });
+
+  const tex = await source.innerText();
+  expect(tex).toContain('\\begin{tikzpicture}');
+  // The two packages, named where a reader will find them. The commonest failure is a correct
+  // picture that will not compile in the document it was pasted into.
+  expect(tex).toContain('\\usetikzlibrary{automata,positioning}');
+});
+
+test('the state-elimination tool opens the section it is about', async ({ page }) => {
+  // It starts collapsed on /convert, where it is the fourth thing on the page. Landing on a
+  // closed section is the wrong answer for the page named after that conversion.
+  await page.goto('/tools/dfa-to-regex');
+  await expect(page.getByRole('heading', { name: 'DFA to regular expression' })).toBeVisible();
+  await expect(page.getByRole('main')).toContainText(/order/i);
 });

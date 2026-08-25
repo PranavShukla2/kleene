@@ -40,6 +40,14 @@ export interface Tool {
    * costs a conversion run and is not what the visitor came for.
    */
   elimination?: boolean;
+  /**
+   * Show the TikZ source for the worked example.
+   *
+   * For the one tool that is an export rather than a conversion. Someone who searched for
+   * "dfa to latex" wants to see source, not to be told a panel exists in an editor they have
+   * not opened.
+   */
+  latex?: boolean;
 }
 
 export const TOOLS: readonly Tool[] = [
@@ -158,6 +166,35 @@ export const TOOLS: readonly Tool[] = [
         question: 'Why does the expression get so long?',
         answer:
           'Because each elimination can multiply the number of paths that have to be described. It is exponential in the worst case: a 33-state machine produces an expression of about 177,000 characters. Kleene refuses above 25 states and says so rather than freezing, which is a measured limit and not a bug.',
+      },
+    ],
+  },
+  {
+    slug: 'dfa-to-latex',
+    title: 'DFA to LaTeX',
+    tagline: 'TikZ source for a state diagram, matching what is on screen.',
+    example: '(a|b)*abb',
+    panes: ['dfa'],
+    latex: true,
+    detail: [
+      'A state diagram in a document is usually either a screenshot — which goes blurry when printed and cannot match the surrounding type — or half an hour of positioning nodes by hand. This is the third option: a TikZ picture that typesets at the document\u2019s own size, in the document\u2019s own font, and can be edited afterwards because it is source rather than an image.',
+      'The coordinates are the arrangement you made. Open any machine in the editor, drag the states where you want them, and the exported picture keeps that layout — there is one test that renders both and compares the geometry, because an export that quietly drifts from the diagram that produced it is worse than no export.',
+    ],
+    faq: [
+      {
+        question: 'What do I need in my preamble?',
+        answer:
+          'Two lines, both named in a comment at the top of every export: \\usepackage{tikz} and \\usetikzlibrary{automata,positioning}. The commonest way this fails is a correct picture that will not compile in the document it was pasted into.',
+      },
+      {
+        question: 'Can I get a picture instead of source?',
+        answer:
+          'Yes — the editor exports SVG and PNG as well, cropped to the diagram and free of the grid and any selection. SVG for anything that will be printed; source is still better if you want it to match your document.',
+      },
+      {
+        question: 'Does it work for NFAs and ε-NFAs too?',
+        answer:
+          'Yes. Nothing about the exporter is specific to determinism — it draws the states and transitions it is given, ε-transitions included.',
       },
     ],
   },

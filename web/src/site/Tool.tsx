@@ -13,6 +13,7 @@
  */
 
 import { Convert } from '@/convert/Convert';
+import { TikzPreview } from '@/site/TikzPreview';
 import { Lift, Reveal, RevealGroup, RevealItem } from '@/site/motion';
 import { Band, BandHeading } from '@/site/page';
 import { TOOLS, type Tool as ToolSpec } from '@/site/tools';
@@ -20,6 +21,19 @@ import { toolPath } from '@/router';
 import type { Automaton } from '@/model/automaton';
 import type { Engine } from '@/wasm/loader';
 import type { Route } from '@/router';
+
+/**
+ * The DFA for a tool's worked example, or nothing if the engine has not arrived.
+ *
+ * A `Compilation` is a union — an expression either parsed or did not — and the failure arm
+ * has no stages on it. These examples are constants in this repository and a test asserts they
+ * all parse, so the failure case here is unreachable rather than unhandled; narrowing it is
+ * what keeps that true if one is ever edited into something that does not compile.
+ */
+function dfaOf(engine: Engine | undefined, source: string): Automaton | undefined {
+  const compiled = engine?.compileRegex(source);
+  return compiled?.kind === 'parsed' ? compiled.dfa.automaton : undefined;
+}
 
 export function Tool({
   tool,
@@ -71,6 +85,14 @@ export function Tool({
         onOpenInEditor={onOpenInEditor}
         embedded={{ source: tool.example, panes: tool.panes, elimination: tool.elimination }}
       />
+
+      {tool.latex && (
+        <Band>
+          {/* The same DFA the converter above is showing, from the same one call — not a
+              second compilation that could answer a different question. */}
+          <TikzPreview engine={engine} automaton={dfaOf(engine, tool.example)} />
+        </Band>
+      )}
 
       <Band>
         <BandHeading title="How it works" />
