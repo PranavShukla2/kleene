@@ -37,12 +37,27 @@ _2026-08-24 onwards_
 - **A first-run tour** in the editor, three cards long and dismissed for good. It exists for
   one gesture: a transition is drawn from a state's _rim_, and someone who never learns that
   concludes the editor cannot draw transitions at all.
+- **A desktop app** for macOS, Windows and Linux — a 4.6 MB native window around the same files
+  the browser gets, with the operating system's own open and save dialogs, and an update check
+  that asks before replacing itself. Measured, not estimated.
+- **A `/download` page** stating plainly that most people do not need it, how to install from
+  the browser instead, and exactly what an unsigned build's warning will say.
+- **Generated algorithm pages.** Every step in `docs/algorithms/` is a sentence the
+  implementation produced while running — CI regenerates them and fails on a difference, so a
+  page cannot describe an algorithm the code does not have.
+- **A getting-started page**, and landing pages for all six conversions.
 - **Project hygiene** — `CONTRIBUTING.md` with the four architectural rules a patch is
   expected not to break, `SECURITY.md` written against the threat model a backendless app
   actually has, the Contributor Covenant, and issue templates built around the share link.
 
 ### Fixed
 
+- **The editor was unusable on a phone.** The command bar was 850px of controls in a 360px
+  window with no way to scroll, so Open, Save, Undo and Redo were unreachable rather than
+  merely awkward; side panels hung off the left edge with their first column of text cut in
+  half; and creating a state was impossible, because double-click and HTML5 drag are both
+  mouse-only. The drag now runs on pointer events, which one gesture covers mouse, touch and
+  the desktop app alike.
 - The end-to-end job in CI had been failing on every push since it was added: Playwright's
   web server ran the full build, which shells out to `wasm-pack`, which that job does not
   install. The server never started and all thirty tests timed out — a total failure wearing

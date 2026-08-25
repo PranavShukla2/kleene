@@ -152,6 +152,26 @@ here is not shipping something imperfect; it is not shipping.
 > page shows the TikZ source for its own example rather than describing a panel in an editor
 > the visitor has not opened.
 
+> **Track D is closed, and two of its three open items were smaller than their reputation.**
+>
+> **D3 needed no build step at all.** The note above said it wanted "a rendering path from
+> `Step` to prose outside React, which is a build step nobody has designed". That was wrong:
+> `Step::detail` has been a finished sentence since Phase 1, so the path already existed and
+> the whole generator is 150 lines. Deferring it for a phase on the strength of an unexamined
+> assumption is the cost of not checking one.
+>
+> **The gate matters more than the pages.** They are committed and diffed by CI, so "three
+> consumers of one source of truth" is now checked rather than asserted — change an
+> algorithm's reasoning without regenerating and the build fails. Verified by doing exactly
+> that. The first attempt at the check was inert, because `docs/algorithms/` was untracked and
+> `git diff` does not see untracked files; a gate that cannot fail is worse than no gate, and
+> only deliberately breaking it revealed that.
+>
+> **D7's last two were not the same page a fifth and sixth time.** `dfa-to-regex` is a section
+> that starts collapsed — correct on `/convert`, wrong on the page named after it.
+> `dfa-to-latex` is not a conversion but an export, so it shows source rather than describing a
+> panel in an editor the visitor has not opened.
+
 ### Track E — Landing page
 
 > **The shell was built early**, in Phase 2 Track K, so that everything after it could be seen
@@ -173,8 +193,8 @@ here is not shipping something imperfect; it is not shipping.
       shortcut sheet read before the first success has already lost most of its audience.
 
       Deliberately scheduled *here* rather than in Phase 2. A tour is documentation with a
-                                              shorter feedback loop: writing it against gestures that are still moving means rewriting
-                                              it, and a tour that describes a gesture the editor no longer has is worse than none.
+                                                  shorter feedback loop: writing it against gestures that are still moving means rewriting
+                                                  it, and a tour that describes a gesture the editor no longer has is worse than none.
 
 - [x] **E7.** The account-free path states what it lacks, plainly, once (roadmap §2.8). Not a
       nag — a line saying work stays in this browser and is not synced. When §9's teaching
@@ -200,7 +220,10 @@ here is not shipping something imperfect; it is not shipping.
       attach to a GitHub Release (roadmap §4).
 - [ ] **F2.** Publish `kleene-core` to crates.io. 🔴 **DECISION D17** — name availability
       and the crates.io account are Pranav's.
-- [ ] **F3.** `cargo dist` or equivalent for installers.
+- [x] **F3.** `cargo dist` or equivalent for installers. **Covered without it.** Tauri's
+      bundler already produces `.dmg`, `.msi`, `.nsis`, `.deb` and `.AppImage`, and the CLI
+      ships as an archive per platform. A third tool doing what two already do would be one
+      more thing to keep in step with the other two.
 - [x] **F4.** Changelog, generated from the commit history — which is why commits have been
       written to read as a build log from the first one.
 - [ ] **F5.** Tag `v1.0.0`. **Bump the workspace version first** — `Cargo.toml` still says
@@ -275,9 +298,9 @@ here is not shipping something imperfect; it is not shipping.
 
 - [x] Installable and fully functional offline.
 - [ ] Desktop builds exist for three platforms and have been launched at least once each.
+      _(Built for all three and released. Launching each is the part a CI runner cannot do.)_
 - [x] ~20 examples load in one click and are covered by CI.
-- [ ] Docs cover getting started, algorithms, CLI, and the format. _(CLI and format done; the
-      generated algorithm pages are D3, deferred.)_
+- [x] Docs cover getting started, algorithms, CLI, and the format.
 - [x] The landing page shows a working automaton with no interaction required.
 - [x] The example gallery is browsable without an account, and every card opens in one click.
 - [x] A first-time visitor reaches their first working automaton without opening the docs.
