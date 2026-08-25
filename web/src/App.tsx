@@ -12,6 +12,7 @@ import { Canvas } from '@/canvas/Canvas';
 import { EmptyCanvas } from '@/canvas/EmptyCanvas';
 import { Tour } from '@/canvas/Tour';
 import { DockPanel, DockRail } from '@/editor/Dock';
+import { InstallButton } from '@/editor/InstallButton';
 import { StatePalette } from '@/editor/StatePalette';
 import { tourSeen } from '@/canvas/tourSeen';
 import { ExportPanel } from '@/panels/Export';
@@ -840,6 +841,9 @@ function CommandBar({
         <ToolButton onClick={onCycleTheme} title="Cycle theme">
           {theme}
         </ToolButton>
+        {/* Beside the theme and the help key: things about the app rather than about the
+            machine. It removes itself once the app is installed. */}
+        <InstallButton />
         <ToolButton onClick={onHelp} title="Keyboard shortcuts">
           ?
         </ToolButton>
