@@ -245,6 +245,27 @@ fn display_name(argument: &str) -> &str {
     }
 }
 
+/// The two names an `equiv` message uses, kept distinguishable.
+///
+/// Basenames read better than paths — "student-02.kln" beats
+/// "submissions/2026/week3/student-02.kln" in a message someone has to scan. But a GitHub
+/// Classroom layout puts the answer key in `reference/even-as.kln` and the student's work in
+/// `submission/even-as.kln`, and stripping both to their basename produced
+///
+///   `b` is in even-as.kln, but even-as.kln rejects it.
+///
+/// which names the same file twice and says nothing. When the short forms collide, the paths
+/// as given are used instead: longer, and unambiguous, which is the trade worth making in the
+/// one case where it matters.
+fn display_pair<'a>(reference: &'a str, candidate: &'a str) -> (&'a str, &'a str) {
+    let (left, right) = (display_name(reference), display_name(candidate));
+    if left == right {
+        (reference, candidate)
+    } else {
+        (left, right)
+    }
+}
+
 /// Print the reasoning behind a result, when asked for.
 ///
 /// The steps come from the engine; this only decides where they go.
@@ -382,10 +403,10 @@ fn equiv_command(
             // and stops is exactly the JFLAP behaviour this project exists to improve on.
             // The flag stays for scripts that want only the verdict line.
             if show_counterexample || !cli.json {
-                println!(
-                    "  {}",
-                    found.explain(display_name(reference), display_name(candidate))
-                );
+                println!("  {}", {
+                    let (left, right) = display_pair(reference, candidate);
+                    found.explain(left, right)
+                });
             }
             Ok(ExitCode::from(NEGATIVE))
         }
@@ -650,6 +671,25 @@ mod tests {
             .edge("a", "b", "x")
             .edge("b", "c", "x")
             .build()
+    }
+
+    #[test]
+    fn two_files_with_one_basename_are_still_told_apart() {
+        // GitHub Classroom puts the answer key at `reference/even-as.kln` and the student's
+        // work at `submission/even-as.kln`. Stripping both to a basename named the same file
+        // twice and said nothing.
+        let (left, right) = display_pair("reference/even-as.kln", "submission/even-as.kln");
+        assert_ne!(left, right);
+        assert!(left.contains("reference"));
+        assert!(right.contains("submission"));
+    }
+
+    #[test]
+    fn distinct_names_stay_short() {
+        // The ordinary case, and the reason basenames are the default: a message someone has
+        // to scan reads better as `student-02.kln` than as the path it came from.
+        let (left, right) = display_pair("a*", "b*");
+        assert_eq!((left, right), ("a*", "b*"));
     }
 
     #[test]
