@@ -8,7 +8,7 @@
  * it would matter to leak.
  */
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/classroom');
@@ -83,4 +83,59 @@ test('the nav marks it as unfinished', async ({ page }) => {
   // The dot carries the meaning for anyone hovering or using a screen reader; the page says it
   // in full the moment they arrive.
   await expect(classroom.getByLabel('coming soon')).toBeVisible();
+});
+
+/** Get past the latch and sign in. Every teacher test starts here. */
+async function asTeacher(page: Page) {
+  await page.getByText('Working on this?').click();
+  await page.getByLabel('Development PIN').fill('9696');
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+  await page.getByRole('button', { name: /Sign in/ }).click();
+  await page.getByRole('button', { name: 'Create a class' }).click();
+  await page.getByRole('button', { name: 'Set an assignment' }).click();
+}
+
+test('a target that does not parse is refused before anyone is given the link', async ({
+  page,
+}) => {
+  // The expensive failure this form exists to prevent: thirty students opening a broken
+  // problem. The engine is already in the tab, so there is no reason to find out later.
+  await asTeacher(page);
+  await page.getByPlaceholder('(b + ab*a)*').fill('a+');
+
+  await expect(page.getByText(/not a regular expression/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Set the assignment' })).toBeDisabled();
+});
+
+test('a valid target reports how many states the answer needs', async ({ page }) => {
+  await asTeacher(page);
+  await page.getByPlaceholder('(b + ab*a)*').fill('(b + ab*a)*');
+  await expect(page.getByText(/needs 2 states at minimum/)).toBeVisible();
+});
+
+test('an unachievable budget is refused, with the number that would work', async ({ page }) => {
+  /*
+    The worst of the three, because it is invisible: a problem with a budget below its minimum
+    is unsolvable, and unsolvable in a way that looks exactly like being bad at minimization. A
+    student would never suspect the problem.
+  */
+  await asTeacher(page);
+  await page.getByPlaceholder('(b + ab*a)*').fill('(b + ab*a)*');
+  await page.getByPlaceholder('optional').fill('1');
+
+  await expect(page.getByText(/smallest machine for this language has 2 states/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Set the assignment' })).toBeDisabled();
+});
+
+test('a complete assignment can be set', async ({ page }) => {
+  await asTeacher(page);
+  await page.getByPlaceholder('Week 3 — parity').fill('Week 3 — parity');
+  await page.getByPlaceholder(/Strings over/).fill('An even number of a’s.');
+  await page.getByPlaceholder('(b + ab*a)*').fill('(b + ab*a)*');
+  await page.getByPlaceholder('optional').fill('2');
+
+  await page.getByRole('button', { name: 'Set the assignment' }).click();
+
+  await expect(page.getByText('Week 3 — parity')).toBeVisible();
+  await expect(page.getByText(/at most 2 states/)).toBeVisible();
 });

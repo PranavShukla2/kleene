@@ -14,7 +14,8 @@ import { Band, BandHeading, Masthead } from '@/site/page';
 import { useAccount, useClassroomApi, hasServer } from '@/classroom/useClassroom';
 import { signInLocally } from '@/classroom/local';
 import { lock, tryPin, unlocked } from '@/classroom/gate';
-import type { ClassSummary } from '@/classroom/api';
+import { Compose } from '@/classroom/Compose';
+import type { Assignment, ClassSummary } from '@/classroom/api';
 import type { Engine } from '@/wasm/loader';
 import type { Route } from '@/router';
 
@@ -170,6 +171,9 @@ function Inside({ engine, onLock }: { engine: Engine | undefined; onLock: () => 
   const { account, loading, refresh, signOut } = useAccount(api);
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [error, setError] = useState<string | undefined>(undefined);
+  /** Which class is having an assignment written for it, if any. */
+  const [composing, setComposing] = useState<string | undefined>(undefined);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
 
   useEffect(() => {
     // Nothing to fetch signed out, and nothing to clear either: the list is rendered only when
@@ -286,9 +290,67 @@ function Inside({ engine, onLock }: { engine: Engine | undefined; onLock: () => 
                     assignments
                   </p>
                 </div>
-                <code className="ml-auto rounded-full border border-k-border px-3 py-1 font-mono text-sm">
+                <code
+                  title="Students join with this. Read it out; there is nothing to email."
+                  className="ml-auto rounded-full border border-k-border px-3 py-1 font-mono text-sm"
+                >
                   {entry.joinCode}
                 </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComposing(composing === entry.id ? undefined : entry.id);
+                  }}
+                  className="rounded-full border border-k-border-strong bg-k-surface-raised px-4 py-1.5 text-sm font-medium"
+                >
+                  {composing === entry.id ? 'Close' : 'Set an assignment'}
+                </button>
+
+                {composing === entry.id && (
+                  <div className="w-full">
+                    <Compose
+                      engine={engine}
+                      onCancel={() => {
+                        setComposing(undefined);
+                      }}
+                      onCreate={(input) => {
+                        void api.createAssignment(entry.id, input).then((created) => {
+                          setAssignments((was) => [...was, created]);
+                          setComposing(undefined);
+                          setClasses((was) =>
+                            was.map((candidate) =>
+                              candidate.id === entry.id
+                                ? {
+                                    ...candidate,
+                                    assignmentCount: candidate.assignmentCount + 1,
+                                  }
+                                : candidate,
+                            ),
+                          );
+                        });
+                      }}
+                    />
+                  </div>
+                )}
+
+                {assignments
+                  .filter((assignment) => assignment.classId === entry.id)
+                  .map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className="w-full rounded-xl border border-k-border bg-k-surface-raised p-4"
+                    >
+                      <p className="text-sm font-medium">{assignment.title}</p>
+                      <p className="mt-1 text-sm text-k-text-muted">{assignment.prompt}</p>
+                      <p className="mt-2 font-mono text-xs text-k-text-faint">
+                        {assignment.budget !== undefined
+                          ? `at most ${String(assignment.budget)} states`
+                          : 'no state budget'}
+                        {assignment.dueAt !== undefined &&
+                          ` · due ${new Date(assignment.dueAt).toLocaleString()}`}
+                      </p>
+                    </div>
+                  ))}
               </RevealItem>
             ))}
           </RevealGroup>
