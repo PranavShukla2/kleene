@@ -136,6 +136,64 @@ test('a complete assignment can be set', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Set the assignment' }).click();
 
-  await expect(page.getByText('Week 3 — parity')).toBeVisible();
-  await expect(page.getByText(/at most 2 states/)).toBeVisible();
+  /*
+    Twice, and that is correct rather than a duplicate: one browser is both people here, so a
+    new assignment shows in the teacher's list *and* in the student's. Asserting the count
+    documents that, where a `.first()` would have hidden it.
+  */
+  await expect(page.getByText('Week 3 — parity')).toHaveCount(2);
+  await expect(page.getByText(/at most 2 states/).first()).toBeVisible();
+});
+
+/** A class with one assignment set, and a machine saved in the editor to submit. */
+async function withAssignment(page: Page) {
+  await page.goto('/editor');
+  await expect(page.getByText('saved', { exact: true })).toBeVisible();
+
+  await page.goto('/classroom');
+  await asTeacher(page);
+  await page.getByPlaceholder('Week 3 — parity').fill('Parity');
+  await page.getByPlaceholder(/Strings over/).fill('An even number of a’s.');
+  await page.getByPlaceholder('(b + ab*a)*').fill('(b + ab*a)*');
+  await page.getByRole('button', { name: 'Set the assignment' }).click();
+}
+
+test('a newly set assignment appears without a reload', async ({ page }) => {
+  // Teacher and student are two views of one state here, and the student's list is fetched
+  // when it mounts — so setting an assignment left it stale. Invisible in a two-person system
+  // where those are different browsers, and immediate in this one.
+  await withAssignment(page);
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+});
+
+test('a wrong submission comes back with the string that proves it wrong', async ({ page }) => {
+  // The whole project, in the place a mark would normally go.
+  await withAssignment(page);
+  await page.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(page.getByText(/accepts|rejects/)).toBeVisible();
+  await expect(page.getByText(/Trace that string/)).toBeVisible();
+});
+
+test('every attempt is kept, not just the latest', async ({ page }) => {
+  // A student asking "what did I submit at four o'clock" deserves an answer, and an appeal
+  // needs the history. Keeping only the last throws both away to save a row.
+  await withAssignment(page);
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByText(/accepts|rejects/).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByText(/accepts|rejects/)).toHaveCount(2);
+});
+
+test('joining with a code that matches nothing says so', async ({ page }) => {
+  await page.goto('/classroom');
+  await page.getByText('Working on this?').click();
+  await page.getByLabel('Development PIN').fill('9696');
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+  await page.getByRole('button', { name: /Sign in/ }).click();
+
+  await page.getByLabel('Class join code').fill('ZZZZZZ');
+  await page.getByRole('button', { name: 'Join' }).click();
+  await expect(page.getByRole('alert')).toContainText(/No class has that code/);
 });

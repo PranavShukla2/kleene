@@ -15,6 +15,7 @@ import { useAccount, useClassroomApi, hasServer } from '@/classroom/useClassroom
 import { signInLocally } from '@/classroom/local';
 import { lock, tryPin, unlocked } from '@/classroom/gate';
 import { Compose } from '@/classroom/Compose';
+import { Student } from '@/classroom/Student';
 import type { Assignment, ClassSummary } from '@/classroom/api';
 import type { Engine } from '@/wasm/loader';
 import type { Route } from '@/router';
@@ -30,6 +31,7 @@ export function Classroom({
   return open ? (
     <Inside
       engine={engine}
+      onNavigate={onNavigate}
       onLock={() => {
         lock();
         setOpen(false);
@@ -166,7 +168,15 @@ function Locked({
 }
 
 /** The classroom, once someone is in. */
-function Inside({ engine, onLock }: { engine: Engine | undefined; onLock: () => void }) {
+function Inside({
+  engine,
+  onLock,
+  onNavigate,
+}: {
+  engine: Engine | undefined;
+  onLock: () => void;
+  onNavigate: (to: Route) => void;
+}) {
   const api = useClassroomApi(engine);
   const { account, loading, refresh, signOut } = useAccount(api);
   const [classes, setClasses] = useState<ClassSummary[]>([]);
@@ -174,6 +184,17 @@ function Inside({ engine, onLock }: { engine: Engine | undefined; onLock: () => 
   /** Which class is having an assignment written for it, if any. */
   const [composing, setComposing] = useState<string | undefined>(undefined);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  /*
+    Bumped whenever the set of assignments changes, and passed down so the student's list
+    reloads.
+
+    Needed because teacher and student are two views of one state here, and the student's list
+    is fetched once when it mounts. Setting an assignment left it stale — invisible in a
+    two-person system, where the teacher and the student are different browsers, and immediate
+    in this one. A counter rather than lifting the whole list, because the list belongs to the
+    view that shows it.
+  */
+  const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
     // Nothing to fetch signed out, and nothing to clear either: the list is rendered only when
@@ -316,6 +337,7 @@ function Inside({ engine, onLock }: { engine: Engine | undefined; onLock: () => 
                       onCreate={(input) => {
                         void api.createAssignment(entry.id, input).then((created) => {
                           setAssignments((was) => [...was, created]);
+                          setGeneration((was) => was + 1);
                           setComposing(undefined);
                           setClasses((was) =>
                             was.map((candidate) =>
@@ -355,6 +377,21 @@ function Inside({ engine, onLock }: { engine: Engine | undefined; onLock: () => 
             ))}
           </RevealGroup>
         </Band>
+      )}
+
+      {account && (
+        <Student
+          api={api}
+          engine={engine}
+          classes={classes}
+          generation={generation}
+          onJoined={(joined) => {
+            // Replace rather than append: joining a class you are already in is idempotent on
+            // the server, and appending would show it twice.
+            setClasses((was) => [...was.filter((entry) => entry.id !== joined.id), joined]);
+          }}
+          onNavigate={onNavigate}
+        />
       )}
 
       {loading && (
