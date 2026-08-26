@@ -34,14 +34,27 @@ import type { Route } from '@/router';
  * before anyone would look for them: the landing page says the tool is free in its first
  * screen, and the roadmap is a document for people already invested. Practice and Download
  * stayed, because they are things a visitor wants to *do*.
+ *
+ * Adding "Classroom" pushed the bar back over the edge, and the test written for the previous
+ * overflow caught it — which is the argument for having written it.
+ *
+ * The fix is *not* a responsive breakpoint, which was the first attempt and does nothing here:
+ * the bar is capped at `max-w-6xl`, so it is 1152px wide at 1280 and at 2560 alike. A wider
+ * screen buys no room at all, and hiding an item above some width hides it exactly where there
+ * was already space. Forty pixels had to actually go, so the tagline went — as the note beside
+ * it always said it would.
  */
-const NAV: readonly { route: Route; label: string }[] = [
+const NAV: readonly { route: Route; label: string; soon?: boolean }[] = [
   { route: 'convert', label: 'Convert' },
   { route: 'examples', label: 'Examples' },
   { route: 'learn', label: 'Learn' },
   // Beside Learn, because it is the doing half of it.
   { route: 'practice', label: 'Practice' },
   { route: 'docs', label: 'Docs' },
+  // Tagged rather than hidden. Someone handed this link should be able to see where the
+  // project is going and be told plainly that this part is not there yet — an untagged link
+  // to unfinished work is the thing worth avoiding, not the link itself.
+  { route: 'classroom', label: 'Classroom', soon: true },
   // About was reachable only from the footer, which is a page you have to already be
   // finished with the site to find. It is the page that answers "who made this and is it
   // serious", which is a question people have early rather than last.
@@ -113,14 +126,6 @@ export function Nav({
           <span className="k-gradient-text font-mono text-lg font-semibold tracking-tight">
             kleene
           </span>
-          {/*
-            The tagline is the first thing to go. It says what the nav's own items already
-            imply, and at 1024 the seven of them plus a call to action leave no room for a
-            second opinion about what this is.
-          */}
-          <span className="hidden text-[13px] whitespace-nowrap text-k-text-faint xl:inline">
-            automata workbench
-          </span>
         </button>
 
         <nav className="ml-1 hidden items-center gap-0.5 lg:flex" aria-label="Sections">
@@ -148,7 +153,19 @@ export function Nav({
                   transition={SPRING}
                 />
               )}
-              <span className="relative">{item.label}</span>
+              <span className="relative inline-flex items-center gap-1.5">
+                {item.label}
+                {item.soon && (
+                  /* A dot, not the word: the nav has no room for "coming soon", and the page
+                     itself says it in full the moment anyone arrives. The title attribute
+                     carries the meaning for anyone who hovers or reads it aloud. */
+                  <span
+                    aria-label="coming soon"
+                    title="Coming soon"
+                    className="h-1.5 w-1.5 rounded-full bg-k-primary/60"
+                  />
+                )}
+              </span>
             </button>
           ))}
         </nav>
