@@ -29,6 +29,7 @@ import type {
   Attempt,
   ClassSummary,
   ClassroomApi,
+  Role,
   Standing,
 } from '@/classroom/api';
 import { ApiError } from '@/classroom/api';
@@ -38,12 +39,41 @@ const KEY = 'kleene.classroom';
 
 interface Stored {
   account?: Account;
-  classes: (Omit<ClassSummary, 'studentCount' | 'assignmentCount'> & { members: string[] })[];
+  /**
+   * Everyone who has signed in on this browser.
+   *
+   * Needed because signing out and back in has to return you to *the same person*. A first
+   * version minted a fresh id on every sign-in, so a teacher who signed out and back in was a
+   * stranger to the class they had just created — their own results table was empty.
+   *
+   * Keyed by email, which is this adapter's stand-in for the `users.google_sub UNIQUE` in the
+   * plan's schema: an identity provider hands back a stable subject, and the row is upserted
+   * against it rather than inserted.
+   */
+  accounts?: Account[];
+  /**
+   * Classes, each with its own enrolment list.
+   *
+   * The role lives on the *membership*, not on the class. A first version put a single `role`
+   * on the class record, and joining someone else's class then made you a teacher of it —
+   * because there was only one field and the creator had already set it. That is the same
+   * shape as the plan's `enrolments (class_id, user_id, role)` table, and for the same reason:
+   * one person is a teacher in one module and a student in another, and a TA is both in the
+   * same term.
+   */
+  classes: {
+    id: string;
+    name: string;
+    term: string;
+    joinCode: string;
+    archivedAt?: string;
+    members: { userId: string; role: Role }[];
+  }[];
   assignments: Assignment[];
   attempts: Attempt[];
 }
 
-const EMPTY: Stored = { classes: [], assignments: [], attempts: [] };
+const EMPTY: Stored = { classes: [], assignments: [], attempts: [], accounts: [] };
 
 function read(): Stored {
   try {
@@ -113,13 +143,30 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
     return state.account;
   };
 
+  /**
+   * What role the signed-in account has in a class.
+   *
+   * `undefined` for a class they are not in, which is the same answer as "not allowed" for
+   * every caller here — a class you are not a member of should be indistinguishable from a
+   * class that does not exist.
+   */
+  const roleIn = (state: Stored, classId: string): Role | undefined => {
+    const account = state.account;
+    if (!account) return undefined;
+    const entry = state.classes.find((candidate) => candidate.id === classId);
+    return entry?.members.find((member) => member.userId === account.id)?.role;
+  };
+
   const summarise = (state: Stored, entry: Stored['classes'][number]): ClassSummary => ({
     id: entry.id,
     name: entry.name,
     term: entry.term,
-    role: entry.role,
+    // The viewer's own role, not the class's. There is no such thing as a class's role.
+    role: roleIn(state, entry.id) ?? 'student',
     joinCode: entry.joinCode,
-    studentCount: entry.members.length,
+    // Students, not members: a teacher is not one of their own students, and a roster count
+    // that includes the person reading it is off by one in the direction that looks careless.
+    studentCount: entry.members.filter((member) => member.role === 'student').length,
     assignmentCount: state.assignments.filter((a) => a.classId === entry.id).length,
     ...(entry.archivedAt !== undefined ? { archivedAt: entry.archivedAt } : {}),
   });
@@ -140,8 +187,12 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
 
     classes: () =>
       withState((state) => {
-        requireAccount(state);
-        return state.classes.map((entry) => summarise(state, entry));
+        const account = requireAccount(state);
+        // Only classes you are in. A class you are not a member of should be indistinguishable
+        // from one that does not exist.
+        return state.classes
+          .filter((entry) => entry.members.some((member) => member.userId === account.id))
+          .map((entry) => summarise(state, entry));
       }),
 
     createClass: ({ name, term }) =>
@@ -151,9 +202,10 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
           id: id(),
           name,
           term,
-          role: 'teacher' as const,
           joinCode: joinCode(),
-          members: [account.id],
+          // Creating a class is what makes you its teacher. There is no separate step, and no
+          // way to be a teacher of a class you did not create or were not made one of.
+          members: [{ userId: account.id, role: 'teacher' as const }],
         };
         state.classes.push(entry);
         return summarise(state, entry);
@@ -166,7 +218,11 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
           (candidate) => candidate.joinCode.toUpperCase() === code.trim().toUpperCase(),
         );
         if (!entry) throw new ApiError('No class has that code.', 'not-found');
-        if (!entry.members.includes(account.id)) entry.members.push(account.id);
+        // Joining is idempotent, and never changes a role you already have — a teacher who
+        // types their own join code stays the teacher.
+        if (!entry.members.some((member) => member.userId === account.id)) {
+          entry.members.push({ userId: account.id, role: 'student' });
+        }
         return summarise(state, entry);
       }),
 
@@ -178,7 +234,20 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
       }),
 
     assignments: (classId) =>
-      Promise.resolve(read().assignments.filter((entry) => entry.classId === classId)),
+      withState((state) => {
+        const role = roleIn(state, classId);
+        const found = state.assignments.filter((entry) => entry.classId === classId);
+
+        // The answer key never leaves the teacher's view.
+        //
+        // `api.ts` has said "never sent to students" since the contract was written, and this
+        // returned the whole record to everyone — so a student could read the target language
+        // out of a network response and solve every problem by pasting it back. Stripping it
+        // here rather than hiding it in the UI is the difference between a rule and a wish:
+        // the field is not in the object, so no component can leak it by accident.
+        if (role === 'teacher') return found;
+        return found.map(({ targetRegex: _hidden, ...rest }) => rest);
+      }),
 
     createAssignment: (classId, input) =>
       withState((state) => {
@@ -191,6 +260,14 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
     standings: (assignmentId) =>
       withState((state) => {
         const account = requireAccount(state);
+
+        // Who else has solved what is a teacher's view. A student seeing the roster learns
+        // their classmates' names, their attempt counts and who is struggling — none of which
+        // is theirs to know, and none of which they asked for.
+        const assignment = state.assignments.find((entry) => entry.id === assignmentId);
+        if (!assignment || roleIn(state, assignment.classId) !== 'teacher') {
+          throw new ApiError('Only a teacher can see the class’s results.', 'forbidden');
+        }
         const mine = state.attempts.filter((a) => a.assignmentId === assignmentId);
         if (mine.length === 0) return [];
 
@@ -229,6 +306,10 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
         if (!running) {
           throw new ApiError('The engine has not finished loading.', 'offline');
         }
+
+        // Read from stored state, not from anything the caller sent. This is the local stand-in
+        // for the plan's central decision: the server re-checks with its own copy of the
+        // problem, so a student who edits their copy of the assignment changes nothing.
 
         // Checked properly, exactly as the server would — which is the point of this adapter
         // being real rather than stubbed.
@@ -277,10 +358,20 @@ export function localClassroom(engine: () => Engine | undefined): ClassroomApi {
   };
 }
 
-/** Sign in locally, standing in for the Google round trip. */
+/**
+ * Sign in locally, standing in for the Google round trip.
+ *
+ * Upserts by email rather than minting an id. Signing out and back in must return the same
+ * person, or a teacher who does it becomes a stranger to their own class — which is what
+ * happened, and what the accounts list exists to prevent.
+ */
 export function signInLocally(displayName: string, email: string): Account {
   const state = read();
-  const account: Account = { id: id(), email, displayName };
+  const known = (state.accounts ?? []).find((candidate) => candidate.email === email);
+
+  const account: Account = known ?? { id: id(), email, displayName };
+  if (!known) state.accounts = [...(state.accounts ?? []), account];
+
   state.account = account;
   write(state);
   return account;

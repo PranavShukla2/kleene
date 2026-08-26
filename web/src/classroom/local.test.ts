@@ -51,6 +51,28 @@ describe('signing in', () => {
     signInLocally('Ada', 'ada@example.test');
     await expect(api().me()).resolves.toMatchObject({ displayName: 'Ada' });
   });
+
+  it('returns the same person when they sign in again', async () => {
+    /*
+      Signing out and back in must not mint a new identity. It did, and the consequence was
+      specific: a teacher who signed out became a stranger to the class they had just created,
+      and their own results table was empty.
+
+      Email stands in for `users.google_sub UNIQUE` — an identity provider hands back a stable
+      subject and the row is upserted against it, never inserted blindly.
+    */
+    const first = signInLocally('Ada', 'ada@example.test');
+    await api().signOut();
+    const again = signInLocally('Ada', 'ada@example.test');
+
+    expect(again.id).toBe(first.id);
+  });
+
+  it('keeps two different people apart', () => {
+    const teacher = signInLocally('Teacher', 'teacher@example.test');
+    const student = signInLocally('Student', 'student@example.test');
+    expect(student.id).not.toBe(teacher.id);
+  });
 });
 
 describe('classes', () => {
@@ -220,5 +242,80 @@ describe('what one browser cannot honestly do', () => {
     const standings = await api(engine).standings(task.id);
     expect(standings).toHaveLength(1);
     expect(standings[0]?.solved).toBe(true);
+  });
+});
+
+describe('what a student may not see', () => {
+  /**
+   * A second account, joined to a class it did not create.
+   *
+   * The local adapter is one browser, so "another person" is modelled by signing in again —
+   * which is exactly what the real adapter does with two Google accounts.
+   */
+  function asStudentOf(code: string) {
+    signInLocally('Student', 'student@example.test');
+    return api(fakeEngine(true)).joinClass(code);
+  }
+
+  it('never hands a student the answer key', async () => {
+    /*
+      The contract has said "never sent to students" since it was written, and the adapter
+      returned the whole record to everybody — so a student could read the target language out
+      of a response and solve every problem by pasting it back.
+
+      Stripped in the adapter rather than hidden in the UI: the field is not in the object, so
+      no component can leak it by accident.
+    */
+    signInLocally('Teacher', 'teacher@example.test');
+    const engine = fakeEngine(true);
+    const klass = await api(engine).createClass({ name: 'FL', term: 'Autumn' });
+    await api(engine).createAssignment(klass.id, {
+      title: 'Even a’s',
+      prompt: 'An even number of a’s.',
+      targetRegex: '(b + ab*a)*',
+    });
+
+    const [asTeacher] = await api(engine).assignments(klass.id);
+    expect(asTeacher?.targetRegex).toBe('(b + ab*a)*');
+
+    await asStudentOf(klass.joinCode);
+    const [asStudent] = await api(engine).assignments(klass.id);
+
+    expect(asStudent?.prompt).toBe('An even number of a’s.');
+    expect(asStudent?.targetRegex).toBeUndefined();
+    expect(Object.keys(asStudent ?? {})).not.toContain('targetRegex');
+  });
+
+  it('refuses a student the class results', async () => {
+    // Who else has solved what is a teacher's view. A student seeing the roster learns their
+    // classmates' names, attempt counts and who is struggling — none of it theirs to know.
+    signInLocally('Teacher', 'teacher@example.test');
+    const engine = fakeEngine(true);
+    const klass = await api(engine).createClass({ name: 'FL', term: 'Autumn' });
+    const task = await api(engine).createAssignment(klass.id, {
+      title: 'T',
+      prompt: 'p',
+      targetRegex: 'a',
+    });
+
+    await asStudentOf(klass.joinCode);
+    await expect(api(engine).standings(task.id)).rejects.toMatchObject({ kind: 'forbidden' });
+  });
+
+  it('still lets a student submit, and still checks it properly', async () => {
+    // Losing the answer key must not cost the student the check: the adapter reads the target
+    // from its own stored copy, which is the local stand-in for the server re-checking.
+    signInLocally('Teacher', 'teacher@example.test');
+    const engine = fakeEngine(true);
+    const klass = await api(engine).createClass({ name: 'FL', term: 'Autumn' });
+    const task = await api(engine).createAssignment(klass.id, {
+      title: 'T',
+      prompt: 'p',
+      targetRegex: '(b + ab*a)*',
+    });
+
+    await asStudentOf(klass.joinCode);
+    const attempt = await api(engine).submit(task.id, '{}');
+    expect(attempt.solved).toBe(true);
   });
 });
