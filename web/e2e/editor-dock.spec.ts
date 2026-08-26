@@ -236,7 +236,18 @@ test('connect mode stays armed, because transitions come in groups', async ({ pa
   const to = await stateAt(page, 'q1');
   await page.mouse.click(from.x, from.y);
   await page.mouse.click(to.x, to.y);
-  await page.keyboard.press('Escape'); // dismiss the symbol editor
+
+  /*
+    Wait for the symbol editor before pressing Escape.
+
+    `editNewEdge` opens it on the next animation frame, and Escape landing inside that window
+    means no editor is open yet — so the key does what it does with no editor open, which is
+    leave connect mode. That is correct behaviour and an unwinnable race for a test: it passed
+    alone and failed in the suite, which is the shape of a timing bug rather than a flaky
+    assertion. A person cannot press a key within one frame of a click; a test can.
+  */
+  await expect(page.locator('input').first()).toBeVisible();
+  await page.keyboard.press('Escape');
 
   await expect(page.locator('[data-connect]')).toHaveAttribute('aria-pressed', 'true');
 });
