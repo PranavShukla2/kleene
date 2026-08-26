@@ -79,3 +79,43 @@ test('the page says where progress lives, and that clearing site data clears it'
   await expect(page.getByText(/no account/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Export progress' })).toBeVisible();
 });
+
+test('the teaching layer is reachable without knowing a URL', async ({ page }) => {
+  /*
+    It was in the nav and the footer and nowhere else, which is close to not existing — a
+    visitor scrolling the landing page had no way to learn any of it was there. One word in a
+    nav cannot say "there is a problem set, a game that plays the pumping lemma against you,
+    and a way to set an assignment without an account".
+  */
+  await page.goto('/');
+
+  const band = page.getByRole('heading', { name: /Somewhere to use it/ });
+  await band.scrollIntoViewIfNeeded();
+  await expect(band).toBeVisible();
+
+  await page.getByRole('button', { name: /Open the problem set/ }).click();
+  await expect(page).toHaveURL(/\/practice$/);
+});
+
+test('practice is in the top nav, not only the footer', async ({ page }) => {
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Sections' });
+  await expect(nav.getByRole('button', { name: 'Practice' })).toBeVisible();
+});
+
+test('the header does not clip its own call to action', async ({ page }) => {
+  // It did: nine nav items made the header's content 89px wider than the header, with no
+  // overflow, so "Open the editor" was cut off at the right edge.
+  await page.goto('/');
+  const clipped = await page.evaluate(() => {
+    const header = document.querySelector('header');
+    return header ? header.scrollWidth > header.clientWidth : true;
+  });
+  expect(clipped).toBe(false);
+
+  const cta = page.getByRole('button', { name: /Open the editor/ }).first();
+  const box = await cta.boundingBox();
+  const view = page.viewportSize();
+  if (!box || !view) throw new Error('no layout');
+  expect(box.x + box.width).toBeLessThanOrEqual(view.width);
+});

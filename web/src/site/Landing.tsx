@@ -54,6 +54,7 @@ export function Landing({
       <Trace onNavigate={onNavigate} />
       <Bento />
       <Audiences />
+      <Practise onNavigate={onNavigate} />
       <Examples
         onOpen={onOpenExample}
         onBrowseAll={() => {
@@ -403,6 +404,83 @@ function Examples({
           Browse the gallery →
         </button>
       </Reveal>
+    </Section>
+  );
+}
+
+/* ── Practise ──────────────────────────────────────────────────────────────── */
+
+/**
+ * The teaching layer, on the page where people arrive.
+ *
+ * It was reachable only from the nav and the footer, which is close to not existing: a visitor
+ * scrolling the landing page had no way to learn that any of it was there. The nav can hold
+ * one word, and one word cannot say "there is a problem set, a game that plays the pumping
+ * lemma against you, and a way to set an assignment without an account".
+ *
+ * Placed after the audiences band, which is where the page stops describing what the tool is
+ * and starts saying who it is for — and these are the three things those people would do next.
+ */
+function Practise({ onNavigate }: { onNavigate: (to: Route) => void }) {
+  const cards = [
+    {
+      route: 'practice' as Route,
+      eyebrow: 'For practice',
+      title: 'Twenty problems, in the order they get harder',
+      detail:
+        'Build a machine for a language and check it. A wrong answer comes back with the shortest string that proves it wrong — never just “incorrect”. Nothing is scored and nothing is timed.',
+      action: 'Open the problem set',
+    },
+    {
+      route: 'pumping' as Route,
+      eyebrow: 'For the hard part',
+      title: 'Play the pumping lemma instead of memorising it',
+      detail:
+        'The lemma alternates quantifiers, and alternating quantifiers are a game: the adversary picks n, you pick w, it splits, you pump. Win and it prints the proof you just played. Two of the languages are regular and cannot be beaten — that is the lesson.',
+      action: 'Play a round',
+    },
+    {
+      route: 'download' as Route,
+      eyebrow: 'For teaching',
+      title: 'Set an assignment without an account',
+      detail:
+        'One command prints a link you can paste into a slide. One more marks a folder of submissions to a spreadsheet, with a counterexample beside every wrong answer. No sign-up, no roster, no server holding anyone’s work.',
+      action: 'See the command line',
+    },
+  ];
+
+  return (
+    <Section>
+      <Heading
+        eyebrow="Practise"
+        title="Somewhere to use it, and something to be wrong at"
+        detail="A tool you can only read about teaches nothing. These are the parts you work through — with the same engine checking your answer that drew the diagram."
+      />
+
+      <RevealGroup className="mt-12 grid gap-5 lg:grid-cols-3">
+        {cards.map((card) => (
+          <RevealItem key={card.route}>
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate(card.route);
+              }}
+              className="k-card flex h-full w-full flex-col rounded-2xl border border-k-border bg-k-surface p-6 text-left hover:border-k-primary/50"
+            >
+              <span className="font-mono text-[10px] tracking-wider text-k-text-faint uppercase">
+                {card.eyebrow}
+              </span>
+              <h3 className="mt-3 text-lg font-medium tracking-tight text-balance">
+                {card.title}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-k-text-muted">{card.detail}</p>
+              <span className="mt-auto pt-5 font-mono text-xs text-k-primary">
+                {card.action} →
+              </span>
+            </button>
+          </RevealItem>
+        ))}
+      </RevealGroup>
     </Section>
   );
 }
