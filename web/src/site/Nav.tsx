@@ -22,15 +22,26 @@ import { Lift } from '@/site/motion';
 import { SPRING } from '@/site/spring';
 import type { Route } from '@/router';
 
+/**
+ * The top bar, and what it costs to be in it.
+ *
+ * This list grew to nine and the bar stopped fitting: at 1280px the header's content was 89px
+ * wider than the header, with no overflow — so "Open the editor", the one control the page is
+ * trying to lead people to, was clipped off the right edge. A nav that pushes out its own call
+ * to action has stopped being a nav.
+ *
+ * Pricing and Roadmap came out. Both are one click away in the footer and both are answered
+ * before anyone would look for them: the landing page says the tool is free in its first
+ * screen, and the roadmap is a document for people already invested. Practice and Download
+ * stayed, because they are things a visitor wants to *do*.
+ */
 const NAV: readonly { route: Route; label: string }[] = [
   { route: 'convert', label: 'Convert' },
   { route: 'examples', label: 'Examples' },
   { route: 'learn', label: 'Learn' },
-  // Between Learn and Docs, because it is the doing half of Learn.
+  // Beside Learn, because it is the doing half of it.
   { route: 'practice', label: 'Practice' },
   { route: 'docs', label: 'Docs' },
-  { route: 'pricing', label: 'Pricing' },
-  { route: 'roadmap', label: 'Roadmap' },
   // About was reachable only from the footer, which is a page you have to already be
   // finished with the site to find. It is the page that answers "who made this and is it
   // serious", which is a question people have early rather than last.
