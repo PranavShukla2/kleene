@@ -43,6 +43,21 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
     ],
   },
   {
+    heading: 'Practise',
+    items: [
+      { label: 'Problem set', route: 'practice' },
+      { label: 'Pumping lemma', route: 'pumping' },
+      {
+        label: 'Set an assignment',
+        href: 'https://github.com/PranavShukla2/kleene/tree/main/docs/classroom',
+      },
+      {
+        label: 'Grade a class',
+        href: 'https://github.com/PranavShukla2/kleene/blob/main/docs/cli.md',
+      },
+    ],
+  },
+  {
     heading: 'Free tools',
     items: [
       { label: 'Regex to DFA', href: '/tools/regex-to-dfa' },
@@ -64,8 +79,6 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
     heading: 'Project',
     items: [
       { label: 'Getting started', route: 'start' },
-      { label: 'Practice problems', route: 'practice' },
-      { label: 'Pumping lemma game', route: 'pumping' },
       { label: 'Download', route: 'download' },
       { label: 'About', route: 'about' },
       { label: 'Compared to JFLAP', route: 'jflap' },
@@ -144,8 +157,17 @@ function Link({
   onNavigate: (to: Route) => void;
   onOpenPath: (path: string) => void;
 }) {
+  /*
+    `text-left` is doing real work here.
+
+    A `<button>` defaults to `text-align: center` while an `<a>` inherits `left`, so route
+    items and link items agreed on every label that fitted on one line and disagreed on the
+    first one that did not: "Pumping lemma game" wrapped and centred itself in a column of
+    left-aligned text. Setting it on the shared style is what makes the two element types
+    interchangeable, which is what a shared style is for.
+  */
   const style =
-    'text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:text-k-text';
+    'text-left text-sm text-k-text-muted transition-colors duration-(--duration-k-hover) hover:text-k-text';
 
   if (item.href) {
     // Internal links keep the running app; external ones get a new tab and a marker. The
