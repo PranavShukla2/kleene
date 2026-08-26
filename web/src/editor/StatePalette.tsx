@@ -30,9 +30,14 @@
 
 export function StatePalette({
   onPlaceStart,
+  connecting,
+  onToggleConnect,
 }: {
   /** A press on the chip. The canvas tracks the pointer from here and decides where it lands. */
   onPlaceStart: (event: React.PointerEvent) => void;
+  /** Whether the canvas is waiting for two states to join. */
+  connecting: boolean;
+  onToggleConnect: () => void;
 }) {
   return (
     <div className="pointer-events-none absolute top-3 left-3 z-20 flex items-center gap-2">
@@ -53,6 +58,49 @@ export function StatePalette({
           q
         </span>
         <span className="text-xs text-k-text-muted">drag a state</span>
+      </button>
+
+      {/*
+        Transitions, the other way round.
+
+        A transition already has a gesture — drag from a state's *rim* — and it is the single
+        least guessable thing in the editor, which is why the tour spends a card on it. It is
+        also close to unusable with a finger: the rim is a few pixels wide, and on a phone
+        those pixels are under the fingertip that is trying to hit them.
+        
+        So this is the same job as a mode rather than a drag: press it, tap the state the arrow
+        leaves, tap the state it arrives at. Two taps, both of them on targets the size of a
+        state. The rim drag stays for anyone who has learned it — it is quicker — and this is
+        the path that works with a finger and with a keyboard.
+      */}
+      {/* `data-connect` is a stable handle for tests: the visible label changes with the
+          mode, which is right for a reader and useless for a locator — the control is named
+          one way before it is pressed and another way after. */}
+      <button
+        type="button"
+        onClick={onToggleConnect}
+        aria-pressed={connecting}
+        data-connect
+        title={
+          connecting
+            ? 'Tap the state the arrow leaves, then the one it arrives at. Esc to stop.'
+            : 'Connect two states — or drag from a state’s rim, which is quicker'
+        }
+        className={`pointer-events-auto flex items-center gap-2 rounded-full border py-1.5 pr-3 pl-1.5 shadow-sm backdrop-blur transition-colors duration-(--duration-k-hover) ${
+          connecting
+            ? 'border-k-primary bg-k-primary/12'
+            : 'border-k-border bg-k-surface-raised/90 hover:border-k-primary/50'
+        }`}
+      >
+        <span
+          aria-hidden
+          className="grid h-6 w-6 place-items-center rounded-full border border-k-border bg-k-surface font-mono text-[11px] text-k-text-faint"
+        >
+          →
+        </span>
+        <span className="text-xs text-k-text-muted">
+          {connecting ? 'pick two states' : 'connect'}
+        </span>
       </button>
     </div>
   );

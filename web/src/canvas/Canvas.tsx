@@ -33,6 +33,7 @@ import { SNAP, snapPoint, toScreen } from '@/canvas/viewport';
 import type { Automaton, StateId } from '@/model/automaton';
 import {
   addState,
+  addTransition,
   clearCanvas,
   deleteEdge,
   deleteStates,
@@ -189,6 +190,16 @@ export function Canvas({
   const [dropAt, setDropAt] = useState<Point | undefined>(undefined);
 
   /**
+   * Connect mode: the pointer-free way to draw a transition.
+   *
+   * `undefined` when off, `{ from: undefined }` when armed and waiting for a source, and
+   * `{ from: id }` once a source has been chosen. Three states in one value, because "armed"
+   * and "has a source" are the two halves of one gesture and splitting them into two booleans
+   * makes a fourth, meaningless combination representable.
+   */
+  const [connect, setConnect] = useState<{ from?: StateId } | undefined>(undefined);
+
+  /**
    * Carry a state from the palette to wherever the pointer is released.
    *
    * Pointer events rather than HTML5 drag-and-drop, which is a mouse-only protocol: it never
@@ -255,6 +266,21 @@ export function Canvas({
     },
     [pointerToWorld, run],
   );
+
+  useEffect(() => {
+    if (connect === undefined) return;
+    const onKey = (event: KeyboardEvent) => {
+      // Not while the symbol editor is open. Escape there means "abandon this label", and one
+      // key press was doing both jobs — dismissing the editor *and* leaving connect mode — so
+      // drawing a second edge meant re-pressing the chip every time. Two consumers of one
+      // Escape, resolved by the nearer one winning.
+      if (event.key === 'Escape' && editing === undefined) setConnect(undefined);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [connect, editing]);
 
   const closeEditor = useCallback(() => {
     setEditing(undefined);
@@ -555,13 +581,76 @@ export function Canvas({
       className={`relative overflow-hidden bg-k-canvas outline-none focus-visible:ring-1 focus-visible:ring-k-primary/40 focus-visible:ring-inset ${className ?? ''}`}
       style={{ cursor: cursorFor(panning, interaction), touchAction: 'none' }}
       onContextMenu={openMenu}
+      /*
+        Connect mode, handled in the capture phase so it runs before the drag machinery.
+
+        Capture rather than bubble because `useCanvasEditing` is listening on this same element
+        for the press that begins a marquee or a state drag. In connect mode a press on a state
+        means something else entirely, and letting both interpretations run would start a drag
+        underneath the arrow being drawn.
+      */
+      onPointerDownCapture={(event) => {
+        if (connect === undefined) return;
+
+        const world = pointerToWorld(event);
+        const hit = stateAt(world, ids, layout);
+
+        // A press on empty canvas leaves connect mode. It is the gesture everyone tries when
+        // they want out, and the alternative is a mode you can only escape from the keyboard.
+        if (hit === undefined) {
+          setConnect(undefined);
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (connect.from === undefined) {
+          setConnect({ from: hit });
+          return;
+        }
+
+        // Same state twice is a self-loop, which is a real thing to want and not a mis-tap.
+        run(addTransition(connect.from, hit));
+        editNewEdge({ from: connect.from, to: hit });
+        // Stays armed: transitions come in groups, and re-pressing the chip between every one
+        // would make drawing five edges nine gestures.
+        setConnect({});
+      }}
     >
       {/*
         Canvas furniture, so it can reach the viewport. Tapping it places a state in the middle
         of what is currently on screen, which is the only sensible answer without a pointer —
         and on a touch device it is the only way to create one at all.
       */}
-      <StatePalette onPlaceStart={placeStart} />
+      <StatePalette
+        onPlaceStart={placeStart}
+        connecting={connect !== undefined}
+        onToggleConnect={() => {
+          setConnect((was) => (was === undefined ? {} : undefined));
+        }}
+      />
+
+      {connect?.from !== undefined &&
+        (() => {
+          const at = layout[connect.from];
+          if (!at) return null;
+          const screen = toScreen(viewport, at);
+          return (
+            <div
+              aria-hidden
+              // Marks where the arrow starts. Without it the second tap is a guess about
+              // which state the first one chose.
+              className="pointer-events-none absolute z-20 animate-pulse rounded-full border-2 border-k-primary"
+              style={{
+                width: GEOM.radius * 2 * viewport.scale + 8,
+                height: GEOM.radius * 2 * viewport.scale + 8,
+                left: screen.x - GEOM.radius * viewport.scale - 4,
+                top: screen.y - GEOM.radius * viewport.scale - 4,
+              }}
+            />
+          );
+        })()}
 
       {dropAt && (
         /*

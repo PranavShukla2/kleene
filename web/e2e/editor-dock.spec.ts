@@ -10,7 +10,7 @@
  * which is the entire reason any of this moved.
  */
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { canvas, openPanel } from './canvas';
 
@@ -192,4 +192,71 @@ test('Install answers the question even where the browser will not help', async 
 
   await page.getByRole('button', { name: 'Got it' }).click();
   await expect(dialog).toHaveCount(0);
+});
+
+/** The centre of a state, found by its label. */
+async function stateAt(page: Page, label: string) {
+  const box = await page
+    .locator('svg text')
+    .filter({ hasText: new RegExp(`^${label}$`) })
+    .first()
+    .boundingBox();
+  if (!box) throw new Error(`no state ${label}`);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+test('two states can be connected without touching a rim', async ({ page }) => {
+  /*
+    Dragging from a state's *rim* is the existing way to draw a transition, and it is the least
+    guessable thing in the editor — the tour spends a card on it. It is also close to unusable
+    with a finger: the rim is a few pixels wide and those pixels are under the fingertip aiming
+    at them.
+
+    So the same job as a mode: press connect, tap the state the arrow leaves, tap the one it
+    arrives at. Two targets the size of a state.
+  */
+  await expect(page.getByText('6 transitions')).toBeVisible();
+
+  await page.locator('[data-connect]').click();
+  await expect(page.locator('[data-connect]')).toHaveAttribute('aria-pressed', 'true');
+
+  const from = await stateAt(page, 'q0');
+  const to = await stateAt(page, 'q1');
+  await page.mouse.click(from.x, from.y);
+  await page.mouse.click(to.x, to.y);
+
+  await expect(page.getByText('7 transitions')).toBeVisible();
+});
+
+test('connect mode stays armed, because transitions come in groups', async ({ page }) => {
+  // Re-pressing the chip between every edge would make drawing five of them nine gestures.
+  await page.locator('[data-connect]').click();
+
+  const from = await stateAt(page, 'q0');
+  const to = await stateAt(page, 'q1');
+  await page.mouse.click(from.x, from.y);
+  await page.mouse.click(to.x, to.y);
+  await page.keyboard.press('Escape'); // dismiss the symbol editor
+
+  await expect(page.locator('[data-connect]')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('escape leaves connect mode', async ({ page }) => {
+  // A mode with no visible way out is a trap.
+  await page.locator('[data-connect]').click();
+  await expect(page.locator('[data-connect]')).toHaveAttribute('aria-pressed', 'true');
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-connect]')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('pressing empty canvas leaves connect mode too', async ({ page }) => {
+  // The gesture everyone tries when they want out.
+  await page.locator('[data-connect]').click();
+
+  const box = await canvas(page).boundingBox();
+  if (!box) throw new Error('no canvas');
+  await page.mouse.click(box.x + box.width - 80, box.y + box.height - 80);
+
+  await expect(page.locator('[data-connect]')).toHaveAttribute('aria-pressed', 'false');
 });
