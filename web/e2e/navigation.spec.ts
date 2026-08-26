@@ -289,3 +289,34 @@ test('the state-elimination tool opens the section it is about', async ({ page }
   await expect(page.getByRole('heading', { name: 'DFA to regular expression' })).toBeVisible();
   await expect(page.getByRole('main')).toContainText(/order/i);
 });
+
+test('the landing page links every conversion, and the footer lists every one', async ({
+  page,
+}) => {
+  /*
+    They existed and the landing page linked to none of them, which is worse than an omission
+    in a menu: these pages are built to be the end of a search — somebody types "nfa to dfa
+    converter", not "automata workbench" — and links from the most-visited page are how they
+    are found at all.
+
+    Counted against the tool list rather than a number written here, so a seventh conversion
+    fails this until it appears in both places. The footer's hand-written version had drifted
+    to four of six, which is what a hand-written list does.
+  */
+  const { TOOLS } = await import('../src/site/tools');
+
+  await page.goto('/');
+  for (const tool of TOOLS) {
+    // Not `exact`: a card's accessible name is its whole text — title, tagline and the worked
+    // example on the bottom row — so an exact match tests the copy rather than the link.
+    await expect(page.getByRole('button', { name: new RegExp(tool.title) })).toBeVisible();
+    await expect(page.locator('footer').getByText(tool.short, { exact: true })).toBeVisible();
+  }
+});
+
+test('a conversion card opens the page it names', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /NFA to DFA converter/ }).click();
+  await expect(page).toHaveURL(/\/tools\/nfa-to-dfa$/);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('NFA to DFA');
+});

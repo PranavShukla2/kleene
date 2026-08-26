@@ -23,6 +23,14 @@ export interface Tool {
   slug: string;
   /** What someone typed into a search box. */
   title: string;
+  /**
+   * The same thing, short enough for a footer column or a card.
+   *
+   * A separate field rather than a truncation: "Regular expression to DFA" is what a person
+   * searches for and belongs on the page, and "Regex to DFA" is what fits in a narrow column.
+   * Cutting the first to length would produce "Regular expression to…", which is neither.
+   */
+  short: string;
   /** The sentence under it. One line, no product name. */
   tagline: string;
   /** The expression the page opens with, already converting. */
@@ -54,6 +62,7 @@ export const TOOLS: readonly Tool[] = [
   {
     slug: 'regex-to-dfa',
     title: 'Regular expression to DFA',
+    short: 'Regex to DFA',
     tagline: 'Type an expression, get a deterministic machine — and every step in between.',
     example: '(a|b)*abb',
     panes: ['nfa', 'dfa'],
@@ -77,6 +86,7 @@ export const TOOLS: readonly Tool[] = [
   {
     slug: 'nfa-to-dfa',
     title: 'NFA to DFA converter',
+    short: 'NFA to DFA',
     tagline: 'Subset construction, one round at a time, with the worklist and the reasoning.',
     example: '(a|b)*abb',
     panes: ['nfa', 'dfa'],
@@ -100,6 +110,7 @@ export const TOOLS: readonly Tool[] = [
   {
     slug: 'minimize-dfa',
     title: 'DFA minimizer',
+    short: 'DFA minimizer',
     tagline: 'The smallest machine accepting the same language, and why each merge is allowed.',
     example: 'a*b*',
     panes: ['dfa', 'minimal'],
@@ -123,6 +134,7 @@ export const TOOLS: readonly Tool[] = [
   {
     slug: 'regex-to-nfa',
     title: 'Regular expression to NFA',
+    short: 'Regex to NFA',
     tagline: 'Thompson’s construction, operator by operator, with the ε-transitions shown.',
     example: 'a(b|c)*',
     panes: ['nfa'],
@@ -146,6 +158,7 @@ export const TOOLS: readonly Tool[] = [
   {
     slug: 'dfa-to-regex',
     title: 'DFA to regular expression',
+    short: 'DFA to regex',
     tagline: 'State elimination, one state at a time, with what is left on the edges.',
     // Small on purpose. State elimination is worst-case exponential and this page runs it on
     // arrival, so the worked example has to be one whose answer stays readable.
@@ -172,6 +185,7 @@ export const TOOLS: readonly Tool[] = [
   {
     slug: 'dfa-to-latex',
     title: 'DFA to LaTeX',
+    short: 'DFA to LaTeX',
     tagline: 'TikZ source for a state diagram, matching what is on screen.',
     example: '(a|b)*abb',
     panes: ['dfa'],

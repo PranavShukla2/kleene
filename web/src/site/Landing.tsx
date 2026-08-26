@@ -28,6 +28,8 @@ import { statusHeadline } from '@/overview/status';
 import { StatusBadge, Pill } from '@/site/Badge';
 import { AUDIENCES, FAQ, PIPELINE, STATS, TRACE_CLAIM } from '@/site/content';
 import { LiveHero } from '@/site/LiveHero';
+import { TOOLS } from '@/site/tools';
+import { toolPath } from '@/router';
 import {
   CountUp,
   Lift,
@@ -42,9 +44,12 @@ import type { Route } from '@/router';
 export function Landing({
   onNavigate,
   onOpenExample,
+  onOpenPath,
 }: {
   onNavigate: (to: Route) => void;
   onOpenExample: (key: string) => void;
+  /** For `/tools/*`, which is a parameterised route and cannot go through `onNavigate`. */
+  onOpenPath: (path: string) => void;
 }) {
   return (
     <main>
@@ -55,6 +60,7 @@ export function Landing({
       <Bento />
       <Audiences />
       <Practise onNavigate={onNavigate} />
+      <Conversions onOpenPath={onOpenPath} />
       <Examples
         onOpen={onOpenExample}
         onBrowseAll={() => {
@@ -404,6 +410,52 @@ function Examples({
           Browse the gallery →
         </button>
       </Reveal>
+    </Section>
+  );
+}
+
+/* ── Conversions ───────────────────────────────────────────────────────────── */
+
+/**
+ * The six conversion pages, from the page that gives them their reach.
+ *
+ * They existed and the landing page linked to none of them. That is worse than an omission in
+ * a menu: these pages are built to be the end of a search — somebody types "nfa to dfa
+ * converter", not "automata workbench" — and the internal links from the site's most-visited
+ * page are how they are found at all, by a person scrolling and by anything crawling.
+ *
+ * Driven by `TOOLS`, so a seventh conversion appears here by existing. The footer's list drifted
+ * to four of six precisely because it was written out by hand, and adding a page and
+ * remembering to link it are two separate acts.
+ */
+function Conversions({ onOpenPath }: { onOpenPath: (path: string) => void }) {
+  return (
+    <Section>
+      <Heading
+        eyebrow="Conversions"
+        title="Every direction, and the reasoning for each"
+        detail="One page per task, each opening on a worked example rather than on a description of one. The same engine underneath — these are six questions asked of it, not six tools."
+      />
+
+      <RevealGroup className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {TOOLS.map((tool) => (
+          <RevealItem key={tool.slug}>
+            <button
+              type="button"
+              onClick={() => {
+                onOpenPath(toolPath(tool.slug));
+              }}
+              className="k-card flex h-full w-full flex-col rounded-2xl border border-k-border bg-k-surface p-5 text-left hover:border-k-primary/50"
+            >
+              <h3 className="font-medium tracking-tight">{tool.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-k-text-muted">{tool.tagline}</p>
+              <span className="mt-auto pt-4 font-mono text-xs text-k-primary">
+                {tool.example} →
+              </span>
+            </button>
+          </RevealItem>
+        ))}
+      </RevealGroup>
     </Section>
   );
 }

@@ -11,6 +11,8 @@
  */
 
 import { Pill } from '@/site/Badge';
+import { TOOLS } from '@/site/tools';
+import { toolPath } from '@/router';
 import type { Route } from '@/router';
 
 interface Item {
@@ -59,12 +61,10 @@ const COLUMNS: readonly { heading: string; items: readonly Item[] }[] = [
   },
   {
     heading: 'Free tools',
-    items: [
-      { label: 'Regex to DFA', href: '/tools/regex-to-dfa' },
-      { label: 'NFA to DFA', href: '/tools/nfa-to-dfa' },
-      { label: 'DFA minimizer', href: '/tools/minimize-dfa' },
-      { label: 'Regex to NFA', href: '/tools/regex-to-nfa' },
-    ],
+    // Derived from TOOLS rather than written out. The hand-written version listed four of six
+    // for as long as it took to notice, because adding a tool page and remembering to add a
+    // footer link are two separate acts and the second one is invisible when skipped.
+    items: TOOLS.map((tool) => ({ label: tool.short, href: toolPath(tool.slug) })),
   },
   {
     heading: 'Build on it',

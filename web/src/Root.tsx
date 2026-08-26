@@ -305,7 +305,7 @@ function Page({
     case 'missing':
       return <Missing onNavigate={go} />;
     default:
-      return <Landing onNavigate={go} onOpenExample={openExample} />;
+      return <Landing onNavigate={go} onOpenExample={openExample} onOpenPath={goPath} />;
   }
 }
 
