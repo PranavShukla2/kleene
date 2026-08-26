@@ -197,3 +197,39 @@ test('joining with a code that matches nothing says so', async ({ page }) => {
   await page.getByRole('button', { name: 'Join' }).click();
   await expect(page.getByRole('alert')).toContainText(/No class has that code/);
 });
+
+test('results appear as soon as something is submitted', async ({ page }) => {
+  await withAssignment(page);
+  await expect(page.getByText('Nobody has submitted yet')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(page.getByText(/0 of 1 solved/)).toBeVisible();
+  // The column that turns a grade into feedback, and the reason to hand this back at all.
+  await expect(page.getByText('Last failure')).toBeVisible();
+});
+
+test('the CSV is the one `kleene grade` writes', async ({ page }) => {
+  /*
+    A lecturer may mark through the browser or the command line, and the two must not produce
+    different spreadsheets — whichever gets automated against becomes the real format, and the
+    other quietly becomes wrong. So the header is copied verbatim rather than chosen.
+  */
+  await withAssignment(page);
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByText(/0 of 1 solved/)).toBeVisible();
+
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'export csv' }).click();
+  const file = await download;
+
+  expect(file.suggestedFilename()).toBe('parity.csv');
+
+  const path = await file.path();
+  const text = await import('node:fs/promises').then((fs) => fs.readFile(path, 'utf8'));
+
+  expect(text.split('\n')[0]).toBe('file,verdict,counterexample,direction,states');
+  // ε rather than an empty cell: the empty string is a real counterexample, and a blank there
+  // reads as a tool that failed to find one.
+  expect(text).toContain('ε');
+});

@@ -16,6 +16,7 @@ import { signInLocally } from '@/classroom/local';
 import { lock, tryPin, unlocked } from '@/classroom/gate';
 import { Compose } from '@/classroom/Compose';
 import { Student } from '@/classroom/Student';
+import { Results } from '@/classroom/Results';
 import type { Assignment, ClassSummary } from '@/classroom/api';
 import type { Engine } from '@/wasm/loader';
 import type { Route } from '@/router';
@@ -371,6 +372,8 @@ function Inside({
                         {assignment.dueAt !== undefined &&
                           ` · due ${new Date(assignment.dueAt).toLocaleString()}`}
                       </p>
+
+                      <Results api={api} assignment={assignment} generation={generation} />
                     </div>
                   ))}
               </RevealItem>
@@ -385,6 +388,9 @@ function Inside({
           engine={engine}
           classes={classes}
           generation={generation}
+          onSubmitted={() => {
+            setGeneration((was) => was + 1);
+          }}
           onJoined={(joined) => {
             // Replace rather than append: joining a class you are already in is idempotent on
             // the server, and appending would show it twice.

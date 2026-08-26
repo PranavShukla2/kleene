@@ -36,6 +36,7 @@ export function Student({
   engine,
   classes,
   generation,
+  onSubmitted,
   onJoined,
   onNavigate,
 }: {
@@ -44,6 +45,8 @@ export function Student({
   classes: ClassSummary[];
   /** Changes when the assignments have, so the lists below reload. */
   generation: number;
+  /** Called after a submission, so the teacher's results table stops showing stale numbers. */
+  onSubmitted: () => void;
   onJoined: (joined: ClassSummary) => void;
   onNavigate: (to: Route) => void;
 }) {
@@ -109,6 +112,7 @@ export function Student({
           engine={engine}
           entry={entry}
           generation={generation}
+          onSubmitted={onSubmitted}
           onNavigate={onNavigate}
         />
       ))}
@@ -121,12 +125,14 @@ function ClassWork({
   engine,
   entry,
   generation,
+  onSubmitted,
   onNavigate,
 }: {
   api: ClassroomApi;
   engine: Engine | undefined;
   entry: ClassSummary;
   generation: number;
+  onSubmitted: () => void;
   onNavigate: (to: Route) => void;
 }) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -149,7 +155,13 @@ function ClassWork({
       <RevealGroup className="mt-6 grid gap-3">
         {assignments.map((assignment) => (
           <RevealItem key={assignment.id}>
-            <Work api={api} engine={engine} assignment={assignment} onNavigate={onNavigate} />
+            <Work
+              api={api}
+              engine={engine}
+              assignment={assignment}
+              onSubmitted={onSubmitted}
+              onNavigate={onNavigate}
+            />
           </RevealItem>
         ))}
       </RevealGroup>
@@ -161,11 +173,13 @@ function Work({
   api,
   engine,
   assignment,
+  onSubmitted,
   onNavigate,
 }: {
   api: ClassroomApi;
   engine: Engine | undefined;
   assignment: Assignment;
+  onSubmitted: () => void;
   onNavigate: (to: Route) => void;
 }) {
   // The answer is whatever is in the editor — the same document, seen from here.
@@ -195,6 +209,7 @@ function Work({
       .submit(assignment.id, engine.toKln(document))
       .then(() => {
         load();
+        onSubmitted();
       })
       .catch((error: unknown) => {
         setProblem(error instanceof Error ? error.message : 'That did not send.');
