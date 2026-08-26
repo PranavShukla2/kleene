@@ -80,6 +80,7 @@ describe('routeOf', () => {
       'solve',
       'practice',
       'pumping',
+      'classroom',
     ] as const) {
       expect(routeOf(pathOf(route))).toBe(route);
     }

@@ -36,6 +36,7 @@ import { Download } from '@/site/Download';
 import { Start } from '@/site/Start';
 import { Practice } from '@/teach/Practice';
 import { Pumping } from '@/teach/Pumping';
+import { Classroom } from '@/classroom/Classroom';
 import { Solve } from '@/teach/Solve';
 import { openProblem, useProblem } from '@/teach/useProblem';
 import { Jflap } from '@/site/Jflap';
@@ -155,6 +156,7 @@ const NEEDS_ENGINE = new Set<Route>([
   'solve',
   'practice',
   'pumping',
+  'classroom',
 ]);
 
 /** What each of them is waiting for, in words the visitor can do something with. */
@@ -172,6 +174,8 @@ const WAITING_FOR: Partial<Record<Route, string>> & { convert: string } = {
     'The problem set is built by the engine rather than shipped as a list, so every problem in it is one the checker can actually verify.',
   pumping:
     'The adversary has to play well, which means working out which split is hardest — that is a real computation, and it runs here.',
+  classroom:
+    'Submissions are checked by the same engine that draws the diagrams, so it has to be here before anything can be marked.',
 };
 
 function Page({
@@ -258,6 +262,8 @@ function Page({
       return <SolveRoute engine={engine} go={go} />;
     case 'pumping':
       return <Pumping engine={engine} />;
+    case 'classroom':
+      return <Classroom engine={engine} onNavigate={go} />;
     case 'practice':
       return (
         <Practice
