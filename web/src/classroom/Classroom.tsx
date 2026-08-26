@@ -191,6 +191,18 @@ function Inside({
     view that shows it.
   */
   const [generation, setGeneration] = useState(0);
+  /**
+   * Which half of the page opened first.
+   *
+   * A preference, never a permission. What someone may actually do comes from their role in
+   * each class and is enforced by the adapter — a student who flips this sees the teaching
+   * panel and finds it empty, because they teach nothing.
+   */
+  const [intent, setIntent] = useState<'teaching' | 'taking'>('taking');
+
+  // Split by the role the adapter gave each class, not by which button was pressed at sign-in.
+  const teaching = classes.filter((entry) => entry.role === 'teacher');
+  const taking = classes.filter((entry) => entry.role === 'student');
 
   useEffect(() => {
     // Nothing to fetch signed out, and nothing to clear either: the list is rendered only when
@@ -251,20 +263,47 @@ function Inside({
               </button>
             </>
           ) : (
-            <Lift>
-              <button
-                type="button"
-                onClick={() => {
-                  // The local stand-in for the Google round trip. The real adapter sends the
-                  // browser to `api.signInUrl()` instead; nothing else on this page changes.
-                  signInLocally('Development user', 'dev@example.test');
-                  refresh();
-                }}
-                className="k-glow rounded-full bg-k-primary px-5 py-3 font-medium text-white"
-              >
-                {hasServer ? 'Sign in with Google' : 'Sign in (local)'}
-              </button>
-            </Lift>
+            /*
+              Two doors, one identity.
+
+              A person signs in once — with Google, in the real thing — and what they can do
+              follows from their role *in each class*, not from which button they pressed.
+              These choose which half of the page opens first, which is what "am I teaching or
+              taking this" actually means to somebody arriving.
+
+              Two accounts would be the wrong model and would break the common case: a TA is a
+              student in one module and a teacher in another, and a PhD student teaches one
+              course while taking two. One person, two logins, and submissions under whichever
+              identity they happened to be signed into.
+            */
+            <>
+              <Lift>
+                <button
+                  type="button"
+                  onClick={() => {
+                    signInLocally('Teacher', 'teacher@example.test');
+                    setIntent('teaching');
+                    refresh();
+                  }}
+                  className="k-glow rounded-full bg-k-primary px-5 py-3 font-medium text-white"
+                >
+                  {hasServer ? 'Sign in to teach' : 'Sign in to teach (local)'}
+                </button>
+              </Lift>
+              <Lift>
+                <button
+                  type="button"
+                  onClick={() => {
+                    signInLocally('Student', 'student@example.test');
+                    setIntent('taking');
+                    refresh();
+                  }}
+                  className="rounded-full border border-k-border-strong bg-k-surface-raised px-5 py-3 font-medium"
+                >
+                  {hasServer ? 'Sign in to take a class' : 'Sign in as a student (local)'}
+                </button>
+              </Lift>
+            </>
           )}
           <button
             type="button"
@@ -286,16 +325,42 @@ function Inside({
 
       {account && (
         <Band>
+          {/* A switch, not a permission. Flipping it shows the other half of the page; what
+              it contains still comes from the roles the adapter reports. */}
+          <div className="flex flex-wrap items-center gap-2">
+            {(['teaching', 'taking'] as const).map((which) => (
+              <button
+                key={which}
+                type="button"
+                onClick={() => {
+                  setIntent(which);
+                }}
+                aria-pressed={intent === which}
+                className={`rounded-full border px-4 py-1.5 text-sm transition-colors duration-(--duration-k-hover) ${
+                  intent === which
+                    ? 'border-k-primary bg-k-primary/10 text-k-text'
+                    : 'border-k-border text-k-text-muted hover:border-k-border-strong'
+                }`}
+              >
+                {which === 'teaching' ? 'Teaching' : 'Taking'}
+              </button>
+            ))}
+          </div>
+        </Band>
+      )}
+
+      {account && intent === 'teaching' && (
+        <Band>
           <BandHeading
-            title="Your classes"
+            title="Classes you teach"
             detail={
-              classes.length === 0
+              teaching.length === 0
                 ? 'None yet. Create one, and the join code is what students use.'
                 : 'The join code is read out in a lecture — there is nothing to email.'
             }
           />
           <RevealGroup className="mt-6 grid gap-3">
-            {classes.map((entry) => (
+            {teaching.map((entry) => (
               <RevealItem
                 key={entry.id}
                 className="flex flex-wrap items-center gap-4 rounded-2xl border border-k-border bg-k-surface p-5"
@@ -377,11 +442,11 @@ function Inside({
         </Band>
       )}
 
-      {account && (
+      {account && intent === 'taking' && (
         <Student
           api={api}
           engine={engine}
-          classes={classes}
+          classes={taking}
           generation={generation}
           onSubmitted={() => {
             setGeneration((was) => was + 1);

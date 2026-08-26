@@ -57,7 +57,7 @@ test('the classroom works with no server at all', async ({ page }) => {
   await page.getByLabel('Development PIN').fill('9696');
   await page.getByRole('button', { name: 'Open', exact: true }).click();
 
-  await page.getByRole('button', { name: /Sign in/ }).click();
+  await page.getByRole('button', { name: /Sign in to teach/ }).click();
   await page.getByRole('button', { name: 'Create a class' }).click();
 
   await expect(page.getByText('Formal Languages')).toBeVisible();
@@ -90,7 +90,9 @@ async function asTeacher(page: Page) {
   await page.getByText('Working on this?').click();
   await page.getByLabel('Development PIN').fill('9696');
   await page.getByRole('button', { name: 'Open', exact: true }).click();
-  await page.getByRole('button', { name: /Sign in/ }).click();
+  // The teaching door specifically: `/Sign in/` now matches both, which is the point of there
+  // being two.
+  await page.getByRole('button', { name: /Sign in to teach/ }).click();
   await page.getByRole('button', { name: 'Create a class' }).click();
   await page.getByRole('button', { name: 'Set an assignment' }).click();
 }
@@ -137,15 +139,24 @@ test('a complete assignment can be set', async ({ page }) => {
   await page.getByRole('button', { name: 'Set the assignment' }).click();
 
   /*
-    Twice, and that is correct rather than a duplicate: one browser is both people here, so a
-    new assignment shows in the teacher's list *and* in the student's. Asserting the count
-    documents that, where a `.first()` would have hidden it.
+    Once, now that roles are enforced.
+
+    This asserted twice, and that was right when one browser was both people: the assignment
+    appeared in the teacher's list and in the student's. A teacher is not a student of their
+    own class, so they see it in one place — which is the separation working, and the reason
+    to assert a count rather than use `.first()`.
   */
-  await expect(page.getByText('Week 3 — parity')).toHaveCount(2);
-  await expect(page.getByText(/at most 2 states/).first()).toBeVisible();
+  await expect(page.getByText('Week 3 — parity')).toHaveCount(1);
+  await expect(page.getByText(/at most 2 states/)).toBeVisible();
 });
 
-/** A class with one assignment set, and a machine saved in the editor to submit. */
+/**
+ * Set an assignment as a teacher, then join it as a student.
+ *
+ * Both halves are needed now that roles are enforced: a teacher is not a student of their own
+ * class and cannot submit to it, which is correct and used to be untrue. These tests relied on
+ * the two being one person.
+ */
 async function withAssignment(page: Page) {
   await page.goto('/editor');
   await expect(page.getByText('saved', { exact: true })).toBeVisible();
@@ -156,6 +167,18 @@ async function withAssignment(page: Page) {
   await page.getByPlaceholder(/Strings over/).fill('An even number of a’s.');
   await page.getByPlaceholder('(b + ab*a)*').fill('(b + ab*a)*');
   await page.getByRole('button', { name: 'Set the assignment' }).click();
+  await expect(page.getByText('Nobody has submitted yet')).toBeVisible();
+
+  const code = (await page.getByRole('main').innerText()).match(
+    /\b[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}\b/,
+  )?.[0];
+  expect(code).toBeDefined();
+
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: /student/ }).click();
+  await page.getByLabel('Class join code').fill(code ?? '');
+  await page.getByRole('button', { name: 'Join' }).click();
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
 }
 
 test('a newly set assignment appears without a reload', async ({ page }) => {
@@ -191,18 +214,21 @@ test('joining with a code that matches nothing says so', async ({ page }) => {
   await page.getByText('Working on this?').click();
   await page.getByLabel('Development PIN').fill('9696');
   await page.getByRole('button', { name: 'Open', exact: true }).click();
-  await page.getByRole('button', { name: /Sign in/ }).click();
+  await page.getByRole('button', { name: /student/ }).click();
 
   await page.getByLabel('Class join code').fill('ZZZZZZ');
   await page.getByRole('button', { name: 'Join' }).click();
   await expect(page.getByRole('alert')).toContainText(/No class has that code/);
 });
 
-test('results appear as soon as something is submitted', async ({ page }) => {
+test('results appear for the teacher once something is submitted', async ({ page }) => {
   await withAssignment(page);
-  await expect(page.getByText('Nobody has submitted yet')).toBeVisible();
-
   await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByText(/accepts|rejects/)).toBeVisible();
+
+  // Back through the teaching door: the results are not the student's to see.
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: /Sign in to teach/ }).click();
 
   await expect(page.getByText(/0 of 1 solved/)).toBeVisible();
   // The column that turns a grade into feedback, and the reason to hand this back at all.
@@ -217,6 +243,10 @@ test('the CSV is the one `kleene grade` writes', async ({ page }) => {
   */
   await withAssignment(page);
   await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByText(/accepts|rejects/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: /Sign in to teach/ }).click();
   await expect(page.getByText(/0 of 1 solved/)).toBeVisible();
 
   const download = page.waitForEvent('download');
@@ -232,4 +262,79 @@ test('the CSV is the one `kleene grade` writes', async ({ page }) => {
   // ε rather than an empty cell: the empty string is a real counterexample, and a blank there
   // reads as a tool that failed to find one.
   expect(text).toContain('ε');
+});
+
+test('there are two doors, and one identity behind them', async ({ page }) => {
+  /*
+    Not two accounts. A person signs in once and what they may do follows from their role in
+    each class — because a TA is a student in one module and a teacher in another, and two
+    accounts would mean one person logging in twice and submitting as whichever they happened
+    to be.
+  */
+  await page.goto('/classroom');
+  await page.getByText('Working on this?').click();
+  await page.getByLabel('Development PIN').fill('9696');
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+
+  await expect(page.getByRole('button', { name: /Sign in to teach/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /student/ })).toBeVisible();
+});
+
+test('a student is not shown the answer key or the class results', async ({ page }) => {
+  /*
+    The rule that makes the separation real rather than cosmetic. `api.ts` has said the target
+    is "never sent to students" since the contract was written, and the adapter was returning
+    the whole record to everybody — so a student could have read the target language out of a
+    response and pasted it back.
+
+    Enforced in the adapter, not the UI: the field is not in the object, so no component can
+    leak it by accident.
+  */
+  await page.goto('/editor');
+  await expect(page.getByText('saved', { exact: true })).toBeVisible();
+
+  await page.goto('/classroom');
+  await asTeacher(page);
+  await page.getByPlaceholder('Week 3 — parity').fill('Parity');
+  await page.getByPlaceholder(/Strings over/).fill('An even number of a’s.');
+  await page.getByPlaceholder('(b + ab*a)*').fill('(b + ab*a)*');
+  await page.getByRole('button', { name: 'Set the assignment' }).click();
+  await expect(page.getByText('Nobody has submitted yet')).toBeVisible();
+
+  const code = (await page.getByRole('main').innerText()).match(
+    /\b[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}\b/,
+  )?.[0];
+  expect(code).toBeDefined();
+
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: /student/ }).click();
+  await page.getByLabel('Class join code').fill(code ?? '');
+  await page.getByRole('button', { name: 'Join' }).click();
+
+  const main = page.getByRole('main');
+  await expect(main).toContainText('An even number');
+  await expect(main).not.toContainText('(b + ab*a)*');
+  await expect(main).not.toContainText('Nobody has submitted yet');
+  await expect(main).not.toContainText('Last failure');
+});
+
+test('joining a class does not make you its teacher', async ({ page }) => {
+  // The bug the role-per-membership model exists to prevent: a single `role` on the class
+  // record meant whoever created it had already decided everyone else's.
+  await page.goto('/classroom');
+  await asTeacher(page);
+  await page.getByRole('button', { name: 'Cancel' }).click();
+
+  const code = (await page.getByRole('main').innerText()).match(
+    /\b[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}\b/,
+  )?.[0];
+
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: /student/ }).click();
+  await page.getByLabel('Class join code').fill(code ?? '');
+  await page.getByRole('button', { name: 'Join' }).click();
+
+  // The teaching half is theirs to open and empty when they open it.
+  await page.getByRole('button', { name: 'Teaching' }).click();
+  await expect(page.getByText(/None yet/)).toBeVisible();
 });
