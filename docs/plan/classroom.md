@@ -110,6 +110,12 @@ has to read and a reason for their IT department to say no.
 
 Deliberately small. Every column below is one someone could be asked to justify.
 
+**Roles are per enrolment, not per account.** There is one sign-in and one identity; whether
+you are a teacher is a fact about you _and a class_. A TA is a student in one module and a
+teacher in another, and a PhD student teaches one course while taking two — two accounts would
+mean one person logging in twice and submitting under whichever they were signed into. The UI
+offers two doors for the same reason a building does, and neither is a permission.
+
 ```sql
 users        (id, google_sub UNIQUE, email, display_name, created_at, sessions_revoked_at)
 classes      (id, owner_id → users, name, term, join_code UNIQUE, archived_at, created_at)
@@ -193,6 +199,10 @@ except that C2 gates everything.
 - [ ] **C3.1.** Create, join by code, roster, archive.
 - [ ] **C3.2.** Role checks in one middleware, not per handler — an authorisation check that
       is written twenty times is one that is wrong once.
+- [ ] **C3.3.** `targetRegex` is stripped from every student-facing response _at the boundary_,
+      not by the client. The local adapter got this wrong first — the contract said "never sent
+      to students" and the implementation returned it to everyone — which is exactly how it
+      will go wrong on the server if the rule lives anywhere but one place.
 
 ### C4 — Assignments and server-side checking
 
