@@ -156,11 +156,6 @@ function Locked({
                 </span>
               )}
             </form>
-            <p className="mt-3 text-xs leading-relaxed text-k-text-faint">
-              This hides unfinished work from someone having a look around. It is not a security
-              control — the check runs in your browser — so nothing behind it is anything it
-              would matter to leak.
-            </p>
           </details>
         </Reveal>
       </Band>
